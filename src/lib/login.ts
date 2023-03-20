@@ -2,7 +2,7 @@ import { getState, saveState } from "../state/save.js";
 import { enquire, PromptTypes, PromptNames, PromptMessages } from "../api/enquire.js";
 import { createTransporter, TransporterOptions, TransporterType } from "../api/nodemailer.js";
 
-export async function isLoggedIn() {
+export async function isLoggedIn(id: string, password: string) {
   const state = getState();
 
   if (state.logged[0]) {
@@ -16,12 +16,12 @@ export async function isLoggedIn() {
     ]);
 
     if (confirm) {
-      login();
+      login(id, password);
     } else {
       return
     }
   } else {
-    login();
+    login(id, password);
   }
 }
 
@@ -35,28 +35,18 @@ const hosts: Hosts = {
   'Outlook': '',
 }
 
-export async function login() {
+export async function login(id: string, password: string) {
   console.log('Logging in...');
-  const { host, id, password } = await enquire([
+  const { host } = await enquire([
     {
       type: PromptTypes.select,
       name: PromptNames.host,
       message: PromptMessages.host,
       choices: ['Gmail', 'Apple', 'Outlook']
-    },
-    {
-      type: PromptTypes.input,
-      name: PromptNames.id,
-      message: PromptMessages.id
-    },
-    {
-      type: PromptTypes.password,
-      name: PromptNames.password,
-      message: PromptMessages.password
     }
   ]);
 
-  if (typeof host === 'string' && typeof id === 'string' && typeof password === 'string') {
+  if (typeof host === 'string') {
     const hostUrl = hosts[host];
     const options: TransporterOptions = {
       host: hostUrl,
