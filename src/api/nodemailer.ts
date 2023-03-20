@@ -1,6 +1,5 @@
 import nodemailer from 'nodemailer';
 import SMTPTransport from 'nodemailer/lib/smtp-transport/index.js';
-import { testFile } from './fetch.js';
 
 type EmailOptions = {
   from: string;

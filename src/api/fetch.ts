@@ -14,5 +14,3 @@ export async function getFile(type: 'html' | 'mjml' | 'png', path: string): Prom
 
   return string;
 }
-
-export const testFile = await getFile('html', './test/index.html');
