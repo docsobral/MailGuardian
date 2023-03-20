@@ -1,9 +1,10 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import Cryptr from 'cryptr';
 import env from '../api/dotenv.js';
+import chalk from 'chalk';
 
 if (typeof env.secretKey === 'undefined') {
-  console.log('Missing secret key');
+  console.log(`${chalk.red('Missing secret key')}`);
   process.exit(1);
 }
 
@@ -15,7 +16,7 @@ export type AppState = {
 
 function checkFirstUse(): void {
   if (!existsSync('config')) {
-    console.log('\nCreating save files...\n\n');
+    console.log(`${chalk.blue('Creating save files...\n')}`);
     mkdirSync('config');
   };
 
