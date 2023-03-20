@@ -1,2 +1,7 @@
 # Dependencies
 node_modules/
+
+# Dev files & folders
+test/
+build/
+.env
