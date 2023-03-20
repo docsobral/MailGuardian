@@ -63,5 +63,3 @@ export async function mail(transporter: TransporterType, options: EmailOptions) 
   console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
   // Preview URL: https://ethereal.email/message/WaQKMgKddxQDoou...
 };
-
-// mail(await createTransporter(), {from: 'davidcsobral@gmail.com', to: ['davidcsobral@gmail.com'], subject: 'Test', text: 'Test!', html: testFile});

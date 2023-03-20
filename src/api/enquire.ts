@@ -45,18 +45,3 @@ export type PromptResults = {
 export async function enquire(options: PromptOptions[]): Promise<PromptResults> {
   return await Enquirer.prompt(options);
 }
-
-// const testOptions: PromptOptions[] = [{
-//   type: PromptTypes.select,
-//   name: PromptNames.host,
-//   message: PromptMessages.host,
-//   choices: ['Gmail', 'Apple', 'Outlook'],
-// },
-// {
-//   type: PromptTypes.input,
-//   name: PromptNames.password,
-//   message: PromptMessages.password,
-// }]
-
-// const result = await enquire(testOptions);
-// console.log(result);
