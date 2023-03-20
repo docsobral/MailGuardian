@@ -1,8 +1,26 @@
 import { getFile, getImage } from '../api/fetch.js';
 import { writeFileSync, readdirSync } from 'node:fs';
+// @ts-ignore
+import selectFolder from 'win-select-folder';
 
 type Images = {
   [name: string]: Buffer
+}
+
+type FolderSelectOptions = {
+  root: string;
+  description: string;
+  newFolder: number;
+}
+
+async function getPath(): Promise<string> {
+  const options: FolderSelectOptions = {
+    root: 'Desktop',
+    description: 'Find the project folder:',
+    newFolder: 0,
+  }
+
+  return await selectFolder(options);
 }
 
 async function getMJML(path: string): Promise<string> {
@@ -29,7 +47,8 @@ async function getImages(path: string, list: string[]): Promise<Images> {
   return images;
 }
 
-const images = await getImages('./test', await getImageNames('./test'));
+const path = await getPath();
+const images = await getImages(path, await getImageNames(path));
 
 Object.keys(images).forEach(name => {
   writeFileSync(`./${name}`, images[name])
