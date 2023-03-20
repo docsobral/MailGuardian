@@ -4,11 +4,12 @@ import { program } from 'commander';
 import { isLoggedIn } from '../lib/login.js';
 import * as supabaseAPI from '../api/supabase.js';
 import { existsSync, writeFileSync } from 'node:fs';
+import { getMJML, getImages, getPath } from '../lib/export.js';
 
-if (!existsSync('config/paths.json')) {
-  writeFileSync('config/paths.json', JSON.stringify({path: `${__dirname} + test/`}, null, 2));
-  console.log(`${__dirname} + test/`);
-}
+// if (!existsSync('config/paths.json')) {
+//   writeFileSync('config/paths.json', JSON.stringify({path: `${__dirname} + test/`}, null, 2));
+//   console.log(`${__dirname} + test/`);
+// }
 
 program.version('0.1');
 
@@ -19,12 +20,25 @@ program
   isLoggedIn(id, password);
 });
 
-// program
-// .command('export [url]')
-// .description('Exports MJML project into host server')
-// .action((url?: string) => {
-//   // export(url);
-// })
+program
+.command('export [path]')
+.description('Exports MJML project into host server')
+.action(async (path?: string) => {
+  if (path) {
+    const mjml = await getMJML(path);
+    const images = await getImages(path);
+
+    console.log(mjml);
+    console.log(images);
+  } else {
+    const path = await getPath();
+    const mjml = await getMJML(path);
+    const images = await getImages(path);
+
+    console.log(mjml);
+    console.log(images);
+  }
+});
 
 program
 .command('bucket')
@@ -43,7 +57,7 @@ program
     console.log(`${chalk.magenta(`Deleting bucket named ${name}`)}`);
     supabaseAPI.deleteFolder(name);
   }
-})
+});
 
 
 program.parse(process.argv);
