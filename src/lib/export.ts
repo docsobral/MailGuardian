@@ -1,5 +1,5 @@
 import { getFile, getImage } from '../api/fetch.js';
-import { writeFileSync, readdirSync } from 'node:fs';
+import { writeFile, readdir } from 'node:fs/promises';
 // @ts-ignore
 import selectFolder from 'win-select-folder';
 
@@ -13,7 +13,7 @@ type FolderSelectOptions = {
   newFolder: number;
 }
 
-async function getPath(): Promise<string> {
+export async function getPath(): Promise<string> {
   const options: FolderSelectOptions = {
     root: 'Desktop',
     description: 'Find the project folder:',
@@ -23,22 +23,23 @@ async function getPath(): Promise<string> {
   return await selectFolder(options);
 }
 
-async function getMJML(path: string): Promise<string> {
+export async function getMJML(path: string): Promise<string> {
   const mjml = getFile('mjml', path);
 
   return mjml;
 }
 
-async function getImageNames(path: string): Promise<string[]> {
+export async function getImageNames(path: string): Promise<string[]> {
   let list: string[] = [];
 
-  list = readdirSync(path + '/img');
+  list = await readdir(path + '\\img');
 
   return list;
 }
 
-async function getImages(path: string, list: string[]): Promise<Images> {
+export async function getImages(path: string): Promise<Images> {
   let images: Images = {};
+  const list = await getImageNames(path);
 
   for (let image of list) {
     images[image] = await getImage(path, image);
@@ -46,10 +47,3 @@ async function getImages(path: string, list: string[]): Promise<Images> {
 
   return images;
 }
-
-const path = await getPath();
-const images = await getImages(path, await getImageNames(path));
-
-Object.keys(images).forEach(name => {
-  writeFileSync(`./${name}`, images[name])
-});
