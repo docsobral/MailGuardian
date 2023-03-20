@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "module": "NodeNext",
+    "target": "ES2017",
+    "strict": true,
+    "strictNullChecks": true,
+    "noImplicitAny": true,
+    "removeComments": false,
+    "preserveConstEnums": true,
+    "sourceMap": false,
+    "noEmitOnError": true,
+    "esModuleInterop": true,
+    "rootDir": "src",
+    "outDir": "build"
+  }
+}
