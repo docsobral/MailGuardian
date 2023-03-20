@@ -8,8 +8,6 @@ export enum PromptTypes {
 }
 
 export enum PromptMessages {
-  id = 'Enter your email id: ',
-  password = 'Enter your password: ',
   host = 'What is your email client?',
   confirm = 'Confirm: ',
   project = 'Enter the project\'s name: ',
@@ -17,8 +15,6 @@ export enum PromptMessages {
 }
 
 export enum PromptNames {
-  id = 'id',
-  password = 'password',
   host = 'host',
   confirm = 'confirm',
   project = 'project',
@@ -34,8 +30,6 @@ export type PromptOptions = {
 }
 
 export type PromptResults = {
-  id?: string;
-  password?: string;
   host?: string;
   confirm?: boolean;
   project?: string;
