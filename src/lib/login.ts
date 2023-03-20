@@ -1,3 +1,4 @@
+import chalk from 'chalk';
 import { getState, saveState } from "../state/save.js";
 import { enquire, PromptTypes, PromptNames, PromptMessages } from "../api/enquire.js";
 import { createTransporter, TransporterOptions, TransporterType } from "../api/nodemailer.js";
@@ -36,20 +37,12 @@ const hosts: Hosts = {
 }
 
 export async function login(id: string, password: string) {
-  console.log('Logging in...');
-  const { host } = await enquire([
-    {
-      type: PromptTypes.select,
-      name: PromptNames.host,
-      message: PromptMessages.host,
-      choices: ['Gmail', 'Apple', 'Outlook']
-    }
-  ]);
+  console.log(`${chalk.blue('Logging in...')}`);
+  let host: string;
 
-  if (typeof host === 'string') {
-    const hostUrl = hosts[host];
+  if (id.includes('gmail')) {
     const options: TransporterOptions = {
-      host: hostUrl,
+      host: 'smtp.gmail.com',
       id,
       password
     }
@@ -61,7 +54,7 @@ export async function login(id: string, password: string) {
       if (error) {
         console.log(error);
       } else {
-        console.log('Success! Saving your credentials');
+        console.log(`${chalk.blueBright('Success! Saving your credentials')}`);
         saveCredentials(options);
       }
     });
