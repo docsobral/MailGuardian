@@ -2,7 +2,7 @@ import { getState, saveState } from "../state/save.js";
 import { enquire, PromptTypes, PromptNames, PromptMessages } from "../api/enquire.js";
 import { createTransporter, TransporterOptions, TransporterType } from "../api/nodemailer.js";
 
-async function isLoggedIn() {
+export async function isLoggedIn() {
   const state = getState();
 
   if (state.logged[0]) {
@@ -83,5 +83,3 @@ export async function saveCredentials(options: any) {
     (key === 'id' || key === 'password') ? saveState(key, options[key], true) : saveState(key, options[key]);
   });
 }
-
-isLoggedIn();
