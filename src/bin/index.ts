@@ -3,6 +3,12 @@ import chalk from 'chalk';
 import { program } from 'commander';
 import { isLoggedIn } from '../lib/login.js';
 import * as supabaseAPI from '../api/supabase.js';
+import { existsSync, writeFileSync } from 'node:fs';
+
+if (!existsSync('config/paths.json')) {
+  writeFileSync('config/paths.json', JSON.stringify({path: `${__dirname} + test/`}, null, 2));
+  console.log(`${__dirname} + test/`);
+}
 
 program.version('0.1');
 
