@@ -143,7 +143,7 @@ program
 program
 .command('bucket')
 .description('Lists, creates or deletes a remote bucket')
-.argument('[bucket name]', 'Name of the bucket as it exists in the server')
+.argument('[name]', 'Name of the bucket as it exists in the server')
 .option('-d, --delete', 'deletes a bucket')
 .option('-c, --create', 'creates a bucket')
 .action((name, options) => {
@@ -162,6 +162,12 @@ program
 program
 .command('prepare')
 .description('Parses MJML file into HTML according to provided parameters')
+.argument('<name>', 'Name of the bucket where the MJML you want to parse is located')
+.action(async (name) => {
+  const mjml = await supabaseAPI.downloadFile(name, 'mjml');
+  //@ts-ignore
+  console.log(await mjml.data.text());
+})
 
 
 program.parse(process.argv);
