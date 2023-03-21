@@ -37,8 +37,7 @@ export async function cleanFolder(projectName: string) {
 }
 
 // sobe arquivo para pasta específica dentro de bucket do projeto
-export async function uploadFile(filePath: string, fileName: string, projectName: string, contentType: string) {
-  const file = readFileSync(filePath);
+export async function uploadFile(file: string | Buffer, fileName: string, projectName: string, contentType: 'text/plain' | 'image/png' = 'text/plain') {
   let result: SupabaseStorageResult = await supabase.storage.from(projectName).upload(
     fileName,
     file,
@@ -47,10 +46,8 @@ export async function uploadFile(filePath: string, fileName: string, projectName
   return result;
 }
 
-export async function updateFile(filePath: string, fileName: string, projectName: string, contentType: string) {
-  const file = readFileSync(filePath);
-  let result: SupabaseStorageResult;
-  result = await supabase.storage.from(projectName).update(
+export async function updateFile(file: string | Buffer, fileName: string, projectName: string, contentType: string) {
+  let result: SupabaseStorageResult = await supabase.storage.from(projectName).update(
     fileName,
     file,
     {contentType: contentType, upsert: false},
