@@ -3,6 +3,7 @@ import env from './dotenv.js';
 import { readFileSync } from 'node:fs';
 import { StorageError } from '@supabase/storage-js';
 import { createClient } from '@supabase/supabase-js';
+import { Bucket, FileObject } from '@supabase/storage-js';
 
 if (typeof env.supaUrl === 'undefined' || typeof env.supaKey === 'undefined' || typeof env.supaSecret === 'undefined') {
   console.log(`${chalk.red('Missing API url, key or secret key!')}`);
@@ -10,7 +11,7 @@ if (typeof env.supaUrl === 'undefined' || typeof env.supaKey === 'undefined' || 
 }
 
 export type SupabaseStorageResult = {
-  data: unknown,
+  data: null | Blob | {message: string} | Pick<Bucket, 'name'> | {path: string} | FileObject[] | Bucket
   error: StorageError | null,
 }
 
