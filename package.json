@@ -3,6 +3,7 @@
   "type": "module",
   "dependencies": {
     "@supabase/supabase-js": "^2.12.0",
+    "@types/mjml": "^4.7.0",
     "chalk": "^5.2.0",
     "commander": "^10.0.0",
     "cryptr": "^6.2.0",
