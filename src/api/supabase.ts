@@ -1,9 +1,7 @@
 import chalk from 'chalk';
 import env from './dotenv.js';
-import { readFileSync } from 'node:fs';
-import { StorageError } from '@supabase/storage-js';
 import { createClient } from '@supabase/supabase-js';
-import { Bucket, FileObject } from '@supabase/storage-js';
+import { Bucket, FileObject, StorageError } from '@supabase/storage-js';
 
 if (typeof env.supaUrl === 'undefined' || typeof env.supaKey === 'undefined' || typeof env.supaSecret === 'undefined') {
   console.log(`${chalk.red('Missing API url, key or secret key!')}`);
@@ -13,6 +11,11 @@ if (typeof env.supaUrl === 'undefined' || typeof env.supaKey === 'undefined' || 
 export type SupabaseStorageResult = {
   data: null | Blob | {message: string} | Pick<Bucket, 'name'> | {path: string} | FileObject[] | Bucket
   error: StorageError | null,
+}
+
+export type SupabaseDownloadResult = {
+  data: Blob | null;
+  error: null | StorageError;
 }
 
 // inicia um cliente supabase para usar funções
@@ -67,7 +70,7 @@ export async function folderExists(projectName: string) {
   return result = await supabase.storage.getBucket(projectName);
 }
 
-export async function downloadFile(projectName: string, extension: 'mjml' | 'html' | 'png', type?: 'index' | 'marketo', imageName?: string): Promise<SupabaseStorageResult> {
+export async function downloadFile(projectName: string, extension: 'mjml' | 'html' | 'png', type?: 'index' | 'marketo', imageName?: string): Promise<SupabaseDownloadResult> {
   if (extension === 'mjml') {
     return await supabase.storage.from(projectName).download('index.mjml');
   }
