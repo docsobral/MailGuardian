@@ -174,7 +174,7 @@ program
   else {
     const files = readdirSync('temp');
     for (let file of files) {
-      unlinkSync('./temp/' + file);
+      unlinkSync('temp/' + file);
     }
   }
 
@@ -228,7 +228,7 @@ program
 
     writeFileSync('temp/index.mjml', mjmlString);
 
-    const finalMJML = parseMJML(readFileSync('./temp/index.mjml'));
+    const finalMJML = parseMJML(readFileSync('temp/index.mjml'));
     writeFileSync('temp/index.html', finalMJML.html);
 
     try {
