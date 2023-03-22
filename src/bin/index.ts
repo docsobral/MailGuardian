@@ -1,11 +1,12 @@
 #! /usr/bin/env node
 import chalk from 'chalk';
 import { program } from 'commander';
-import { enquire } from '../api/enquire.js';
+// import { enquire } from '../api/enquire.js';
 import { isLoggedIn } from '../lib/login.js';
 import * as supabaseAPI from '../api/supabase.js';
-import { existsSync, writeFileSync } from 'node:fs';
+import { downloadMJML, parseMJML } from '../lib/prepare.js';
 import { getMJML, getImages, getPath } from '../lib/export.js';
+import { existsSync, mkdirSync, writeFileSync, readdirSync, unlinkSync, readFileSync } from 'node:fs';
 
 // if (!existsSync('config/paths.json')) {
 //   writeFileSync('config/paths.json', JSON.stringify({path: `${__dirname} + test/`}, null, 2));
@@ -164,9 +165,42 @@ program
 .description('Parses MJML file into HTML according to provided parameters')
 .argument('<name>', 'Name of the bucket where the MJML you want to parse is located')
 .action(async (name) => {
-  const mjml = await supabaseAPI.downloadFile(name, 'mjml');
-  //@ts-ignore
-  console.log(await mjml.data.text());
+  if (!existsSync('temp')) {
+    mkdirSync('temp');
+  }
+
+  else {
+    const files = readdirSync('temp');
+    for (let file of files) {
+      unlinkSync('./temp/' + file);
+    }
+  }
+
+  // regular parsing
+  console.log(`${chalk.yellow('Fetching index.mjml file from the', name, 'bucket')}`)
+  const mjmlBlob = await downloadMJML(name);
+  if (mjmlBlob) {
+    const mjmlString = await mjmlBlob.text()
+    writeFileSync('temp/index.mjml', mjmlString);
+
+    // prepare images src
+
+    const parsedMJML = parseMJML(readFileSync('./temp/index.mjml'));
+    writeFileSync('temp/index.html', parsedMJML.html);
+
+    try {
+      const results = await supabaseAPI.uploadFile(parsedMJML.html, 'index.html', name);
+      if (results.error) {
+        throw new Error('Failed to upload HTML file!')
+      }
+      console.log(`${chalk.blue('Successfully parsed MJML and uploaded HTML to server')}`);
+    }
+
+    catch (error) {
+      console.error(`${chalk.red(error)}`);
+      process.exit(1);
+    }
+  }
 })
 
 
