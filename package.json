@@ -1,9 +1,9 @@
 {
   "name": "mailer",
+  "version": "0.1",
   "type": "module",
   "dependencies": {
     "@supabase/supabase-js": "^2.12.0",
-    "@types/mjml": "^4.7.0",
     "chalk": "^5.2.0",
     "commander": "^10.0.0",
     "cryptr": "^6.2.0",
@@ -14,6 +14,7 @@
     "win-select-folder": "^1.0.1"
   },
   "devDependencies": {
+    "@types/mjml": "^4.7.0",
     "@types/nodemailer": "^6.4.7",
     "@types/yargs": "^17.0.22"
   },
