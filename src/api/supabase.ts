@@ -1,9 +1,15 @@
 import chalk from 'chalk';
-import env from './dotenv.js';
 import { createClient } from '@supabase/supabase-js';
 import { Bucket, FileObject, StorageError } from '@supabase/storage-js';
+import { readFileSync } from 'node:fs';
 
-if (typeof env.supaUrl === 'undefined' || typeof env.supaKey === 'undefined' || typeof env.supaSecret === 'undefined') {
+type Config = {
+  [config: string]: string;
+}
+
+const config: Config = JSON.parse(readFileSync('./config/config.json', { encoding: 'utf8' }));
+
+if (typeof config['SUPA_URL'] === 'undefined' || typeof config['SUPA_KEY'] === 'undefined' || typeof config['SUPA_SECRET'] === 'undefined') {
   console.log(`${chalk.red('Missing API url, key or secret key!')}`);
   process.exit(1);
 }
@@ -20,7 +26,7 @@ export type SupabaseDownloadResult = {
 
 // inicia um cliente supabase para usar funções
 const options = { db: { schema: 'public' }, auth: { autoRefreshToken: true, persistSession: true, detectSessionInUrl: true } };
-const supabase = createClient(env.supaUrl, env.supaSecret, options);
+const supabase = createClient(config['SUPA_URL'], config['SUPA_SECRET'], options);
 
 // cria bucket
 export async function createFolder(projectName: string) {

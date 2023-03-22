@@ -1,11 +1,7 @@
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { enquire, PromptMessages, PromptNames, PromptTypes } from '../api/enquire.js';
-import env from '../api/dotenv.js';
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import Cryptr from 'cryptr';
 import chalk from 'chalk';
-
-// @ts-ignore
-const cryptr = new Cryptr(env.secretKey);
 
 export type AppState = {
   [key: string]: [(string | boolean), boolean] | string;
@@ -52,11 +48,16 @@ async function checkFirstUse(): Promise<void> {
     }
 
     writeFileSync('./config/config.json', JSON.stringify(appConfigs, null, 2));
+    console.log('Finished creating config files and terminating process...');
+    process.exit(1);
   }
 }
 
 export async function getState(): Promise<AppState> {
   await checkFirstUse();
+
+  const config = JSON.parse(readFileSync('./config/config.json', { encoding: 'utf8' }));
+  const cryptr = new Cryptr(config['SECRET_KEY']);
 
   let state: AppState = JSON.parse(readFileSync('config/state.json', { encoding: 'utf8' }));
 
@@ -71,7 +72,8 @@ export async function getState(): Promise<AppState> {
 }
 
 export function saveState(key: string, value: string | boolean, encrypt = false): void {
-  checkFirstUse();
+  const config = JSON.parse(readFileSync('./config/config.json', { encoding: 'utf8' }));
+  const cryptr = new Cryptr(config['SECRET_KEY']);
 
   let finalValue: string;
   let state: AppState = JSON.parse(readFileSync('config/state.json', { encoding: 'utf8' }));

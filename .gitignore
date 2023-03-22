@@ -6,8 +6,3 @@ temp/
 # Dev files & folders
 test/
 build/
-.env
-.env*
-.flaskenv*
-!.env.project
-!.env.vault
