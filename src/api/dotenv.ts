@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 import { existsSync, writeFileSync } from 'node:fs';
 import { enquire, PromptMessages, PromptNames, PromptTypes } from './enquire.js';
 
-if (!existsSync('./.env')) {
+if (!existsSync('.env')) {
   console.error(`${chalk.red('Creating .env file...')}`);
   const answers = await enquire([
     {
