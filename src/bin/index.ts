@@ -180,16 +180,52 @@ program
   console.log(`${chalk.yellow('Fetching index.mjml file from the', name, 'bucket')}`)
   const mjmlBlob = await downloadMJML(name);
   if (mjmlBlob) {
-    const mjmlString = await mjmlBlob.text()
-    writeFileSync('temp/index.mjml', mjmlString);
+    let mjmlString = await mjmlBlob.text()
 
     // prepare images src
-
-    const parsedMJML = parseMJML(readFileSync('./temp/index.mjml'));
-    writeFileSync('temp/index.html', parsedMJML.html);
+    let imgList: string[] = [];
+    let signedUrlList: string[] = [];
 
     try {
-      const results = await supabaseAPI.uploadFile(parsedMJML.html, 'index.html', name);
+      const fetch = await supabaseAPI.listImages(name);
+      if (fetch.error) {
+        throw new Error('Failed to fetch list of image names!');
+      }
+
+      fetch.data.forEach(fileObject => imgList.push(fileObject.name));
+    }
+
+    catch (error) {
+      console.error(`${chalk.red(error)}`);
+      process.exit(1);
+    }
+
+    try {
+      const fetch = await supabaseAPI.imagesUrls(name, imgList);
+      if (fetch.error) {
+        throw new Error('Failed to get signed URLs!');
+      }
+
+      fetch.data.forEach(object => signedUrlList.push(object.signedUrl));
+    }
+
+    catch (error) {
+      console.error(`${chalk.red(error)}`);
+    }
+
+    for (let index in imgList) {
+      const localPath = `(?<=src=")(.*)(${imgList[index]})(?=")`;
+      const replacer = new RegExp(localPath, 'g');
+      mjmlString = mjmlString.replace(replacer, signedUrlList[index]);
+    };
+
+    writeFileSync('temp/index.mjml', mjmlString);
+
+    const finalMJML = parseMJML(readFileSync('./temp/index.mjml'));
+    writeFileSync('temp/index.html', finalMJML.html);
+
+    try {
+      const results = await supabaseAPI.uploadFile(finalMJML.html, 'index.html', name);
       if (results.error) {
         throw new Error('Failed to upload HTML file!')
       }
@@ -201,7 +237,7 @@ program
       process.exit(1);
     }
   }
-})
+});
 
 
 program.parse(process.argv);
