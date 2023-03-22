@@ -14,7 +14,7 @@ import { downloadHTML, mailHTML } from '../lib/mail.js';
 //   console.log(`${__dirname} + test/`);
 // }
 
-program.version('0.2.3');
+program.version('0.2.4');
 
 program
 .command('login')
