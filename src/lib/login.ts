@@ -56,6 +56,7 @@ export async function login(id: string, password: string) {
       } else {
         console.log(`${chalk.blueBright('Success! Saving your credentials')}`);
         saveCredentials(options);
+        saveCredentials({logged: true});
       }
     });
   }
@@ -65,4 +66,9 @@ export async function saveCredentials(options: any) {
   Object.keys(options).forEach(key => {
     (key === 'id' || key === 'password') ? saveState(key, options[key], true) : saveState(key, options[key]);
   });
+}
+
+export async function checkLoggedBeforeMail() {
+  const state = getState();
+  return state.logged[0]
 }
