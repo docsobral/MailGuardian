@@ -277,8 +277,15 @@ program
 
   if (htmlBlob) {
     const htmlString = await htmlBlob.text();
-    // console.log(htmlString);
-    mailHTML(recipientsList, htmlString);
+    console.log(`${chalk.yellow('Sending email...')}`);
+    try {
+      await mailHTML(recipientsList, htmlString);
+      console.log(`${chalk.blue('Success!')}`);
+    }
+
+    catch (error) {
+      console.error(`${chalk.red(error)}`);
+    }
   }
 });
 
