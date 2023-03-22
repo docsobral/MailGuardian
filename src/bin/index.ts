@@ -2,11 +2,12 @@
 import chalk from 'chalk';
 import { program } from 'commander';
 // import { enquire } from '../api/enquire.js';
-import { isLoggedIn } from '../lib/login.js';
+import { checkLoggedBeforeMail, isLoggedIn } from '../lib/login.js';
 import * as supabaseAPI from '../api/supabase.js';
 import { downloadMJML, parseMJML } from '../lib/prepare.js';
 import { getMJML, getImages, getPath } from '../lib/export.js';
 import { existsSync, mkdirSync, writeFileSync, readdirSync, unlinkSync, readFileSync } from 'node:fs';
+import { downloadHTML, mailHTML } from '../lib/mail.js';
 
 // if (!existsSync('config/paths.json')) {
 //   writeFileSync('config/paths.json', JSON.stringify({path: `${__dirname} + test/`}, null, 2));
@@ -165,7 +166,7 @@ program
 .description('Parses MJML file into HTML according to provided parameters')
 .argument('<name>', 'Name of the bucket where the MJML you want to parse is located')
 .option('-m, --marketo', 'parses MJML for Marketo', false)
-.action(async (name, marketo) => {
+.action(async (name, marketo: boolean) => {
   if (!existsSync('temp')) {
     mkdirSync('temp');
   }
@@ -177,7 +178,7 @@ program
     }
   }
 
-  if (marketo) {
+  if (marketo === true) {
     console.log('Marketo');
     return;
   }
@@ -231,9 +232,16 @@ program
     writeFileSync('temp/index.html', finalMJML.html);
 
     try {
+      const list = await supabaseAPI.listFiles(name);
+      const exists = await supabaseAPI.fileExists('index.html', list.data);
+
+      if (exists) {
+        await supabaseAPI.deleteFile('index.html', name);
+      }
+
       const results = await supabaseAPI.uploadFile(finalMJML.html, 'index.html', name);
       if (results.error) {
-        throw new Error('Failed to upload HTML file!')
+        throw new Error('Failed to upload HTML file!');
       }
       console.log(`${chalk.blue('Successfully parsed MJML and uploaded HTML to server')}`);
     }
@@ -242,6 +250,35 @@ program
       console.error(`${chalk.red(error)}`);
       process.exit(1);
     }
+  }
+});
+
+program
+.command('mail')
+.description('Mails a HTML file to a recipient list')
+.argument('<name>', 'Name of the bucket where the project is located')
+.argument('<recipients>,', 'Recipient list (e.g. "davidsobral@me.com, davidcsobral@gmail.com"')
+.action(async (name: string, recipientsString: string) => {
+  const check = await checkLoggedBeforeMail();
+
+  if (typeof check === 'string') {
+    process.exit(1);
+  }
+
+  if (typeof check === 'boolean') {
+    if (!check) {
+      console.error(`${chalk.red('Please log in with "mailer login" before trying to send an email')}`);
+      process.exit(1);
+    }
+  }
+
+  const recipientsList: string[] = recipientsString.split(', ')
+  const htmlBlob = await downloadHTML(name);
+
+  if (htmlBlob) {
+    const htmlString = await htmlBlob.text();
+    // console.log(htmlString);
+    mailHTML(recipientsList, htmlString);
   }
 });
 
