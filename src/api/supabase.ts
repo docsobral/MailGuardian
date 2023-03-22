@@ -1,10 +1,19 @@
 import chalk from 'chalk';
+import { readFileSync } from 'node:fs';
 import { createClient } from '@supabase/supabase-js';
 import { Bucket, FileObject, StorageError } from '@supabase/storage-js';
-import { readFileSync } from 'node:fs';
+import { checkFirstUse } from '../lib/save.js';
 
 type Config = {
   [config: string]: string;
+}
+
+try {
+  const config: Config = JSON.parse(readFileSync('./config/config.json', { encoding: 'utf8' }));
+}
+
+catch (error) {
+  await checkFirstUse();
 }
 
 const config: Config = JSON.parse(readFileSync('./config/config.json', { encoding: 'utf8' }));

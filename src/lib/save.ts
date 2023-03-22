@@ -7,13 +7,13 @@ export type AppState = {
   [key: string]: [(string | boolean), boolean] | string;
 }
 
-async function checkFirstUse(): Promise<void> {
+export async function checkFirstUse(): Promise<void> {
   if (!existsSync('./config')) {
     console.log(`${chalk.blue('Creating save files...\n')}`);
     mkdirSync('config');
   };
 
-  if (!existsSync('./config/state.json')) {
+  if (!existsSync('./config/state.json') || !existsSync('./config/config.json')) {
     const initialState: AppState = {logged: [false, false]};
     writeFileSync('./config/state.json', JSON.stringify(initialState, null, 2));
 
@@ -48,7 +48,7 @@ async function checkFirstUse(): Promise<void> {
     }
 
     writeFileSync('./config/config.json', JSON.stringify(appConfigs, null, 2));
-    console.log('Finished creating config files and terminating process...');
+    console.log(`${chalk.yellow('Finished creating config files and terminating process. Run the previous command again...')}`);
     process.exit(1);
   }
 }
