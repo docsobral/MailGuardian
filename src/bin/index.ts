@@ -70,7 +70,7 @@ program
         if (upload.error) {
           throw new Error(`Failed to upload ${imageName}! ${upload.error.message}`);
         }
-        console.log(`${chalk.blue(`Succesfully uploaded ${imageName}`)}`);
+        console.log(`${chalk.blue('Succesfully uploaded', imageName)}`);
       }
 
       catch (error) {
