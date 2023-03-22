@@ -81,3 +81,13 @@ export async function downloadFile(projectName: string, extension: 'mjml' | 'htm
 
   return await supabase.storage.from(projectName).download(`img/${imageName}.png`)
 }
+
+export async function listImages(projectName: string) {
+  return await supabase.storage.from(projectName).list('img', { sortBy: { column: 'name', order: 'asc' } });
+}
+
+export async function imagesUrls(projectName: string, imageNames: string[]) {
+  const pathList = imageNames.map(imageName => 'img/' + imageName);
+
+  return supabase.storage.from(projectName).createSignedUrls(pathList, 600);
+}
