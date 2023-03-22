@@ -1,6 +1,6 @@
 {
-  "name": "mailer",
-  "version": "0.1",
+  "name": "mjml-mailer",
+  "version": "0.1.0",
   "type": "module",
   "dependencies": {
     "@supabase/supabase-js": "^2.12.0",
