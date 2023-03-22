@@ -4,7 +4,7 @@ import { enquire, PromptTypes, PromptNames, PromptMessages } from "../api/enquir
 import { createTransporter, TransporterOptions, TransporterType } from "../api/nodemailer.js";
 
 export async function isLoggedIn(id: string, password: string) {
-  const state = getState();
+  const state = await getState();
 
   if (state.logged[0]) {
     console.log('You are already logged in... do you want to change accounts?');
@@ -69,6 +69,6 @@ export async function saveCredentials(options: any) {
 }
 
 export async function checkLoggedBeforeMail() {
-  const state = getState();
+  const state = await getState();
   return state.logged[0]
 }

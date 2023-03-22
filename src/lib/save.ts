@@ -1,33 +1,62 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
-import Cryptr from 'cryptr';
+import { enquire, PromptMessages, PromptNames, PromptTypes } from '../api/enquire.js';
 import env from '../api/dotenv.js';
+import Cryptr from 'cryptr';
 import chalk from 'chalk';
 
-if (typeof env.secretKey === 'undefined') {
-  console.log(`${chalk.red('Missing secret key')}`);
-  process.exit(1);
-}
-
+// @ts-ignore
 const cryptr = new Cryptr(env.secretKey);
 
 export type AppState = {
   [key: string]: [(string | boolean), boolean] | string;
 }
 
-function checkFirstUse(): void {
-  if (!existsSync('config')) {
+async function checkFirstUse(): Promise<void> {
+  if (!existsSync('./config')) {
     console.log(`${chalk.blue('Creating save files...\n')}`);
     mkdirSync('config');
   };
 
-  if (!existsSync('config/state.json')) {
+  if (!existsSync('./config/state.json')) {
     const initialState: AppState = {logged: [false, false]};
-    writeFileSync('config/state.json', JSON.stringify(initialState, null, 2));
+    writeFileSync('./config/state.json', JSON.stringify(initialState, null, 2));
+
+    const answers = await enquire([
+      {
+        type: PromptTypes.input,
+        name: PromptNames.supabaseKey,
+        message: PromptMessages.supabaseKey
+      },
+      {
+        type: PromptTypes.input,
+        name: PromptNames.supabaseSecret,
+        message: PromptMessages.supabaseSecret
+      },
+      {
+        type: PromptTypes.input,
+        name: PromptNames.supabaseURL,
+        message: PromptMessages.supabaseURL
+      },
+      {
+        type: PromptTypes.input,
+        name: PromptNames.secretKey,
+        message: PromptMessages.secretKey
+      }
+    ]);
+
+    const appConfigs = {
+      'SUPA_KEY': answers.supabaseKey,
+      'SUPA_SECRET': answers.supabaseSecret,
+      'SUPA_URL': answers.supabaseURL,
+      'SECRET_KEY': answers.secretKey,
+    }
+
+    writeFileSync('./config/config.json', JSON.stringify(appConfigs, null, 2));
   }
 }
 
-export function getState(): AppState {
-  checkFirstUse();
+export async function getState(): Promise<AppState> {
+  await checkFirstUse();
 
   let state: AppState = JSON.parse(readFileSync('config/state.json', { encoding: 'utf8' }));
 

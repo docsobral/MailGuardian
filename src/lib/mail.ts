@@ -21,7 +21,7 @@ export async function downloadHTML(projectName: string): Promise<Blob | null> {
 export async function mailHTML(recipients: string[], htmlString: string) {
 
   // puxa save.json e salve user e password
-  const state = getState();
+  const state = await getState();
 
   // create reusable transporter object
   const Transporter = nodemailer.createTransport({
