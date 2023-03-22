@@ -7,3 +7,7 @@ temp/
 test/
 build/
 .env
+.env*
+.flaskenv*
+!.env.project
+!.env.vault
