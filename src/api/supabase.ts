@@ -40,7 +40,6 @@ export async function cleanFolder(projectName: string) {
   return result = await supabase.storage.emptyBucket(projectName);
 }
 
-// sobe arquivo para pasta específica dentro de bucket do projeto
 export async function uploadFile(file: string | Buffer, fileName: string, projectName: string, contentType: 'text/plain' | 'image/png' = 'text/plain') {
   let result: SupabaseStorageResult = await supabase.storage.from(projectName).upload(
     fileName,
@@ -50,13 +49,17 @@ export async function uploadFile(file: string | Buffer, fileName: string, projec
   return result;
 }
 
-export async function updateFile(file: string | Buffer, fileName: string, projectName: string, contentType: string) {
+export async function updateFile(file: string | Buffer, fileName: string, projectName: string, contentType: 'text/plain' | 'image/png' = 'text/plain') {
   let result: SupabaseStorageResult = await supabase.storage.from(projectName).update(
     fileName,
     file,
     {contentType: contentType, upsert: false},
   );
   return result;
+}
+
+export async function listFiles(projectName: string) {
+  return await supabase.storage.from(projectName).list();
 }
 
 export async function deleteFile(fileName: string, projectName: string) {
@@ -90,4 +93,14 @@ export async function imagesUrls(projectName: string, imageNames: string[]) {
   const pathList = imageNames.map(imageName => 'img/' + imageName);
 
   return supabase.storage.from(projectName).createSignedUrls(pathList, 600);
+}
+
+export async function fileExists(name: string, list: any) {
+  for (let index in list) {
+    if (list[index].name === name) {
+      return true
+    }
+  }
+
+  return false
 }
