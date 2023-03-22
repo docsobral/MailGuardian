@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 import { existsSync, writeFileSync } from 'node:fs';
 import { enquire, PromptMessages, PromptNames, PromptTypes } from './enquire.js';
 
-if (!existsSync('.env')) {
+if (!existsSync('./.env')) {
   console.error(`${chalk.red('Creating .env file...')}`);
   const answers = await enquire([
     {
@@ -27,7 +27,7 @@ if (!existsSync('.env')) {
       message: PromptMessages.secretKey
     }
   ]);
-  writeFileSync('.env', `NODE_PATH="BUILD"\nNODE_NO_WARNINGS=1\nSUPA_KEY="${answers.supabaseKey}"\nSUPA_SECRET="${answers.supabaseSecret}"\nSUPA_URL="${answers.supabaseURL}"\nSECRET_KEY="${answers.secretKey}"\nAUTHOR="<meta name="author" content="YOUR NAME">"`);
+  writeFileSync('./.env', `NODE_PATH="BUILD"\nNODE_NO_WARNINGS=1\nSUPA_KEY="${answers.supabaseKey}"\nSUPA_SECRET="${answers.supabaseSecret}"\nSUPA_URL="${answers.supabaseURL}"\nSECRET_KEY="${answers.secretKey}"\nAUTHOR="<meta name="author" content="YOUR NAME">"`);
   process.exit(1);
 }
 

@@ -14,7 +14,7 @@ import { downloadHTML, mailHTML } from '../lib/mail.js';
 //   console.log(`${__dirname} + test/`);
 // }
 
-program.version('0.2.1');
+program.version('0.2.3');
 
 program
 .command('login')
@@ -167,14 +167,14 @@ program
 .argument('<name>', 'Name of the bucket where the MJML you want to parse is located')
 .option('-m, --marketo', 'parses MJML for Marketo', false)
 .action(async (name, marketo: boolean) => {
-  if (!existsSync('temp')) {
-    mkdirSync('temp');
+  if (!existsSync('./temp')) {
+    mkdirSync('./temp');
   }
 
   else {
-    const files = readdirSync('temp');
+    const files = readdirSync('./temp');
     for (let file of files) {
-      unlinkSync('temp/' + file);
+      unlinkSync('./temp/' + file);
     }
   }
 
@@ -226,10 +226,10 @@ program
       mjmlString = mjmlString.replace(replacer, signedUrlList[index]);
     };
 
-    writeFileSync('temp/index.mjml', mjmlString);
+    writeFileSync('./temp/index.mjml', mjmlString);
 
-    const finalMJML = parseMJML(readFileSync('temp/index.mjml'));
-    writeFileSync('temp/index.html', finalMJML.html);
+    const finalMJML = parseMJML(readFileSync('./temp/index.mjml'));
+    writeFileSync('./temp/index.html', finalMJML.html);
 
     try {
       const list = await supabaseAPI.listFiles(name);
