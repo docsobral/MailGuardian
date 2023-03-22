@@ -164,7 +164,8 @@ program
 .command('prepare')
 .description('Parses MJML file into HTML according to provided parameters')
 .argument('<name>', 'Name of the bucket where the MJML you want to parse is located')
-.action(async (name) => {
+.option('-m, --marketo', 'parses MJML for Marketo', false)
+.action(async (name, marketo) => {
   if (!existsSync('temp')) {
     mkdirSync('temp');
   }
@@ -174,6 +175,11 @@ program
     for (let file of files) {
       unlinkSync('./temp/' + file);
     }
+  }
+
+  if (marketo) {
+    console.log('Marketo');
+    return;
   }
 
   // regular parsing
