@@ -8,6 +8,10 @@ export type AppState = {
   [key: string]: [(string | boolean), boolean] | string;
 }
 
+export type AppConfig = {
+  [key: string]: [(string | boolean), boolean] | string;
+}
+
 export async function checkFirstUse(): Promise<void> {
   if (!existsSync(__dirname + 'config')) {
     console.log(`${chalk.blue('Creating save files...\n')}`);
@@ -88,4 +92,19 @@ export function saveState(key: string, value: string | boolean, encrypt = false)
 
   const stateString = JSON.stringify(state, null, 2);
   writeFileSync(__dirname + 'config\\state.json', stateString);
+}
+
+export async function getConfig(): Promise<AppConfig> {
+  const config = JSON.parse(readFileSync(__dirname + 'config\\config.json', { encoding: 'utf8' }));
+
+  return config;
+}
+
+export async function saveConfig(key: string, value: string) {
+  let config = JSON.parse(readFileSync(__dirname + 'config\\config.json', { encoding: 'utf8' }));
+
+  config[key] = value;
+
+  const configString = JSON.stringify(config, null, 2);
+  writeFileSync(__dirname + 'config\\config.json', configString);
 }
