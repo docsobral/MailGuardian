@@ -1,13 +1,14 @@
 #! /usr/bin/env node
 import chalk from 'chalk';
 import { program } from 'commander';
+import __dirname from '../api/dirname.js';
 // import { enquire } from '../api/enquire.js';
-import { checkLoggedBeforeMail, isLoggedIn } from '../lib/login.js';
 import * as supabaseAPI from '../api/supabase.js';
+import { downloadHTML, mailHTML } from '../lib/mail.js';
 import { downloadMJML, parseMJML } from '../lib/prepare.js';
 import { getMJML, getImages, getPath } from '../lib/export.js';
+import { checkLoggedBeforeMail, isLoggedIn } from '../lib/login.js';
 import { existsSync, mkdirSync, writeFileSync, readdirSync, unlinkSync, readFileSync } from 'node:fs';
-import { downloadHTML, mailHTML } from '../lib/mail.js';
 
 // if (!existsSync('config/paths.json')) {
 //   writeFileSync('config/paths.json', JSON.stringify({path: `${__dirname} + test/`}, null, 2));
@@ -191,14 +192,14 @@ program
 .argument('<name>', 'Name of the bucket where the MJML you want to parse is located')
 .option('-m, --marketo', 'parses MJML for Marketo', false)
 .action(async (name, marketo: boolean) => {
-  if (!existsSync('./temp')) {
-    mkdirSync('./temp');
+  if (!existsSync(__dirname + 'temp')) {
+    mkdirSync(__dirname + 'temp');
   }
 
   else {
-    const files = readdirSync('./temp');
+    const files = readdirSync(__dirname + 'temp');
     for (let file of files) {
-      unlinkSync('./temp/' + file);
+      unlinkSync(__dirname + 'temp\\' + file);
     }
   }
 
@@ -250,10 +251,10 @@ program
       mjmlString = mjmlString.replace(replacer, signedUrlList[index]);
     };
 
-    writeFileSync('./temp/index.mjml', mjmlString);
+    writeFileSync(__dirname + 'temp\\index.mjml', mjmlString);
 
-    const finalMJML = parseMJML(readFileSync('./temp/index.mjml'));
-    writeFileSync('./temp/index.html', finalMJML.html);
+    const finalMJML = parseMJML(readFileSync(__dirname + 'temp\\index.mjml'));
+    writeFileSync(__dirname + 'temp\\index.html', finalMJML.html);
 
     try {
       const list = await supabaseAPI.listFiles(name);
