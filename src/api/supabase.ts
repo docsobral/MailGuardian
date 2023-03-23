@@ -1,22 +1,23 @@
 import chalk from 'chalk';
 import { readFileSync } from 'node:fs';
+import __dirname from '../api/dirname.js';
+import { checkFirstUse } from '../lib/save.js';
 import { createClient } from '@supabase/supabase-js';
 import { Bucket, FileObject, StorageError } from '@supabase/storage-js';
-import { checkFirstUse } from '../lib/save.js';
 
 type Config = {
   [config: string]: string;
 }
 
 try {
-  const config: Config = JSON.parse(readFileSync('./config/config.json', { encoding: 'utf8' }));
+  readFileSync(__dirname + 'config\\config.json', { encoding: 'utf8' });
 }
 
 catch (error) {
   await checkFirstUse();
 }
 
-const config: Config = JSON.parse(readFileSync('./config/config.json', { encoding: 'utf8' }));
+const config: Config = JSON.parse(readFileSync(__dirname + 'config\\config.json', { encoding: 'utf8' }));
 
 if (typeof config['SUPA_URL'] === 'undefined' || typeof config['SUPA_KEY'] === 'undefined' || typeof config['SUPA_SECRET'] === 'undefined') {
   console.log(`${chalk.red('Missing API url, key or secret key!')}`);
@@ -33,17 +34,14 @@ export type SupabaseDownloadResult = {
   error: null | StorageError;
 }
 
-// inicia um cliente supabase para usar funções
 const options = { db: { schema: 'public' }, auth: { autoRefreshToken: true, persistSession: true, detectSessionInUrl: true } };
 const supabase = createClient(config['SUPA_URL'], config['SUPA_SECRET'], options);
 
-// cria bucket
 export async function createFolder(projectName: string) {
   let result: SupabaseStorageResult;
   return result = await supabase.storage.createBucket(projectName, { public: false });
 }
 
-// deleta bucket
 export async function deleteFolder(projectName: string) {
   await supabase.storage.emptyBucket(projectName);
   let result: SupabaseStorageResult = await supabase.storage.deleteBucket(projectName);
@@ -82,7 +80,6 @@ export async function deleteFile(fileName: string, projectName: string) {
   return result = await supabase.storage.from(projectName).remove([`${fileName}`]);
 }
 
-// checa se bucket existe
 export async function folderExists(projectName: string) {
   let result: SupabaseStorageResult;
   return result = await supabase.storage.getBucket(projectName);
