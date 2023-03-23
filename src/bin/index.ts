@@ -2,7 +2,7 @@
 import chalk from 'chalk';
 import { program } from 'commander';
 import __dirname from '../api/dirname.js';
-// import { enquire } from '../api/enquire.js';
+import { saveConfig } from '../lib/save.js';
 import * as supabaseAPI from '../api/supabase.js';
 import { downloadHTML, mailHTML } from '../lib/mail.js';
 import { downloadMJML, parseMJML } from '../lib/prepare.js';
@@ -338,5 +338,37 @@ program
   }
 });
 
+enum Config {
+  key = 'SUPA_KEY',
+  secret = 'SUPA_SECRET',
+  url = 'SUPA_URL',
+  secretKey = 'SECRET_KEY',
+  author = 'AUTHOR',
+}
+
+program
+.command('config')
+.description('Change the app\'s configurations')
+.argument('<config>', 'The new config value')
+.option('-k, --key', 'Change the supabase key')
+.option('-s, --secret', 'Change the supabase secret')
+.option('-u, --url', 'Change the supabase URL')
+.option('-sk, --secret-key', 'Change the secret key')
+.option('-a, --author', 'Change the content of the author meta tag')
+.action(async (config, options) => {
+  if (options) {
+    const key: any = Object.keys(options)[0]
+
+    try {
+      console.log(`${chalk.yellow('Saving config...')}`);
+      await saveConfig((key as keyof typeof Config).toUpperCase(), config);
+      console.log(`${chalk.blue('Success!')}`);
+    }
+
+    catch (error) {
+      console.error(`${chalk.red(error)}`);
+    }
+  }
+})
 
 program.parse(process.argv);
