@@ -7,7 +7,7 @@ export async function getFile(type: 'html' | 'mjml', path: string): Promise<stri
 
   if (type === 'html') {
     try {
-      string = await readFile(path + '/index.html');
+      string = await readFile(path + '\\index.html');
       return string.toString();
     }
 
@@ -18,7 +18,7 @@ export async function getFile(type: 'html' | 'mjml', path: string): Promise<stri
   }
 
   try {
-    string = (await readFile(path + '/index.mjml')).toString();
+    string = (await readFile(path + '\\index.mjml')).toString();
     return string.toString();
   }
 
@@ -31,7 +31,7 @@ export async function getFile(type: 'html' | 'mjml', path: string): Promise<stri
 export async function getImage(path: string, imageName: string): Promise<Buffer> {
   let image: Buffer;
   try {
-    image = await readFile(path + `/img/${imageName}`);
+    image = await readFile(path + `\\img\\${imageName}`);
     return image;
   }
 
@@ -42,6 +42,3 @@ export async function getImage(path: string, imageName: string): Promise<Buffer>
 }
 
 export const dirname = path.dirname(process.argv[1]);
-
-// console.log(await getFile('mjml', './test'));
-// console.log(await getImage('./test', 'header.png'));
