@@ -3,7 +3,6 @@ import Enquirer from 'enquirer';
 export enum PromptTypes {
   select = 'select',
   input = 'input',
-  password = 'password',
   confirm = 'confirm',
 }
 
@@ -31,7 +30,6 @@ export type PromptOptions = {
   type: PromptTypes;
   name: PromptNames;
   message: PromptMessages;
-  choices?: ['Gmail', 'Apple', 'Outlook'];
   initial?: string;
 }
 
