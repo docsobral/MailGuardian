@@ -192,6 +192,18 @@ program
 .argument('<name>', 'Name of the bucket where the MJML you want to parse is located')
 .option('-m, --marketo', 'parses MJML for Marketo', false)
 .action(async (name, marketo: boolean) => {
+  try {
+    const bucket = await supabaseAPI.folderExists(name);
+    if (bucket.error) {
+      throw new Error('BUCKET ERROR: bucket doesn\'t exist! Use \'mailer bucket -c [name]\' to create one before trying to export a project.')
+    }
+  }
+
+  catch (e) {
+    console.error(`${chalk.red(e)}`);
+    process.exit(1);
+  }
+
   if (!existsSync(__dirname + 'temp')) {
     mkdirSync(__dirname + 'temp');
   }
@@ -285,6 +297,18 @@ program
 .argument('<recipients>,', 'Recipient list (e.g. "davidsobral@me.com, davidcsobral@gmail.com"')
 .action(async (name: string, recipientsString: string) => {
   const check = await checkLoggedBeforeMail();
+
+  try {
+    const bucket = await supabaseAPI.folderExists(name);
+    if (bucket.error) {
+      throw new Error('BUCKET ERROR: bucket doesn\'t exist! Use \'mailer bucket -c [name]\' to create one before trying to export a project.')
+    }
+  }
+
+  catch (e) {
+    console.error(`${chalk.red(e)}`);
+    process.exit(1);
+  }
 
   if (typeof check === 'string') {
     process.exit(1);
