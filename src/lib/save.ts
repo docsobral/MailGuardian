@@ -1,5 +1,6 @@
 import { enquire, PromptMessages, PromptNames, PromptTypes } from '../api/enquire.js';
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import __dirname from '../api/dirname.js';
 import Cryptr from 'cryptr';
 import chalk from 'chalk';
 
@@ -8,14 +9,14 @@ export type AppState = {
 }
 
 export async function checkFirstUse(): Promise<void> {
-  if (!existsSync('./config')) {
+  if (!existsSync(__dirname + 'config')) {
     console.log(`${chalk.blue('Creating save files...\n')}`);
-    mkdirSync('config');
+    mkdirSync(__dirname + 'config');
   };
 
-  if (!existsSync('./config/state.json') || !existsSync('./config/config.json')) {
+  if (!existsSync(__dirname + 'config\\state.json') || !existsSync(__dirname + 'config\\config.json')) {
     const initialState: AppState = {logged: [false, false]};
-    writeFileSync('./config/state.json', JSON.stringify(initialState, null, 2));
+    writeFileSync(__dirname + 'config\\state.json', JSON.stringify(initialState, null, 2));
 
     const answers = await enquire([
       {
@@ -47,7 +48,7 @@ export async function checkFirstUse(): Promise<void> {
       'SECRET_KEY': answers.secretKey,
     }
 
-    writeFileSync('./config/config.json', JSON.stringify(appConfigs, null, 2));
+    writeFileSync(__dirname + 'config\\config.json', JSON.stringify(appConfigs, null, 2));
     console.log(`${chalk.yellow('Finished creating config files and terminating process. Run the previous command again...')}`);
     process.exit(1);
   }
@@ -56,10 +57,10 @@ export async function checkFirstUse(): Promise<void> {
 export async function getState(): Promise<AppState> {
   await checkFirstUse();
 
-  const config = JSON.parse(readFileSync('./config/config.json', { encoding: 'utf8' }));
+  const config = JSON.parse(readFileSync(__dirname + 'config\\config.json', { encoding: 'utf8' }));
   const cryptr = new Cryptr(config['SECRET_KEY']);
 
-  let state: AppState = JSON.parse(readFileSync('config/state.json', { encoding: 'utf8' }));
+  let state: AppState = JSON.parse(readFileSync(__dirname + 'config\\state.json', { encoding: 'utf8' }));
 
   // decrypts encrypted values (state[key][0] is encrypted if state[key][1] is true)
   Object.keys(state).forEach(key => {
@@ -72,11 +73,11 @@ export async function getState(): Promise<AppState> {
 }
 
 export function saveState(key: string, value: string | boolean, encrypt = false): void {
-  const config = JSON.parse(readFileSync('./config/config.json', { encoding: 'utf8' }));
+  const config = JSON.parse(readFileSync(__dirname + 'config\\config.json', { encoding: 'utf8' }));
   const cryptr = new Cryptr(config['SECRET_KEY']);
 
   let finalValue: string;
-  let state: AppState = JSON.parse(readFileSync('config/state.json', { encoding: 'utf8' }));
+  let state: AppState = JSON.parse(readFileSync(__dirname + 'config\\state.json', { encoding: 'utf8' }));
 
   if (encrypt && typeof value === 'string') {
     finalValue = cryptr.encrypt(value);
@@ -86,5 +87,5 @@ export function saveState(key: string, value: string | boolean, encrypt = false)
   }
 
   const stateString = JSON.stringify(state, null, 2);
-  writeFileSync('config/state.json', stateString);
+  writeFileSync(__dirname + 'config\\state.json', stateString);
 }
