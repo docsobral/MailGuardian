@@ -14,7 +14,7 @@ import { downloadHTML, mailHTML } from '../lib/mail.js';
 //   console.log(`${__dirname} + test/`);
 // }
 
-program.version('0.2.4');
+program.version('0.2.5');
 
 program
 .command('login')
@@ -148,7 +148,8 @@ program
 .argument('[name]', 'Name of the bucket as it exists in the server')
 .option('-d, --delete', 'deletes a bucket')
 .option('-c, --create', 'creates a bucket')
-.action((name, options) => {
+.option('-l, --list', 'lists all buckets')
+.action(async (name, options) => {
   if (options.create) {
     console.log(`${chalk.yellow(`Creating bucket named ${name}`)}`);
     supabaseAPI.createFolder(name);
@@ -158,6 +159,29 @@ program
   if (options.delete) {
     console.log(`${chalk.magenta(`Deleting bucket named ${name}`)}`);
     supabaseAPI.deleteFolder(name);
+    return
+  }
+
+  if (options.list) {
+    try {
+      const { data, error } = await supabaseAPI.listBuckets();
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      if (data) {
+        console.log(`${chalk.yellow('Buckets:')}`);
+        for (let bucket of data) {
+          console.log(`${chalk.blue('Name:', bucket.name)}`);
+          console.log(`${chalk.blue('Created at:', bucket.created_at, '\n')}`);
+        }
+      }
+    }
+
+    catch (error) {
+      console.error(`${chalk.red(error)}`);
+      process.exit(1);
+    }
   }
 });
 

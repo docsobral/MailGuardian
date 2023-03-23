@@ -46,8 +46,8 @@ export async function createFolder(projectName: string) {
 // deleta bucket
 export async function deleteFolder(projectName: string) {
   await supabase.storage.emptyBucket(projectName);
-  let result: SupabaseStorageResult;
-  return result = await supabase.storage.deleteBucket(projectName);
+  let result: SupabaseStorageResult = await supabase.storage.deleteBucket(projectName);
+  return result;
 }
 
 export async function cleanFolder(projectName: string) {
@@ -118,4 +118,8 @@ export async function fileExists(name: string, list: any) {
   }
 
   return false
+}
+
+export async function listBuckets() {
+  return await supabase.storage.listBuckets();
 }
