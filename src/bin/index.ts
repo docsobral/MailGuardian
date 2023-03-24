@@ -191,7 +191,8 @@ program
 .description('Parses MJML file into HTML according to provided parameters')
 .argument('<name>', 'Name of the bucket where the MJML you want to parse is located')
 .option('-m, --marketo', 'parses MJML for Marketo', false)
-.action(async (name, marketo: boolean) => {
+.action(async (name, options) => {
+  // check is bucket exists
   try {
     const bucket = await supabaseAPI.folderExists(name);
     if (bucket.error) {
@@ -204,6 +205,7 @@ program
     process.exit(1);
   }
 
+  // check if temp folder exists
   if (!existsSync(__dirname + 'temp')) {
     mkdirSync(__dirname + 'temp');
   }
@@ -215,21 +217,15 @@ program
     }
   }
 
-  if (marketo === true) {
-    console.log('Marketo');
-    return;
-  }
-
-  // regular parsing
-  console.log(`${chalk.yellow('Fetching index.mjml file from the', name, 'bucket')}`)
+  // fetches mjml file
+  console.log(`${chalk.yellow('Fetching index.mjml file from the', name, 'bucket')}`);
   const mjmlBlob = await downloadMJML(name);
   if (mjmlBlob) {
     let mjmlString = await mjmlBlob.text()
-
-    // prepare images src
     let imgList: string[] = [];
     let signedUrlList: string[] = [];
 
+    // get list of images
     try {
       const fetch = await supabaseAPI.listImages(name);
       if (fetch.error) {
@@ -244,6 +240,7 @@ program
       process.exit(1);
     }
 
+    // get list of signes urls
     try {
       const fetch = await supabaseAPI.imagesUrls(name, imgList);
       if (fetch.error) {
@@ -257,16 +254,25 @@ program
       console.error(`${chalk.red(error)}`);
     }
 
+    // replace local paths for remote paths
     for (let index in imgList) {
       const localPath = `(?<=src=")(.*)(${imgList[index]})(?=")`;
       const replacer = new RegExp(localPath, 'g');
       mjmlString = mjmlString.replace(replacer, signedUrlList[index]);
     };
 
+    // save mjml with new paths
     writeFileSync(__dirname + 'temp\\index.mjml', mjmlString);
 
-    const finalMJML = parseMJML(readFileSync(__dirname + 'temp\\index.mjml'));
-    writeFileSync(__dirname + 'temp\\index.html', finalMJML.html);
+    if (options.marketo) {
+      const parsedHTML = parseMJML(readFileSync(__dirname + 'temp\\index.mjml', { encoding: 'utf8' }), true);
+      writeFileSync(__dirname + 'temp\\index.html', parsedHTML);
+    }
+
+    else {
+      const parsedHTML = parseMJML(readFileSync(__dirname + 'temp\\index.mjml', { encoding: 'utf8' }));
+      writeFileSync(__dirname + 'temp\\index.html', parsedHTML);
+    }
 
     try {
       const list = await supabaseAPI.listFiles(name);
@@ -276,7 +282,7 @@ program
         await supabaseAPI.deleteFile('index.html', name);
       }
 
-      const results = await supabaseAPI.uploadFile(finalMJML.html, 'index.html', name);
+      const results = await supabaseAPI.uploadFile(readFileSync(__dirname + 'temp\\index.html', { encoding: 'utf8' }), 'index.html', name);
       if (results.error) {
         throw new Error('Failed to upload HTML file!');
       }
