@@ -15,7 +15,7 @@ import { existsSync, mkdirSync, writeFileSync, readdirSync, unlinkSync, readFile
 //   console.log(`${__dirname} + test/`);
 // }
 
-program.version('0.3.2');
+program.version('0.4.0');
 
 program
 .command('login')
