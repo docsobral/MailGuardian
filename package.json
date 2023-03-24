@@ -4,10 +4,12 @@
   "type": "module",
   "dependencies": {
     "@supabase/supabase-js": "^2.12.0",
+    "@types/js-beautify": "^1.13.3",
     "chalk": "^5.2.0",
     "commander": "^10.0.0",
     "cryptr": "^6.2.0",
     "enquirer": "^2.3.6",
+    "js-beautify": "^1.14.7",
     "mjml": "^4.13.0",
     "nodemailer": "^6.9.1",
     "win-select-folder": "^1.0.1"
