@@ -56,6 +56,21 @@ function beautifyHTML(html: string) {
 export function divToTable(html: string) {
   let string = html;
   let replacer: RegExp;
+  let matcher: RegExp;
+  let matches: IterableIterator<RegExpExecArray>;
+  let sectionClasses: string[] = [];
+
+  // get classes from sections
+  const divClass = /(?<= *<div class=")(?!mj)(.+)(?=" style)/g;
+  matcher = new RegExp(divClass);
+  // @ts-ignore
+  matches = string.matchAll(matcher);
+  for (let match of matches) {
+    sectionClasses.push(match[1]);
+  }
+
+  const topSectionClass = sectionClasses[0];
+  const nextSectionClasses = sectionClasses.splice(1);
 
   // first <div> to <table><tbody><tr><td>
   const firstDivReg = /(<div)(.*)(>)(?=\n *<!)/;
@@ -65,18 +80,19 @@ export function divToTable(html: string) {
   // end </div> to </td></tr></tbody></table>
   const endDivReg = /(<\/div>)(\n)( *)(?=<\/body>)/;
   replacer = new RegExp(endDivReg, 'g');
-  string = string.replace(replacer, '</td></tr></tbody></table>\n  ');
+  string = string.replace(replacer, '</td></tr></tbody></table>\n');
 
   // middle second div + ghost table opening (closing div)
-  const middleDivGhost = /( *)(<\/div>)(\n)( *)(<!--)(.*)(\n)(.*)(600px;">\n *)/
-  replacer = new RegExp(middleDivGhost, 'g');
-  string = string.replace(replacer, '');
+  const middleDivGhost = /( *)(<\/div>)(\n)( *)(<!--)(.*)(\n)(.*)(600px;">\n *)(<table align="center")/;
+  replacer = new RegExp(middleDivGhost);
+  while (nextSectionClasses.length > 0) string = string.replace(replacer, `<table align="center" class="mktoModule mj-full-width-mobile ${nextSectionClasses.shift()}" mktoname="" id=""`);
 
-  // second div + ghost table opening
-  const topDivGhost = /(<!--)(.*)(\n)(.*)(max-width:600px;">\n *)/;
-  replacer = new RegExp(topDivGhost, 'g');
-  string = string.replace(replacer, '');
+  // top div + ghost table opening
+  const topDivGhost = /(<!--)(.*)(\n)(.*)(max-width:600px;">\n *)(<table align="center")/;
+  replacer = new RegExp(topDivGhost);
+  string = string.replace(replacer, `<table align="center" class="mktoModule mj-full-width-mobile ${topSectionClass}" mktoname="" id=""`);
 
+  // end div + ghost table opening
   const endDivGhost = /(<\/div>\n)( *<!.*\n)(?= *.*\n *.*\n *.*\n *.*\n *<\/body>)/;
   replacer = new RegExp(endDivGhost, 'g');
   string = string.replace(replacer, '');
