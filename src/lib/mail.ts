@@ -3,11 +3,11 @@ import nodemailer from 'nodemailer';
 import { getState } from './save.js';
 import { downloadFile } from '../api/supabase.js';
 
-export async function downloadHTML(projectName: string): Promise<Blob | null> {
+export async function downloadHTML(projectName: string, marketo?: boolean): Promise<Blob | null> {
   try {
-    const { data, error } = await downloadFile(projectName, 'html', 'index');
+    const { data, error } = await downloadFile(projectName, 'html', `${marketo? 'marketo' : 'index'}`);
     if (error) {
-      throw new Error('Failed to get HTML file! Check the project name or the project bucket');
+      throw new Error('Failed to get HTML file! Check the bucket name or the project bucket. If you tried to mail a Marketo HTML, don\'t forget to prepare it first with "mailer prepare -m <bucketname>"');
     }
     return data
   }

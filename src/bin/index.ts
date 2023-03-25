@@ -266,23 +266,23 @@ program
 
     if (options.marketo) {
       const parsedHTML = parseMJML(readFileSync(__dirname + 'temp\\index.mjml', { encoding: 'utf8' }), true);
-      writeFileSync(__dirname + 'temp\\index.html', parsedHTML);
+      writeFileSync(__dirname + `temp\\parsed.html`, parsedHTML);
     }
 
     else {
       const parsedHTML = parseMJML(readFileSync(__dirname + 'temp\\index.mjml', { encoding: 'utf8' }));
-      writeFileSync(__dirname + 'temp\\index.html', parsedHTML);
+      writeFileSync(__dirname + 'temp\\parsed.html', parsedHTML);
     }
 
     try {
       const list = await supabaseAPI.listFiles(name);
-      const exists = await supabaseAPI.fileExists('index.html', list.data);
+      const exists = await supabaseAPI.fileExists(`${options.marketo? 'marketo.html' : 'index.html'}`, list.data);
 
       if (exists) {
-        await supabaseAPI.deleteFile('index.html', name);
+        await supabaseAPI.deleteFile(`${options.marketo? 'marketo.html' : 'index.html'}`, name);
       }
 
-      const results = await supabaseAPI.uploadFile(readFileSync(__dirname + 'temp\\index.html', { encoding: 'utf8' }), 'index.html', name);
+      const results = await supabaseAPI.uploadFile(readFileSync(__dirname + 'temp\\parsed.html', { encoding: 'utf8' }), `${options.marketo? 'marketo.html' : 'index.html'}`, name);
       if (results.error) {
         throw new Error('Failed to upload HTML file!');
       }
@@ -301,7 +301,8 @@ program
 .description('Mails a HTML file to a recipient list')
 .argument('<name>', 'Name of the bucket where the project is located')
 .argument('<recipients>,', 'Recipient list (e.g. "davidsobral@me.com, davidcsobral@gmail.com"')
-.action(async (name: string, recipientsString: string) => {
+.option('-m, --marketo', 'sends the Marketo compatible HTML')
+.action(async (name: string, recipientsString: string, options) => {
   const check = await checkLoggedBeforeMail();
 
   try {
@@ -328,7 +329,7 @@ program
   }
 
   const recipientsList: string[] = recipientsString.split(', ')
-  const htmlBlob = await downloadHTML(name);
+  const htmlBlob = await downloadHTML(name, options.marketo);
 
   if (htmlBlob) {
     const htmlString = await htmlBlob.text();
@@ -375,6 +376,6 @@ program
       console.error(`${chalk.red(error)}`);
     }
   }
-})
+});
 
 program.parse(process.argv);
