@@ -53,4 +53,4 @@ The optional `-m` flag instructs the parser to create Adobe Marketo compatible H
 
 To send a sample, use `mailer mail <bucketname> <"first@recipient.com, second@recipient.com, ...">` The `-m` flag will instruct the Marketo compatible html to be sent, if it exists.
 
-To download the a template's files, including images, the MJML file and either regular or Marketo HTML, use `mailer import <bucketname>`. If you don't use any flag, the regular HTML will be downloaded. If you use the `-m` flag, the Marketo HTML will be downloaded.
+To download the a template's files, including images, the MJML file and either regular or Marketo HTML, use `mailer import <bucketname>`. If you don't use any flag, the regular HTML will be downloaded. If you use the `-m` flag, the Marketo HTML will be downloaded. The files will be downloaded at root/downloads.

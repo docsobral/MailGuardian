@@ -16,7 +16,7 @@ import { existsSync, mkdirSync, writeFileSync, readdirSync, unlinkSync, readFile
 //   console.log(`${__dirname} + test/`);
 // }
 
-program.version('0.5.2');
+program.version('0.5.3');
 
 program
 .command('login')
@@ -301,7 +301,7 @@ program
 .command('mail')
 .description('Mails a HTML file to a recipient list')
 .argument('<name>', 'Name of the bucket where the project is located')
-.argument('<recipients>,', 'Recipient list (e.g. "davidsobral@me.com, davidcsobral@gmail.com"')
+.argument('<recipients>', 'Recipient list (e.g. "davidsobral@me.com, davidcsobral@gmail.com"')
 .option('-m, --marketo', 'sends the Marketo compatible HTML')
 .action(async (name: string, recipientsString: string, options) => {
   const check = await checkLoggedBeforeMail();
