@@ -47,3 +47,7 @@ export async function getImages(path: string): Promise<Images> {
 
   return images;
 }
+
+export async function watch(path: string) {
+  
+}
