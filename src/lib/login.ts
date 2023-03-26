@@ -26,19 +26,8 @@ export async function isLoggedIn(id: string, password: string) {
   }
 }
 
-type Hosts = {
-  [host: string]: string;
-}
-
-const hosts: Hosts = {
-  'Gmail': 'smtp.gmail.com',
-  'Apple': '',
-  'Outlook': '',
-}
-
 export async function login(id: string, password: string) {
   console.log(`${chalk.blue('Logging in...')}`);
-  let host: string;
 
   if (id.includes('gmail')) {
     const options: TransporterOptions = {
