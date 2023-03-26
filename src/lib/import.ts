@@ -2,7 +2,7 @@ import { downloadFile, listImages } from '../api/supabase.js';
 import chalk from 'chalk';
 
 interface BucketFiles {
-  images?: Buffer[];
+  images?: [string, Buffer][];
   mjml?: string;
   index?: string;
   marketo?: string;
@@ -12,7 +12,7 @@ export async function importBucket(projectName: string, marketo: boolean = false
   let imgList: string[] = [];
 
   let bucketFiles: BucketFiles = {};
-  let images: Buffer[] = [];
+  let images: [string, Buffer][] = [];
 
   try {
     const fetch = await listImages(projectName);
@@ -32,7 +32,8 @@ export async function importBucket(projectName: string, marketo: boolean = false
   for (let image of imgList) {
     const arrayBuffer = await (await downloadFile(projectName, 'png', undefined, image)).data?.arrayBuffer();
     if (arrayBuffer) {
-      images.push(Buffer.from(arrayBuffer));
+      const tuple: [string, Buffer] = [image, Buffer.from(arrayBuffer)];
+      images.push(tuple);
     }
   }
 
