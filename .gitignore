@@ -3,6 +3,7 @@ node_modules/
 config/
 temp/
 
-# Dev files & folders
+# Other files & folders
 test/
 build/
+downloads/
