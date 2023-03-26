@@ -11,8 +11,8 @@
     "enquirer": "^2.3.6",
     "js-beautify": "^1.14.7",
     "mjml": "^4.13.0",
+    "node-watch": "^0.7.3",
     "nodemailer": "^6.9.1",
-    "watcher": "^2.2.2",
     "win-select-folder": "^1.0.1"
   },
   "devDependencies": {
