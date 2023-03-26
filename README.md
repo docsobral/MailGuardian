@@ -37,14 +37,20 @@ Replaces all image URLs from local to remote paths with temporary URLs generated
 
 Sends the template on a bucket to all recipients. Recipient list should be surrounded by quotation marks and separated by commas e.g. ', '.
 
+### import \[-m] \<name\>
+
+Downloads the projects files from the supabase bucket.
+
 ## Usage
 
 First, run `mailer`. You will be prompted for the supabase keys and URL. Then run `mailer login <your@email.adress> <yourpassword>` to connect to the email from which samples will be sent.
 
 Each template should have its own folder, implemented on supabase as buckets. Create a bucket with `mailer bucket -c <bucketname>`. The name should preferably relate to the template. Then export the .mjml and .png files to the remote bucket with `mailer export <bucketname> [localpath]`. The path argument is optional. If you don't input a path, the app will open a folder select window where you can browse the filesystem for the folder where the template's files are located. The template folder MUST follow the example at [about](#about) for the export to work succesfully.
 
-You can use `mailer parse <bucketname> [-m]` to parse the .MJML file into an HTML file that can then be sent over email.
+You can use `mailer parse [-m] <bucketname>` to parse the .MJML file into an HTML file that can then be sent over email.
 
-The `-m` flag instructs the parser to create Adobe Marketo compatible HTML -- NOTICE: for now, the parser is only compatible with Marketo modules. The mktoName and id attributes must be manually filled (will be addressed in a future version). Editable elements (images, text) also have to be manually prepared (will be addressed in a future version).
+The optional `-m` flag instructs the parser to create Adobe Marketo compatible HTML -- NOTICE: for now, the parser is only compatible with Marketo modules. The mktoName and id attributes must be manually filled (will be addressed in a future version). Editable elements (images, text) also have to be manually prepared (will be addressed in a future version).
 
 To send a sample, use `mailer mail <bucketname> <"first@recipient.com, second@recipient.com, ...">` The `-m` flag will instruct the Marketo compatible html to be sent, if it exists.
+
+To download the a template's files, including images, the MJML file and either regular or Marketo HTML, use `mailer import <bucketname>`. If you don't use any flag, the regular HTML will be downloaded. If you use the `-m` flag, the Marketo HTML will be downloaded.
