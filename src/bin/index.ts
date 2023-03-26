@@ -303,6 +303,7 @@ program
 .argument('<name>', 'Name of the bucket where the project is located')
 .argument('<recipients>,', 'Recipient list (e.g. "davidsobral@me.com, davidcsobral@gmail.com"')
 .option('-m, --marketo', 'sends the Marketo compatible HTML')
+.option('-t, --test', 'sends the sample email to a nodemailer test account')
 .action(async (name: string, recipientsString: string, options) => {
   const check = await checkLoggedBeforeMail();
 
