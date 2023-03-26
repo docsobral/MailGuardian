@@ -3,6 +3,7 @@ import chalk from 'chalk';
 import { program } from 'commander';
 import __dirname from '../api/dirname.js';
 import { saveConfig } from '../lib/save.js';
+import { importBucket } from '../lib/import.js';
 import * as supabaseAPI from '../api/supabase.js';
 import { downloadHTML, mailHTML } from '../lib/mail.js';
 import { downloadMJML, parseMJML } from '../lib/prepare.js';
@@ -375,6 +376,75 @@ program
     catch (error) {
       console.error(`${chalk.red(error)}`);
     }
+  }
+});
+
+program
+.command('import')
+.description('Fetch all files from a template bucket (including the .html file')
+.argument('<name>', 'The bucket\'s name')
+.option('-m, --marketo', 'Includes the marketo HTML')
+.action(async (name, options) => {
+  // check if bucket exists
+  try {
+    const bucket = await supabaseAPI.folderExists(name);
+    if (bucket.error) {
+      throw new Error('BUCKET ERROR: bucket doesn\'t exist! Use \'mailer bucket -c [name]\' to create one before trying to export a project.')
+    }
+  }
+
+  catch (e) {
+    console.error(`${chalk.red(e)}`);
+    process.exit(1);
+  }
+
+  // check if downloads folder exists
+  if (!existsSync(__dirname + 'downloads')) {
+    mkdirSync(__dirname + 'downloads');
+  }
+
+  // check if template folder exists
+  if (!existsSync(__dirname + `downloads\\${name}`)) {
+    mkdirSync(__dirname + `downloads\\${name}`);
+  }
+
+  // check if downloads folder exists
+  if (!existsSync(__dirname + `downloads\\${name}\\img`)) {
+    mkdirSync(__dirname + `downloads\\${name}\\img`);
+  }
+
+  console.log(`${chalk.yellow(`Importing files, ${options.marketo? 'including the Marketo HTML' : 'not including the Marketo HTML'}`)}`);
+  const files = await importBucket(name, options.marketo ? true : false);
+
+  try {
+    Object.keys(files).forEach(key => {
+      if (key === 'images') {
+        // @ts-ignore
+        for (let image of files[key]) {
+          writeFileSync(__dirname + `downloads\\${name}\\img\\${image[0]}`, image[1])
+        }
+      }
+
+      if (key === 'mjml') {
+        // @ts-ignore
+        writeFileSync(__dirname + `downloads\\${name}\\index.mjml`, files[key]);
+      }
+
+      if (key === 'index') {
+        // @ts-ignore
+        writeFileSync(__dirname + `downloads\\${name}\\index.mjml`, files[key]);
+      }
+
+      if (key === 'marketo') {
+        // @ts-ignore
+        writeFileSync(__dirname + `downloads\\${name}\\index.mjml`, files[key]);
+      }
+    });
+    console.log(`${chalk.blue('Success!')}`)
+  }
+
+  catch (error) {
+    console.error(`${chalk.red(error)}`);
   }
 });
 
