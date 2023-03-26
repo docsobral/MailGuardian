@@ -17,8 +17,7 @@
   "devDependencies": {
     "@types/js-beautify": "^1.13.3",
     "@types/mjml": "^4.7.0",
-    "@types/nodemailer": "^6.4.7",
-    "@types/yargs": "^17.0.22"
+    "@types/nodemailer": "^6.4.7"
   },
   "bin": {
     "mailer": "./build/bin/index.js"
