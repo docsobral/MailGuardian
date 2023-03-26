@@ -85,16 +85,18 @@ export async function folderExists(projectName: string) {
   return result = await supabase.storage.getBucket(projectName);
 }
 
-export async function downloadFile(projectName: string, extension: 'mjml' | 'html' | 'png', type?: 'index' | 'marketo', imageName?: string): Promise<SupabaseDownloadResult> {
+export async function downloadFile(projectName: string, extension: 'mjml' | 'html' | 'png', type: 'index' | 'marketo' = 'index', imageName?: string): Promise<SupabaseDownloadResult> {
   if (extension === 'mjml') {
     return await supabase.storage.from(projectName).download('index.mjml');
   }
 
-  if (extension === 'html') {
+  else if (extension === 'html') {
     return await supabase.storage.from(projectName).download(`${type}.html`);
   }
 
-  return await supabase.storage.from(projectName).download(`img/${imageName}.png`)
+  else {
+    return await supabase.storage.from(projectName).download(`img/${imageName}`);
+  }
 }
 
 export async function listImages(projectName: string) {
