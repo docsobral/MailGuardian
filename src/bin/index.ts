@@ -413,7 +413,7 @@ program
     mkdirSync(__dirname + `downloads\\${name}\\img`);
   }
 
-  console.log(`${chalk.yellow(`Importing files, ${options.marketo? 'including the Marketo HTML' : 'not including the Marketo HTML'}`)}`);
+  console.log(`${chalk.yellow(`Importing files, ${options.marketo? 'including the Marketo HTML' : 'not including the Marketo HTML'}\n`)}`);
   const files = await importBucket(name, options.marketo ? true : false);
 
   try {
@@ -432,12 +432,12 @@ program
 
       if (key === 'index') {
         // @ts-ignore
-        writeFileSync(__dirname + `downloads\\${name}\\index.mjml`, files[key]);
+        writeFileSync(__dirname + `downloads\\${name}\\index.html`, files[key]);
       }
 
       if (key === 'marketo') {
         // @ts-ignore
-        writeFileSync(__dirname + `downloads\\${name}\\index.mjml`, files[key]);
+        writeFileSync(__dirname + `downloads\\${name}\\marketo.html`, files[key]);
       }
     });
     console.log(`${chalk.blue('Success!')}`)

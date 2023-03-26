@@ -39,13 +39,11 @@ export async function importBucket(projectName: string, marketo: boolean = false
 
   bucketFiles.images = images;
 
-  let download: string | undefined;
-
   try {
-    download = await (await downloadFile(projectName, 'mjml')).data?.text();
+    console.log(`${chalk.yellow('\nDownloading index.mjml')}`)
+    const download = await (await downloadFile(projectName, 'mjml')).data?.text();
     if (download) {
       bucketFiles.mjml = download;
-      download = undefined;
     }
 
     else {
@@ -58,39 +56,41 @@ export async function importBucket(projectName: string, marketo: boolean = false
   }
 
   // get html
-  try {
-    download = await (await downloadFile(projectName, 'html')).data?.text();
-    if (download) {
-      bucketFiles.index = download;
-      download = undefined;
+  if (!marketo) {
+    try {
+      console.log(`${chalk.yellow('Downloading index.html')}`)
+      const download = await (await downloadFile(projectName, 'html')).data?.text();
+      if (download) {
+        bucketFiles.index = download;
+      }
+
+      else {
+        throw new Error('Couldn\'t download the HTML file. Does it exist in the bucket?')
+      }
     }
 
-    else {
-      throw new Error('Couldn\'t download the HTML file. Does it exist in the bucket?')
+    catch (error) {
+      console.error(`${chalk.red(error)}`);
     }
-  }
-
-  catch (error) {
-    console.error(`${chalk.red(error)}`);
   }
 
   // get marketo html
-  try {
-    if (marketo === true) {
-      download = await (await downloadFile(projectName, 'html', 'marketo')).data?.text();
-    if (download) {
-      bucketFiles.index = download;
-      download = undefined;
+  if (marketo) {
+    try {
+        console.log(`${chalk.yellow('Downloading marketo.html')}`)
+        const download = await (await downloadFile(projectName, 'html', 'marketo')).data?.text();
+        if (download) {
+          bucketFiles.marketo = download;
+        }
+
+        else {
+          throw new Error('Couldn\'t download the Marketo HTML. Does it exist in the bucket?')
+        }
     }
 
-    else {
-      throw new Error('Couldn\'t download the Marketo HTML. Does it exist in the bucket?')
+    catch (error) {
+      console.error(`${chalk.red(error)}`);
     }
-    }
-  }
-
-  catch (error) {
-    console.error(`${chalk.red(error)}`);
   }
 
   return bucketFiles;
