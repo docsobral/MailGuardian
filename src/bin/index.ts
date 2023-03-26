@@ -11,11 +11,6 @@ import { getMJML, getImages, getPath } from '../lib/export.js';
 import { checkLoggedBeforeMail, isLoggedIn } from '../lib/login.js';
 import { existsSync, mkdirSync, writeFileSync, readdirSync, unlinkSync, readFileSync } from 'node:fs';
 
-// if (!existsSync('config/paths.json')) {
-//   writeFileSync('config/paths.json', JSON.stringify({path: `${__dirname} + test/`}, null, 2));
-//   console.log(`${__dirname} + test/`);
-// }
-
 program.version('0.5.3');
 
 program
@@ -32,7 +27,8 @@ program
 .description('Exports MJML project into host server')
 .argument('<name>', 'Name of the bucket you want to export to')
 .argument('[path]', '(Optional) Path to the folder where the files are located')
-.action(async (name: string, path?: string) => {
+.option('-w, --watch', 'Watches template\'s folder for changes and updates bucket accordingly')
+.action(async (name: string, path: string, options) => {
   if (path) {
     let bucket: supabaseAPI.SupabaseStorageResult;
 
@@ -81,7 +77,9 @@ program
         console.error(`${chalk.red(error)}`);
       }
     });
-  } else {
+  }
+
+  else {
     let bucket: supabaseAPI.SupabaseStorageResult;
 
     try {
