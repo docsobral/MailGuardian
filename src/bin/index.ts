@@ -5,10 +5,11 @@ import __dirname from '../api/dirname.js';
 import { saveConfig } from '../lib/save.js';
 import { importBucket } from '../lib/import.js';
 import * as supabaseAPI from '../api/supabase.js';
+import { isLoggedIn, login } from '../lib/login.js';
 import { downloadHTML, mailHTML } from '../lib/mail.js';
 import { downloadMJML, parseMJML } from '../lib/prepare.js';
 import { getMJML, getImages, getPath } from '../lib/export.js';
-import { checkLoggedBeforeMail, isLoggedIn } from '../lib/login.js';
+import { enquire, PromptMessages, PromptNames, PromptTypes } from '../api/enquire.js';
 import { existsSync, mkdirSync, writeFileSync, readdirSync, unlinkSync, readFileSync } from 'node:fs';
 
 program.version('0.5.3');
@@ -18,8 +19,50 @@ program
 .description('Valitades and stores sender email address credentials')
 .argument('<id>', 'User ID e.g. email@address.com')
 .argument('<password>', 'If you use 2FA, your regular password will not work')
-.action((id, password) => {
-  isLoggedIn(id, password);
+.action(async (id, password) => {
+  try {
+    const check = await isLoggedIn();
+
+    if (check) {
+      console.log(`${chalk.yellow('You are already logged in... do you want to change accounts?')}`);
+      const { confirm } = await enquire([
+        {
+          type: PromptTypes.confirm,
+          name: PromptNames.confirm,
+          message: PromptMessages.confirm
+        }
+      ]);
+
+      if (confirm) {
+        console.log(`${chalk.yellow('\nLogging in...')}`);
+
+        try {
+          const success = await login(id, password);
+
+          if (!success) {
+            throw new Error('Failed to login!');
+          }
+
+          console.log(`${chalk.blueBright('Success! Saving your credentials')}`);
+        }
+
+        catch (error) {
+          console.error(`${chalk.red(error)}`);
+          process.exit(1);
+        }
+      }
+
+      else {
+        console.log(`${chalk.red('Aborting...')}`);
+        process.exit();
+      }
+    }
+  }
+
+  catch (error) {
+    console.error(`${chalk.red(error)}`);
+    process.exit(1);
+  }
 });
 
 program
@@ -302,7 +345,7 @@ program
 .argument('<recipients>', 'Recipient list (e.g. "davidsobral@me.com, davidcsobral@gmail.com"')
 .option('-m, --marketo', 'sends the Marketo compatible HTML')
 .action(async (name: string, recipientsString: string, options) => {
-  const check = await checkLoggedBeforeMail();
+  const check = await isLoggedIn();
 
   try {
     const bucket = await supabaseAPI.folderExists(name);
