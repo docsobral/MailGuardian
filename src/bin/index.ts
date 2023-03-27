@@ -158,9 +158,18 @@ program
 
     try {
       path = await getPath();
+
       if (path === 'cancelled') {
         throw new Error('Operation cancelled by the user');
       }
+
+      const check = existsSync(path);
+
+      if (!check) {
+        throw new Error('The path provided is broken')
+      }
+
+      savePath(name, path);
     }
 
     catch (error) {
@@ -199,7 +208,7 @@ program
           if (upload.error) {
             throw new Error(`Failed to upload ${imageName}! ${upload.error.message}`);
           }
-          console.log(`Succesfully uploaded ${imageName}`);
+          console.log(`${chalk.blue(`Succesfully uploaded ${imageName}`)}`);
         }
 
         catch (error) {
