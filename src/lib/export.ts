@@ -1,7 +1,8 @@
 import chalk from 'chalk';
 import Watch from 'node-watch';
 import __dirname from '../api/dirname.js';
-import { readdir, unlink, writeFile } from 'node:fs/promises';
+import { readdir, unlink, writeFile, mkdir, rm } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 // @ts-ignore
 import selectFolder from 'win-select-folder';
 import { getFile, getImage } from '../api/fetch.js';
@@ -97,17 +98,11 @@ export async function watch(folderPath: string, projectName: string) {
   // @ts-ignore
   Watch(folderPath + '\\index.mjml', async (evt: string, filePath: string) => {
     console.log(`${chalk.yellow(`${capitalizeFirstLetter(evt)} detected at ${filePath}`)}`);
-
-    const files = await readdir(__dirname + 'temp');
-    for (let file of files) {
-      await unlink(__dirname + 'temp\\' + file);
-    }
+    const newMJML = await getFile('mjml', folderPath);
 
     try {
-      await writeFile(__dirname + 'temp\\index.mjml', mjml);
       console.log(`${chalk.blue('Updating MJML')}`);
-
-      await updateFile(mjml, 'index.mjml', projectName);
+      await updateFile(newMJML, 'index.mjml', projectName);
       console.log(`${chalk.blue('Success!\n')}`);
     }
 
