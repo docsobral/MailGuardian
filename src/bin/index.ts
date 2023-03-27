@@ -257,9 +257,8 @@ program
 
       if (data) {
         console.log(`${chalk.yellow('Buckets:')}`);
-        for (let bucket of data) {
-          console.log(`${chalk.blue('Name:', bucket.name)}`);
-          console.log(`${chalk.blue('Created at:', bucket.created_at, '\n')}`);
+        for (let index in data) {
+          console.log(`${chalk.blue(data[index].name)}`);
         }
       }
     }
