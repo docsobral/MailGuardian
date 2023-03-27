@@ -9,7 +9,11 @@ export type AppState = {
 }
 
 export type AppConfig = {
-  [key: string]: [(string | boolean), boolean] | string;
+  [key: string]: string;
+}
+
+export type AppPaths = {
+  [key: string]: string;
 }
 
 export async function checkFirstUse(): Promise<void> {
@@ -17,6 +21,10 @@ export async function checkFirstUse(): Promise<void> {
     console.log(`${chalk.blue('Creating save files...\n')}`);
     mkdirSync(__dirname + 'config');
   };
+
+  if (!existsSync(__dirname + 'config\\paths.json')) {
+    writeFileSync(__dirname + 'config\\paths.json', JSON.stringify({}, null, 2));
+  }
 
   if (!existsSync(__dirname + 'config\\state.json') || !existsSync(__dirname + 'config\\config.json')) {
     const initialState: AppState = {logged: [false, false]};
@@ -107,4 +115,19 @@ export async function saveConfig(key: string, value: string) {
 
   const configString = JSON.stringify(config, null, 2);
   writeFileSync(__dirname + 'config\\config.json', configString);
+}
+
+export async function getPaths(): Promise<[string, string][]> {
+  const paths = JSON.parse(readFileSync(__dirname + 'config\\paths.json', { encoding: 'utf8' }));
+
+  return Object.entries(paths);
+}
+
+export async function savePath(key: string, value: string): Promise<void> {
+  let paths = JSON.parse(readFileSync(__dirname + 'config\\paths.json', { encoding: 'utf8' }));
+
+  paths[key] = value;
+
+  const pathsString = JSON.stringify(paths, null, 2);
+  writeFileSync(__dirname + 'config\\paths.json', pathsString);
 }
