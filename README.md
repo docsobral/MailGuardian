@@ -45,7 +45,9 @@ Downloads the projects files from the supabase bucket.
 
 First, run `mailer`. You will be prompted for the supabase keys and URL. Then run `mailer login <your@email.adress> <yourpassword>` to connect to the email from which samples will be sent.
 
-Each template should have its own folder, implemented on supabase as buckets. Create a bucket with `mailer bucket -c <bucketname>`. The name should preferably relate to the template. Then export the .mjml and .png files to the remote bucket with `mailer export <bucketname> [localpath]`. The path argument is optional. If you don't input a path, the app will open a folder select window where you can browse the filesystem for the folder where the template's files are located. The template folder MUST follow the example at [about](#about) for the export to work succesfully.
+Each template should have its own folder, implemented on supabase as buckets. Create a bucket with `mailer bucket -c <bucketname>`. The name should preferably relate to the template.
+
+Export the .mjml and .png files to the remote bucket with `mailer export <bucketname> [localpath]`. The path argument is optional. If you don't input a path, the app will open a folder select window where you can browse the filesystem for the folder where the template's files are located. The template folder MUST follow the example at [about](#about) for the export to work succesfully. The `-w` flag will watch the folder's MJML file for changes and will continuously upload the newest version to supabase.
 
 You can use `mailer parse [-m] <bucketname>` to parse the .MJML file into an HTML file that can then be sent over email.
 

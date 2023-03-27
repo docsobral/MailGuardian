@@ -8,11 +8,11 @@ import * as supabaseAPI from '../api/supabase.js';
 import { isLoggedIn, login } from '../lib/login.js';
 import { downloadHTML, mailHTML } from '../lib/mail.js';
 import { downloadMJML, parseMJML } from '../lib/prepare.js';
-import { getMJML, getImages, getPath } from '../lib/export.js';
+import { getMJML, getImages, getPath, watch } from '../lib/export.js';
 import { enquire, PromptMessages, PromptNames, PromptTypes } from '../api/enquire.js';
 import { existsSync, mkdirSync, writeFileSync, readdirSync, unlinkSync, readFileSync } from 'node:fs';
 
-program.version('0.5.3');
+program.version('0.5.4');
 
 program
 .command('login')
@@ -53,7 +53,7 @@ program
       }
 
       else {
-        console.log(`${chalk.red('Aborting...')}`);
+        console.log(`${chalk.red('\nAborting...')}`);
         process.exit();
       }
     }
@@ -87,39 +87,45 @@ program
       process.exit(1);
     }
 
-    const mjml = await getMJML(path);
-    const images = await getImages(path);
-
-    console.log(`${chalk.yellow('\nCleaning bucket before upload...')}`);
-    console.log(`${chalk.blue((await supabaseAPI.cleanFolder(name)).data?.message)}`);
-
-    try {
-      console.log(`${chalk.green('\nUploading mjml file...')}`);
-      const upload = await supabaseAPI.uploadFile(mjml, 'index.mjml', name);
-      if (upload.error) {
-        throw new Error('Failed to upload mjml file!');
-      }
-      console.log(`${chalk.blue('Upload succesfull!')}`);
+    if (options.watch) {
+      await watch(path, name);
     }
 
-    catch (error) {
-      console.error(`${chalk.red(error)}`);
-    }
+    else {
+      const mjml = await getMJML(path);
+      const images = await getImages(path);
 
-    console.log(`${chalk.green('\nUploading images...')}`);
-    Object.keys(images).forEach(async (imageName) => {
+      console.log(`${chalk.yellow('\nCleaning bucket before upload...')}`);
+      console.log(`${chalk.blue((await supabaseAPI.cleanFolder(name)).data?.message)}`);
+
       try {
-        const upload = await supabaseAPI.uploadFile(images[imageName], `img/${imageName}`, name, 'image/png');
+        console.log(`${chalk.green('\nUploading mjml file...')}`);
+        const upload = await supabaseAPI.uploadFile(mjml, 'index.mjml', name);
         if (upload.error) {
-          throw new Error(`Failed to upload ${imageName}! ${upload.error.message}`);
+          throw new Error('Failed to upload mjml file!');
         }
-        console.log(`${chalk.blue('Succesfully uploaded', imageName)}`);
+        console.log(`${chalk.blue('Upload succesfull!')}`);
       }
 
       catch (error) {
         console.error(`${chalk.red(error)}`);
       }
-    });
+
+      console.log(`${chalk.green('\nUploading images...')}`);
+      Object.keys(images).forEach(async (imageName) => {
+        try {
+          const upload = await supabaseAPI.uploadFile(images[imageName], `img/${imageName}`, name, 'image/png');
+          if (upload.error) {
+            throw new Error(`Failed to upload ${imageName}! ${upload.error.message}`);
+          }
+          console.log(`${chalk.blue('Succesfully uploaded', imageName)}`);
+        }
+
+        catch (error) {
+          console.error(`${chalk.red(error)}`);
+        }
+      });
+    }
   }
 
   else {
@@ -149,39 +155,45 @@ program
       process.exit(1);
     }
 
-    const mjml = await getMJML(path);
-    const images = await getImages(path);
-
-    console.log(`${chalk.yellow('\nCleaning bucket before upload...')}`);
-    console.log(`${chalk.blue((await supabaseAPI.cleanFolder(name)).data?.message)}`);
-
-    try {
-      console.log(`${chalk.green('\nUploading mjml file...')}`);
-      const upload = await supabaseAPI.uploadFile(mjml, 'index.mjml', name);
-      if (upload.error) {
-        throw new Error('Failed to upload mjml file!');
-      }
-      console.log(`${chalk.blue('Upload succesfull!')}`);
+    if (options.watch) {
+      await watch(path, name);
     }
 
-    catch (error) {
-      console.error(`${chalk.red(error)}`);
-    }
+    else {
+      const mjml = await getMJML(path);
+      const images = await getImages(path);
 
-    console.log(`${chalk.green('\nUploading images...')}`);
-    Object.keys(images).forEach(async (imageName) => {
+      console.log(`${chalk.yellow('\nCleaning bucket before upload...')}`);
+      console.log(`${chalk.blue((await supabaseAPI.cleanFolder(name)).data?.message)}`);
+
       try {
-        const upload = await supabaseAPI.uploadFile(images[imageName], `img/${imageName}`, name, 'image/png');
+        console.log(`${chalk.green('\nUploading mjml file...')}`);
+        const upload = await supabaseAPI.uploadFile(mjml, 'index.mjml', name);
         if (upload.error) {
-          throw new Error(`Failed to upload ${imageName}! ${upload.error.message}`);
+          throw new Error('Failed to upload mjml file!');
         }
-        console.log(`Succesfully uploaded ${imageName}`);
+        console.log(`${chalk.blue('Upload succesfull!')}`);
       }
 
       catch (error) {
         console.error(`${chalk.red(error)}`);
       }
-    });
+
+      console.log(`${chalk.green('\nUploading images...')}`);
+      Object.keys(images).forEach(async (imageName) => {
+        try {
+          const upload = await supabaseAPI.uploadFile(images[imageName], `img/${imageName}`, name, 'image/png');
+          if (upload.error) {
+            throw new Error(`Failed to upload ${imageName}! ${upload.error.message}`);
+          }
+          console.log(`Succesfully uploaded ${imageName}`);
+        }
+
+        catch (error) {
+          console.error(`${chalk.red(error)}`);
+        }
+      });
+    }
   }
 });
 

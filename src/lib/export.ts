@@ -57,36 +57,46 @@ function capitalizeFirstLetter(string: string) {
 }
 
 export async function watch(folderPath: string, projectName: string) {
-  console.log(`${chalk.yellow(`Watching MJML`)}`);
+  const mjml = await getFile('mjml', folderPath);
+  const filesInBucket = await listFiles(projectName);
+  let mjmlExists = await fileExists('index.mjml', filesInBucket.data);
+
+  if (!mjmlExists) {
+    try {
+      console.log(`${chalk.blue('Sending files to bucket')}`);
+      const upload = await uploadFile(mjml, 'index.mjml', projectName);
+      console.log(`${chalk.blue('Successfully uploaded index.mjml')}`);
+      if (upload.error) {
+        throw new Error(`Failed to upload MJML!! ${upload.error.message}`);
+      }
+    }
+
+    catch (error) {
+      console.error(`${chalk.red(error)}`);
+    }
+
+    const images = await getImages(folderPath);
+
+    Object.keys(images).forEach(async (imageName) => {
+      try {
+        const upload = await uploadFile(images[imageName], `img/${imageName}`, projectName, 'image/png');
+        if (upload.error) {
+          throw new Error(`Failed to upload ${imageName}! ${upload.error.message}`);
+        }
+        console.log(`${chalk.blue('Succesfully uploaded', imageName)}`);
+      }
+
+      catch (error) {
+        console.error(`${chalk.red(error)}`);
+      }
+    });
+  }
+
+  console.log(`${chalk.yellow(`Watching MJML for changes\n`)}`);
 
   // @ts-ignore
   Watch(folderPath + '\\index.mjml', async (evt: string, filePath: string) => {
-    console.log(`${chalk.blue(`${capitalizeFirstLetter(evt)} detected at ${filePath}`)}`);
-
-    const mjml = await getFile('mjml', folderPath);
-    const filesInBucket = await listFiles(projectName);
-    const mjmlExists = await fileExists('index.mjml', filesInBucket.data);
-
-    if (!mjmlExists) {
-      console.log(`${chalk.blue('Sending files to bucket')}`);
-      await uploadFile(mjml, 'index.mjml', projectName);
-
-      const images = await getImages(folderPath);
-
-      Object.keys(images).forEach(async (imageName) => {
-        try {
-          const upload = await uploadFile(images[imageName], `img/${imageName}`, projectName, 'image/png');
-          if (upload.error) {
-            throw new Error(`Failed to upload ${imageName}! ${upload.error.message}`);
-          }
-          console.log(`${chalk.blue('Succesfully uploaded', imageName)}`);
-        }
-
-        catch (error) {
-          console.error(`${chalk.red(error)}`);
-        }
-      });
-    }
+    console.log(`${chalk.yellow(`${capitalizeFirstLetter(evt)} detected at ${filePath}`)}`);
 
     const files = await readdir(__dirname + 'temp');
     for (let file of files) {
@@ -95,18 +105,10 @@ export async function watch(folderPath: string, projectName: string) {
 
     try {
       await writeFile(__dirname + 'temp\\index.mjml', mjml);
+      console.log(`${chalk.blue('Updating MJML')}`);
 
-      if (mjmlExists) {
-        console.log(`${chalk.blue('Updating MJML')}`);
-        try {
-          await updateFile(mjml, 'index.mjml', projectName);
-          console.log(`${chalk.blue('Success!')}`);
-        }
-
-        catch (error) {
-          console.error(`${chalk.red(error)}`);
-        }
-      }
+      await updateFile(mjml, 'index.mjml', projectName);
+      console.log(`${chalk.blue('Success!\n')}`);
     }
 
     catch (error) {
