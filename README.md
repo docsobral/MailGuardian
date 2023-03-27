@@ -23,9 +23,19 @@ The package uses Nodemailer to send mails. To that end, it needs valid credentia
 
 Creates or deletes a bucket or lists all buckets on supabase. Each bucket acts as a folder where each email template is stored. Bucket names should be easy to remember and relate to the template.
 
-### export \<name\> \[path]
+-c creates a bucket.
+
+-d deletes a bucket (and all files in it).
+
+-l lists all buckets.
+
+### export \[-w/-n] \<name\> \[path]
 
 Exports a template's .mjml and .png files to a bucket. Path is optional on Windows only.
+
+-m will keep watching the folder's index.mjml for changes.
+
+-n will ignore and overwrite the saved path at paths.json.
 
 ### prepare \[-m] \<name\>
 
@@ -37,9 +47,13 @@ Replaces all image URLs from local to remote paths with temporary URLs generated
 
 Sends the template on a bucket to all recipients. Recipient list should be surrounded by quotation marks and separated by commas e.g. ', '.
 
+-m will mail the Marketo compatible HTML.
+
 ### import \[-m] \<name\>
 
 Downloads the projects files from the supabase bucket.
+
+-m will download the Marketo compatible HTML.
 
 ## Usage
 
