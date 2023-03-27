@@ -5,26 +5,64 @@ import __dirname from '../api/dirname.js';
 import { saveConfig } from '../lib/save.js';
 import { importBucket } from '../lib/import.js';
 import * as supabaseAPI from '../api/supabase.js';
+import { isLoggedIn, login } from '../lib/login.js';
 import { downloadHTML, mailHTML } from '../lib/mail.js';
 import { downloadMJML, parseMJML } from '../lib/prepare.js';
-import { getMJML, getImages, getPath } from '../lib/export.js';
-import { checkLoggedBeforeMail, isLoggedIn } from '../lib/login.js';
+import { getMJML, getImages, getPath, watch } from '../lib/export.js';
+import { enquire, PromptMessages, PromptNames, PromptTypes } from '../api/enquire.js';
 import { existsSync, mkdirSync, writeFileSync, readdirSync, unlinkSync, readFileSync } from 'node:fs';
 
-// if (!existsSync('config/paths.json')) {
-//   writeFileSync('config/paths.json', JSON.stringify({path: `${__dirname} + test/`}, null, 2));
-//   console.log(`${__dirname} + test/`);
-// }
-
-program.version('0.5.3');
+program.version('0.5.4');
 
 program
 .command('login')
 .description('Valitades and stores sender email address credentials')
 .argument('<id>', 'User ID e.g. email@address.com')
 .argument('<password>', 'If you use 2FA, your regular password will not work')
-.action((id, password) => {
-  isLoggedIn(id, password);
+.action(async (id, password) => {
+  try {
+    const check = await isLoggedIn();
+
+    if (check) {
+      console.log(`${chalk.yellow('You are already logged in... do you want to change accounts?')}`);
+      const { confirm } = await enquire([
+        {
+          type: PromptTypes.confirm,
+          name: PromptNames.confirm,
+          message: PromptMessages.confirm
+        }
+      ]);
+
+      if (confirm) {
+        console.log(`${chalk.yellow('\nLogging in...')}`);
+
+        try {
+          const success = await login(id, password);
+
+          if (!success) {
+            throw new Error('Failed to login!');
+          }
+
+          console.log(`${chalk.blueBright('Success! Saving your credentials')}`);
+        }
+
+        catch (error) {
+          console.error(`${chalk.red(error)}`);
+          process.exit(1);
+        }
+      }
+
+      else {
+        console.log(`${chalk.red('\nAborting...')}`);
+        process.exit();
+      }
+    }
+  }
+
+  catch (error) {
+    console.error(`${chalk.red(error)}`);
+    process.exit(1);
+  }
 });
 
 program
@@ -32,7 +70,8 @@ program
 .description('Exports MJML project into host server')
 .argument('<name>', 'Name of the bucket you want to export to')
 .argument('[path]', '(Optional) Path to the folder where the files are located')
-.action(async (name: string, path?: string) => {
+.option('-w, --watch', 'Watches template\'s folder for changes and updates bucket accordingly')
+.action(async (name: string, path: string, options) => {
   if (path) {
     let bucket: supabaseAPI.SupabaseStorageResult;
 
@@ -48,40 +87,48 @@ program
       process.exit(1);
     }
 
-    const mjml = await getMJML(path);
-    const images = await getImages(path);
-
-    console.log(`${chalk.yellow('\nCleaning bucket before upload...')}`);
-    console.log(`${chalk.blue((await supabaseAPI.cleanFolder(name)).data?.message)}`);
-
-    try {
-      console.log(`${chalk.green('\nUploading mjml file...')}`);
-      const upload = await supabaseAPI.uploadFile(mjml, 'index.mjml', name);
-      if (upload.error) {
-        throw new Error('Failed to upload mjml file!');
-      }
-      console.log(`${chalk.blue('Upload succesfull!')}`);
+    if (options.watch) {
+      await watch(path, name);
     }
 
-    catch (error) {
-      console.error(`${chalk.red(error)}`);
-    }
+    else {
+      const mjml = await getMJML(path);
+      const images = await getImages(path);
 
-    console.log(`${chalk.green('\nUploading images...')}`);
-    Object.keys(images).forEach(async (imageName) => {
+      console.log(`${chalk.yellow('\nCleaning bucket before upload...')}`);
+      console.log(`${chalk.blue((await supabaseAPI.cleanFolder(name)).data?.message)}`);
+
       try {
-        const upload = await supabaseAPI.uploadFile(images[imageName], `img/${imageName}`, name, 'image/png');
+        console.log(`${chalk.green('\nUploading mjml file...')}`);
+        const upload = await supabaseAPI.uploadFile(mjml, 'index.mjml', name);
         if (upload.error) {
-          throw new Error(`Failed to upload ${imageName}! ${upload.error.message}`);
+          throw new Error('Failed to upload mjml file!');
         }
-        console.log(`${chalk.blue('Succesfully uploaded', imageName)}`);
+        console.log(`${chalk.blue('Upload succesfull!')}`);
       }
 
       catch (error) {
         console.error(`${chalk.red(error)}`);
       }
-    });
-  } else {
+
+      console.log(`${chalk.green('\nUploading images...')}`);
+      Object.keys(images).forEach(async (imageName) => {
+        try {
+          const upload = await supabaseAPI.uploadFile(images[imageName], `img/${imageName}`, name, 'image/png');
+          if (upload.error) {
+            throw new Error(`Failed to upload ${imageName}! ${upload.error.message}`);
+          }
+          console.log(`${chalk.blue('Succesfully uploaded', imageName)}`);
+        }
+
+        catch (error) {
+          console.error(`${chalk.red(error)}`);
+        }
+      });
+    }
+  }
+
+  else {
     let bucket: supabaseAPI.SupabaseStorageResult;
 
     try {
@@ -108,39 +155,45 @@ program
       process.exit(1);
     }
 
-    const mjml = await getMJML(path);
-    const images = await getImages(path);
-
-    console.log(`${chalk.yellow('\nCleaning bucket before upload...')}`);
-    console.log(`${chalk.blue((await supabaseAPI.cleanFolder(name)).data?.message)}`);
-
-    try {
-      console.log(`${chalk.green('\nUploading mjml file...')}`);
-      const upload = await supabaseAPI.uploadFile(mjml, 'index.mjml', name);
-      if (upload.error) {
-        throw new Error('Failed to upload mjml file!');
-      }
-      console.log(`${chalk.blue('Upload succesfull!')}`);
+    if (options.watch) {
+      await watch(path, name);
     }
 
-    catch (error) {
-      console.error(`${chalk.red(error)}`);
-    }
+    else {
+      const mjml = await getMJML(path);
+      const images = await getImages(path);
 
-    console.log(`${chalk.green('\nUploading images...')}`);
-    Object.keys(images).forEach(async (imageName) => {
+      console.log(`${chalk.yellow('\nCleaning bucket before upload...')}`);
+      console.log(`${chalk.blue((await supabaseAPI.cleanFolder(name)).data?.message)}`);
+
       try {
-        const upload = await supabaseAPI.uploadFile(images[imageName], `img/${imageName}`, name, 'image/png');
+        console.log(`${chalk.green('\nUploading mjml file...')}`);
+        const upload = await supabaseAPI.uploadFile(mjml, 'index.mjml', name);
         if (upload.error) {
-          throw new Error(`Failed to upload ${imageName}! ${upload.error.message}`);
+          throw new Error('Failed to upload mjml file!');
         }
-        console.log(`Succesfully uploaded ${imageName}`);
+        console.log(`${chalk.blue('Upload succesfull!')}`);
       }
 
       catch (error) {
         console.error(`${chalk.red(error)}`);
       }
-    });
+
+      console.log(`${chalk.green('\nUploading images...')}`);
+      Object.keys(images).forEach(async (imageName) => {
+        try {
+          const upload = await supabaseAPI.uploadFile(images[imageName], `img/${imageName}`, name, 'image/png');
+          if (upload.error) {
+            throw new Error(`Failed to upload ${imageName}! ${upload.error.message}`);
+          }
+          console.log(`Succesfully uploaded ${imageName}`);
+        }
+
+        catch (error) {
+          console.error(`${chalk.red(error)}`);
+        }
+      });
+    }
   }
 });
 
@@ -304,7 +357,7 @@ program
 .argument('<recipients>', 'Recipient list (e.g. "davidsobral@me.com, davidcsobral@gmail.com"')
 .option('-m, --marketo', 'sends the Marketo compatible HTML')
 .action(async (name: string, recipientsString: string, options) => {
-  const check = await checkLoggedBeforeMail();
+  const check = await isLoggedIn();
 
   try {
     const bucket = await supabaseAPI.folderExists(name);

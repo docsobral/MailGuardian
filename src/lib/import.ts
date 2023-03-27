@@ -28,7 +28,6 @@ export async function importBucket(projectName: string, marketo: boolean = false
     process.exit(1);
   }
 
-  // NOT WORKING
   for (let image of imgList) {
     const arrayBuffer = await (await downloadFile(projectName, 'png', undefined, image)).data?.arrayBuffer();
     if (arrayBuffer) {

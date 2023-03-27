@@ -1,6 +1,6 @@
 {
   "name": "mjml-mailer",
-  "version": "0.5.3",
+  "version": "0.5.4",
   "homepage": "https://github.com/orchidb0y/mailer",
   "type": "module",
   "dependencies": {
@@ -11,14 +11,14 @@
     "enquirer": "^2.3.6",
     "js-beautify": "^1.14.7",
     "mjml": "^4.13.0",
+    "node-watch": "^0.7.3",
     "nodemailer": "^6.9.1",
     "win-select-folder": "^1.0.1"
   },
   "devDependencies": {
     "@types/js-beautify": "^1.13.3",
     "@types/mjml": "^4.7.0",
-    "@types/nodemailer": "^6.4.7",
-    "@types/yargs": "^17.0.22"
+    "@types/nodemailer": "^6.4.7"
   },
   "bin": {
     "mailer": "./build/bin/index.js"
