@@ -2,7 +2,7 @@
 import chalk from 'chalk';
 import { program } from 'commander';
 import __dirname from '../api/dirname.js';
-import { saveConfig } from '../lib/save.js';
+import { saveConfig, savePath } from '../lib/save.js';
 import { importBucket } from '../lib/import.js';
 import * as supabaseAPI from '../api/supabase.js';
 import { isLoggedIn, login } from '../lib/login.js';
@@ -73,6 +73,19 @@ program
 .option('-w, --watch', 'Watches template\'s folder for changes and updates bucket accordingly')
 .action(async (name: string, path: string, options) => {
   if (path) {
+    try {
+      const check = existsSync(path);
+      if (!check) {
+        throw new Error('The path provided is broken')
+      }
+      savePath(name, path);
+    }
+
+    catch (error) {
+      console.error(`${chalk.red(error)}`);
+      process.exit(1);
+    }
+
     let bucket: supabaseAPI.SupabaseStorageResult;
 
     try {
