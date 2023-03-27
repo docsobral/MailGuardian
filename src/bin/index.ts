@@ -2,7 +2,7 @@
 import chalk from 'chalk';
 import { program } from 'commander';
 import __dirname from '../api/dirname.js';
-import { saveConfig } from '../lib/save.js';
+import { getPaths, saveConfig, savePath } from '../lib/save.js';
 import { importBucket } from '../lib/import.js';
 import * as supabaseAPI from '../api/supabase.js';
 import { isLoggedIn, login } from '../lib/login.js';
@@ -12,7 +12,7 @@ import { getMJML, getImages, getPath, watch } from '../lib/export.js';
 import { enquire, PromptMessages, PromptNames, PromptTypes } from '../api/enquire.js';
 import { existsSync, mkdirSync, writeFileSync, readdirSync, unlinkSync, readFileSync } from 'node:fs';
 
-program.version('0.5.5');
+program.version('0.5.6');
 
 program
 .command('login')
@@ -71,8 +71,30 @@ program
 .argument('<name>', 'Name of the bucket you want to export to')
 .argument('[path]', '(Optional) Path to the folder where the files are located')
 .option('-w, --watch', 'Watches template\'s folder for changes and updates bucket accordingly')
+.option('-n, --new-path', 'Ignore and overwrite current saved path')
 .action(async (name: string, path: string, options) => {
+  const paths = await getPaths();
+
+  for (const entry of paths) {
+    if (entry[0] === name && !options.newPath) {
+      path = entry[1];
+    }
+  }
+
   if (path) {
+    try {
+      const check = existsSync(path);
+      if (!check) {
+        throw new Error('The path provided is broken')
+      }
+      savePath(name, path);
+    }
+
+    catch (error) {
+      console.error(`${chalk.red(error)}`);
+      process.exit(1);
+    }
+
     let bucket: supabaseAPI.SupabaseStorageResult;
 
     try {
@@ -145,13 +167,22 @@ program
 
     try {
       path = await getPath();
+
       if (path === 'cancelled') {
         throw new Error('Operation cancelled by the user');
       }
+
+      const check = existsSync(path);
+
+      if (!check) {
+        throw new Error('The path provided is broken')
+      }
+
+      savePath(name, path);
     }
 
     catch (error) {
-      console.error(`${chalk.magenta(error)}`);
+      console.error(`${chalk.red(error)}`);
       process.exit(1);
     }
 
@@ -186,7 +217,7 @@ program
           if (upload.error) {
             throw new Error(`Failed to upload ${imageName}! ${upload.error.message}`);
           }
-          console.log(`Succesfully uploaded ${imageName}`);
+          console.log(`${chalk.blue(`Succesfully uploaded ${imageName}`)}`);
         }
 
         catch (error) {

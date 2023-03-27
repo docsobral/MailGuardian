@@ -11,6 +11,7 @@ type Config = {
 
 try {
   readFileSync(__dirname + 'config\\config.json', { encoding: 'utf8' });
+  readFileSync(__dirname + 'config\\paths.json', { encoding: 'utf8' })
 }
 
 catch (error) {
