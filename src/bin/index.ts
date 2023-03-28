@@ -12,7 +12,7 @@ import { getMJML, getImages, getPath, watch } from '../lib/export.js';
 import { enquire, PromptMessages, PromptNames, PromptTypes } from '../api/enquire.js';
 import { existsSync, mkdirSync, writeFileSync, readdirSync, unlinkSync, readFileSync } from 'node:fs';
 
-program.version('0.5.10');
+program.version('0.5.11');
 
 program
 .command('login')

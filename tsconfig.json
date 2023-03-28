@@ -11,6 +11,8 @@
     "noEmitOnError": true,
     "esModuleInterop": true,
     "rootDir": "src",
-    "outDir": "build"
+    "outDir": "build",
+    "noUnusedLocals": false,
+    "forceConsistentCasingInFileNames": true
   }
 }
