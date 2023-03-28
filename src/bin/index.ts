@@ -35,21 +35,11 @@ program
 
       if (confirm) {
         console.log(`${chalk.yellow('\nLogging in...')}`);
-
-        try {
-          const success = await login(id, password);
-
-          if (!success) {
-            throw new Error('Failed to login!');
-          }
-
-          console.log(`${chalk.blueBright('Success! Saving your credentials')}`);
+        const success = await login(id, password);
+        if (!success) {
+          throw new Error('Failed to login!');
         }
-
-        catch (error) {
-          console.error(`${chalk.red(error)}`);
-          process.exit(1);
-        }
+        console.log(`${chalk.blueBright('Success! Saving your credentials')}`);
       }
 
       else {
@@ -60,11 +50,9 @@ program
 
     else {
       const success = await login(id, password);
-
       if (!success) {
         throw new Error('Failed to login!');
       }
-
       console.log(`${chalk.blueBright('Success! Saving your credentials')}`);
     }
   }
