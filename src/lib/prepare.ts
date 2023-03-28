@@ -57,13 +57,20 @@ export function divToTable(html: string) {
   let string = html;
   let replacer: RegExp;
   let matcher: RegExp;
-  let matches: IterableIterator<RegExpExecArray>;
+  let matches: IterableIterator<RegExpMatchArray>;
   let sectionClasses: string[] = [];
+  let imgTags: string[] = [];
+
+  // mktoname & id generator
+  let count = 0;
+  function generator() {
+    count++
+    return `a${count}`
+  }
 
   // get classes from sections
   const divClass = /(?<= *<div class=")(?!mj)(.+)(?=" style)/g;
   matcher = new RegExp(divClass);
-  // @ts-ignore
   matches = string.matchAll(matcher);
   for (let match of matches) {
     sectionClasses.push(match[1]);
@@ -72,30 +79,45 @@ export function divToTable(html: string) {
   const topSectionClass = sectionClasses[0];
   const nextSectionClasses = sectionClasses.splice(1);
 
+  // get img tags
+  const imgTag = /(?<!<div.*>\n.*)(<img.*\/>)/;
+  matcher = new RegExp(imgTag, 'g');
+  matches = string.matchAll(matcher);
+  for (let match of matches) {
+    imgTags.push(match[1]);
+  }
+
   // first <div> to <table><tbody><tr><td>
   const firstDivReg = /(<div)(.*)(>)(?=\n *<!)/;
-  replacer = new RegExp(firstDivReg, 'g');
+  replacer = new RegExp(firstDivReg);
   string = string.replace(replacer, '<table class="mj-full-width-mobile" align="center"><tbody><tr><td class="mktoContainer" id="container" width="600" style="width: 600px;">');
 
   // end </div> to </td></tr></tbody></table>
-  const endDivReg = /(<\/div>)(\n)( *)(?=<\/body>)/;
+  const endDivReg = /(<\/div>)(?=\n.*<\/body>)/;
   replacer = new RegExp(endDivReg, 'g');
-  string = string.replace(replacer, '</td></tr></tbody></table>\n');
+  string = string.replace(replacer, '</td></tr></tbody></table>');
 
   // middle second div + ghost table opening (closing div)
-  const middleDivGhost = /( *)(<\/div>)(\n)( *)(<!--)(.*)(\n)(.*)(600px;">\n *)(<table align="center")/;
+  const middleDivGhost = /( *)(<\/div>)(\n)(.*)(<!--)(.*)(\n)(.*)(<div class.*)(600px;">\n *)(<table align="center")/;
   replacer = new RegExp(middleDivGhost);
-  while (nextSectionClasses.length > 0) string = string.replace(replacer, `<table align="center" class="mktoModule mj-full-width-mobile ${nextSectionClasses.shift()}" mktoname="" id=""`);
+  while (nextSectionClasses.length > 0) string = string.replace(replacer, `<table align="center" class="mktoModule mj-full-width-mobile ${nextSectionClasses.shift()}" mktoname="${generator()}" id="${generator()}"`);
 
   // top div + ghost table opening
   const topDivGhost = /(<!--)(.*)(\n)(.*)(max-width:600px;">\n *)(<table align="center")/;
   replacer = new RegExp(topDivGhost);
-  string = string.replace(replacer, `<table align="center" class="mktoModule mj-full-width-mobile ${topSectionClass}" mktoname="" id=""`);
+  string = string.replace(replacer, `<table align="center" class="mktoModule mj-full-width-mobile ${topSectionClass}" mktoname="${generator()}" id="${generator()}"`);
+
+  // beautify
+  string = beautifyHTML(string);
 
   // end div + ghost table opening
-  const endDivGhost = /(<\/div>\n)( *<!.*\n)(?= *.*\n *.*\n *.*\n *.*\n *<\/body>)/;
+  const endDivGhost = /(<\/div>\n)( *<!.*\n)(?=.*\n.*\n.*\n.*\n.*<\/body>)/;
   replacer = new RegExp(endDivGhost, 'g');
   string = string.replace(replacer, '');
+
+  // surround img tags with divs
+  replacer = new RegExp(imgTag);
+  while (imgTags.length > 0) string = string.replace(imgTag, `<div class="mktoImg" mktoname="${generator()}" id="${generator()}">\n${imgTags.shift()}</div>`);
 
   // beautify
   string = beautifyHTML(string);
