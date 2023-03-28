@@ -60,6 +60,7 @@ export function divToTable(html: string) {
   let matches: IterableIterator<RegExpMatchArray>;
   let sectionClasses: string[] = [];
   let imgTags: string[] = [];
+  let textDivs: string[] = [];
 
   // mktoname & id generator
   let count = 0;
@@ -85,6 +86,14 @@ export function divToTable(html: string) {
   matches = string.matchAll(matcher);
   for (let match of matches) {
     imgTags.push(match[1]);
+  }
+
+  // get text divs
+  const textDiv = /(?<=<td.*\n.*)(<div style="font-family)/
+  matcher = new RegExp(textDiv, 'g');
+  matches = string.matchAll(matcher);
+  for (let match of matches) {
+    textDivs.push(match[1]);
   }
 
   // first <div> to <table><tbody><tr><td>
@@ -118,6 +127,13 @@ export function divToTable(html: string) {
   // surround img tags with divs
   replacer = new RegExp(imgTag);
   while (imgTags.length > 0) string = string.replace(imgTag, `<div class="mktoImg" mktoname="${generator()}" id="${generator()}">\n${imgTags.shift()}</div>`);
+
+  // insert mkto attributes to text divs
+  replacer = new RegExp(textDiv);
+  while (textDivs.length > 0) {
+    string = string.replace(textDiv, `<div class="mktoText" mktoname="${generator()}" id="${generator()}" style="font-family`);
+    textDivs.pop();
+  }
 
   // beautify
   string = beautifyHTML(string);
