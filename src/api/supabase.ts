@@ -39,8 +39,8 @@ const options = { db: { schema: 'public' }, auth: { autoRefreshToken: true, pers
 const supabase = createClient(config['SUPA_URL'], config['SUPA_SECRET'], options);
 
 export async function createFolder(projectName: string) {
-  let result: SupabaseStorageResult;
-  return result = await supabase.storage.createBucket(projectName, { public: false });
+  let result: SupabaseStorageResult = await supabase.storage.createBucket(projectName, { public: false });
+  return result;
 }
 
 export async function deleteFolder(projectName: string) {

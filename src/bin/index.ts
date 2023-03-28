@@ -1,4 +1,19 @@
 #! /usr/bin/env node
+
+const { emitWarning } = process;
+
+process.emitWarning = (warning, ...args) => {
+  if (args[0] === 'ExperimentalWarning') {
+    return;
+  }
+
+  if (args[0] && typeof args[0] === 'object' && args[0].type === 'ExperimentalWarning') {
+    return;
+  }
+  // @ts-ignore
+  return emitWarning(warning, ...args);
+}
+
 import chalk from 'chalk';
 import { program } from 'commander';
 import __dirname from '../api/dirname.js';
