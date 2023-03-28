@@ -213,23 +213,30 @@ program
 .option('-c, --create', 'creates a bucket')
 .option('-l, --list', 'lists all buckets')
 .action(async (name, options) => {
-  if (options.create) {
-    console.log(`${chalk.yellow(`Creating bucket named ${name}`)}`);
-    supabaseAPI.createFolder(name);
-    return
-  }
+  try {
+    if (options.create) {
+      console.log(`${chalk.yellow(`Creating bucket named ${name}`)}`);
+      const { data, error } = await supabaseAPI.createFolder(name);
+      if (error) {
+        throw new Error(`${error.stack?.slice(17)}`);
+      }
+      console.log(data, error);
+      return;
+    }
 
-  if (options.delete) {
-    console.log(`${chalk.magenta(`Deleting bucket named ${name}`)}`);
-    supabaseAPI.deleteFolder(name);
-    return
-  }
+    if (options.delete) {
+      console.log(`${chalk.magenta(`Deleting bucket named ${name}`)}`);
+      const { data, error } = await supabaseAPI.deleteFolder(name);
+      if (error) {
+        throw new Error(`${error.stack?.slice(17)}`);
+      }
+      return;
+    }
 
-  if (options.list) {
-    try {
+    if (options.list) {
       const { data, error } = await supabaseAPI.listBuckets();
       if (error) {
-        throw new Error(error.message);
+        throw new Error(`${error.stack?.slice(17)}`);
       }
 
       if (data) {
@@ -239,11 +246,11 @@ program
         }
       }
     }
+  }
 
-    catch (error) {
-      console.error(`${chalk.red(error)}`);
-      process.exit(1);
-    }
+  catch (error) {
+    console.log(`${chalk.red(error)}`);
+    process.exit(1);
   }
 });
 
