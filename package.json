@@ -1,6 +1,6 @@
 {
   "name": "mjml-mailer",
-  "version": "0.5.7",
+  "version": "0.5.8",
   "homepage": "https://github.com/orchidb0y/mailer",
   "type": "module",
   "dependencies": {

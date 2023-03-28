@@ -98,7 +98,7 @@ export function divToTable(html: string) {
   string = string.replace(replacer, '</td></tr></tbody></table>');
 
   // middle second div + ghost table opening (closing div)
-  const middleDivGhost = /( *)(<\/div>)(\n)(.*)(<!--)(.*)(\n)(.*)(<div class.*)(600px;">\n *)(<table align="center")/;
+  const middleDivGhost = /( *)(<\/div>)(\n)(      )(<!--)(.*)(\n)(.*)(<div class.*)(600px;">\n *)(<table align="center")/;
   replacer = new RegExp(middleDivGhost);
   while (nextSectionClasses.length > 0) string = string.replace(replacer, `<table align="center" class="mktoModule mj-full-width-mobile ${nextSectionClasses.shift()}" mktoname="${generator()}" id="${generator()}"`);
 
