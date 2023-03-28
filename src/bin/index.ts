@@ -12,7 +12,7 @@ import { getMJML, getImages, getPath, watch } from '../lib/export.js';
 import { enquire, PromptMessages, PromptNames, PromptTypes } from '../api/enquire.js';
 import { existsSync, mkdirSync, writeFileSync, readdirSync, unlinkSync, readFileSync } from 'node:fs';
 
-program.version('0.5.8');
+program.version('0.5.10');
 
 program
 .command('login')
@@ -56,6 +56,16 @@ program
         console.log(`${chalk.red('\nAborting...')}`);
         process.exit();
       }
+    }
+
+    else {
+      const success = await login(id, password);
+
+      if (!success) {
+        throw new Error('Failed to login!');
+      }
+
+      console.log(`${chalk.blueBright('Success! Saving your credentials')}`);
     }
   }
 
