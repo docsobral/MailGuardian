@@ -37,7 +37,7 @@ export type MJMLBuffer = Buffer;
 
 export function parseMJML(mjml: string, marketo?: boolean) {
   const string = mjml;
-  const htmlObject = mjml2html(string);
+  const htmlObject = mjml2html(string, { validationLevel: 'strict' });
   const html = beautifyHTML(htmlObject.html);
 
   if (marketo) {
