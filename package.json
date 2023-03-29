@@ -2,6 +2,7 @@
   "name": "mjml-mailer",
   "version": "0.5.14",
   "homepage": "https://github.com/orchidb0y/mailer",
+  "license": "AGPL-3.0-only",
   "type": "module",
   "dependencies": {
     "@supabase/supabase-js": "^2.12.0",
