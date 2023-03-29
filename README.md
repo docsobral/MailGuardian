@@ -69,7 +69,7 @@ Export the .mjml and .png files to the remote bucket with `mailer export <bucket
 
 You can use `mailer parse [-m] <bucketname>` to parse the .MJML file into an HTML file that can then be sent over email.
 
-The optional `-m` flag instructs the parser to create Adobe Marketo compatible HTML -- NOTICE: for now, the parser is only compatible with Marketo modules. The mktoName and id attributes must be manually filled (will be addressed in a future version). Editable elements (images, text) also have to be manually prepared (will be addressed in a future version).
+The optional `-m` flag instructs the parser to create Adobe Marketo compatible HTML.
 
 To send a sample, use `mailer mail <bucketname> <"first@recipient.com, second@recipient.com, ...">` The `-m` flag will instruct the Marketo compatible html to be sent, if it exists.
 
