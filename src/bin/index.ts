@@ -274,89 +274,69 @@ program
 .argument('<name>', 'Name of the bucket where the MJML you want to parse is located')
 .option('-m, --marketo', 'parses MJML for Marketo', false)
 .action(async (name, options) => {
-  // check is bucket exists
   try {
+    // check is bucket exists
     const bucket = await supabaseAPI.folderExists(name);
     if (bucket.error) {
       throw new Error('BUCKET ERROR: bucket doesn\'t exist! Use \'mailer bucket -c [name]\' to create one before trying to export a project.')
     }
-  }
 
-  catch (e) {
-    console.error(`${chalk.red(e)}`);
-    process.exit(1);
-  }
-
-  // check if temp folder exists
-  if (!existsSync(__dirname + 'temp')) {
-    mkdirSync(__dirname + 'temp');
-  }
-
-  else {
-    const files = readdirSync(__dirname + 'temp');
-    for (let file of files) {
-      unlinkSync(__dirname + 'temp\\' + file);
-    }
-  }
-
-  // fetches mjml file
-  console.log(`${chalk.yellow('Fetching index.mjml file from the', name, 'bucket')}`);
-  const mjmlBlob = await downloadMJML(name);
-  if (mjmlBlob) {
-    let mjmlString = await mjmlBlob.text()
-    let imgList: string[] = [];
-    let signedUrlList: string[] = [];
-
-    // get list of images
-    try {
-      const fetch = await supabaseAPI.listImages(name);
-      if (fetch.error) {
-        throw new Error('Failed to fetch list of image names!');
-      }
-
-      fetch.data.forEach(fileObject => imgList.push(fileObject.name));
-    }
-
-    catch (error) {
-      console.error(`${chalk.red(error)}`);
-      process.exit(1);
-    }
-
-    // get list of signes urls
-    try {
-      const fetch = await supabaseAPI.imagesUrls(name, imgList);
-      if (fetch.error) {
-        throw new Error('Failed to get signed URLs!');
-      }
-
-      fetch.data.forEach(object => signedUrlList.push(object.signedUrl));
-    }
-
-    catch (error) {
-      console.error(`${chalk.red(error)}`);
-    }
-
-    // replace local paths for remote paths
-    for (let index in imgList) {
-      const localPath = `(?<=src=")(.*)(${imgList[index]})(?=")`;
-      const replacer = new RegExp(localPath, 'g');
-      mjmlString = mjmlString.replace(replacer, signedUrlList[index]);
-    };
-
-    // save mjml with new paths
-    writeFileSync(__dirname + 'temp\\index.mjml', mjmlString);
-
-    if (options.marketo) {
-      const parsedHTML = parseMJML(readFileSync(__dirname + 'temp\\index.mjml', { encoding: 'utf8' }), true);
-      writeFileSync(__dirname + `temp\\parsed.html`, parsedHTML);
+    // check if temp folder exists
+    if (!existsSync(__dirname + 'temp')) {
+      mkdirSync(__dirname + 'temp');
     }
 
     else {
-      const parsedHTML = parseMJML(readFileSync(__dirname + 'temp\\index.mjml', { encoding: 'utf8' }));
-      writeFileSync(__dirname + 'temp\\parsed.html', parsedHTML);
+      const files = readdirSync(__dirname + 'temp');
+      for (let file of files) {
+        unlinkSync(__dirname + 'temp\\' + file);
+      }
     }
 
-    try {
+    // fetches mjml file
+    console.log(`${chalk.yellow('Fetching index.mjml file from the', name, 'bucket')}`);
+    const mjmlBlob = await downloadMJML(name);
+    if (mjmlBlob) {
+      let mjmlString = await mjmlBlob.text()
+      let imgList: string[] = [];
+      let signedUrlList: string[] = [];
+
+      // get list of images
+      const firstFetch = await supabaseAPI.listImages(name);
+      if (firstFetch.error) {
+        throw new Error('Failed to fetch list of image names!');
+      }
+
+      firstFetch.data.forEach(fileObject => imgList.push(fileObject.name));
+
+      // get list of signes urls
+      const secondFetch = await supabaseAPI.imagesUrls(name, imgList);
+      if (secondFetch.error) {
+        throw new Error('Failed to get signed URLs!');
+      }
+
+      secondFetch.data.forEach(object => signedUrlList.push(object.signedUrl));
+
+      // replace local paths for remote paths
+      for (let index in imgList) {
+        const localPath = `(?<=src=")(.*)(${imgList[index]})(?=")`;
+        const replacer = new RegExp(localPath, 'g');
+        mjmlString = mjmlString.replace(replacer, signedUrlList[index]);
+      };
+
+      // save mjml with new paths
+      writeFileSync(__dirname + 'temp\\index.mjml', mjmlString);
+
+      if (options.marketo) {
+        const parsedHTML = parseMJML(readFileSync(__dirname + 'temp\\index.mjml', { encoding: 'utf8' }), true);
+        writeFileSync(__dirname + `temp\\parsed.html`, parsedHTML);
+      }
+
+      else {
+        const parsedHTML = parseMJML(readFileSync(__dirname + 'temp\\index.mjml', { encoding: 'utf8' }));
+        writeFileSync(__dirname + 'temp\\parsed.html', parsedHTML);
+      }
+
       const list = await supabaseAPI.listFiles(name);
       const exists = await supabaseAPI.fileExists(`${options.marketo? 'marketo.html' : 'index.html'}`, list.data);
 
@@ -370,11 +350,11 @@ program
       }
       console.log(`${chalk.blue('Successfully parsed MJML and uploaded HTML to server')}`);
     }
+  }
 
-    catch (error) {
-      console.error(`${chalk.red(error)}`);
-      process.exit(1);
-    }
+  catch (error) {
+    console.error(`${chalk.red(error)}`);
+    process.exit(1);
   }
 });
 
