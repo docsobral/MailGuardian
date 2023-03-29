@@ -138,36 +138,35 @@ export function divToTable(html: string) {
     textDivs.pop();
   }
 
+  // get marketo text variables
+  const textVarNames = getMatches(string, /(?<=\${text: *("|')?)(([a-z]|[A-Z])([a-z]|[A-Z]|[0-9])*)(?=("|')? *; default:.*})/g);
+  const textVarDefaults = getMatches(string, /(?<=\${text: *.* *; *default: *("|')?)(?! )([^"|']([a-z ]|[A-Z]|[0-9]|[!-@]|[[-`]|[{-~])*[^"|'])(?<! )(?=(("|')?) *(}))/g);
+  const textVarEntries = filterDuplicates(tupleArrayFromEntries(textVarNames, textVarDefaults));
+
+  // insert meta tags and place variables
+  string = insertMeta(string, /(?<=<meta name="viewport" content="width=device-width, initial-scale=1">)(\n)/, textVarEntries);
+  string = placeVariables(textVarEntries, string);
+
+  // get marketo number variables
+  const numberVarNames = getMatches(string, /(?<=\${number: *("|')?)(([a-z]|[A-Z])([a-z]|[A-Z]|[0-9])*)(?=("|')? *; default:.*})/g);
+  const numberVarDefaults = getMatches(string, /(?<=\${number: *.* *; *default: *)(?! )(([0-9])*)(?<! )(?= *(}))/g);
+  const numberVarEntries = filterDuplicates(tupleArrayFromEntries(numberVarNames, numberVarDefaults));
+
+  // insert meta tags and place variables
+  string = insertMeta(string, /(?<=<meta name="viewport" content="width=device-width, initial-scale=1">)(\n)/, numberVarEntries);
+  string = placeVariables(numberVarEntries, string);
+
+  // get marketo color variables
+  const colorVarNames = getMatches(string, /(?<=\${color: *("|')?)(([a-z]|[A-Z])([a-z]|[A-Z]|[0-9])*)(?=("|')? *; default:.*})/g);
+  const colorVarDefaults = getMatches(string, /(?<=\${color: *.* *; *default: *)(?! )(#([A-Z]|[a-z]|[0-9])*)(?<! )(?= *(}))/g);
+  const colorVarEntries = filterDuplicates(tupleArrayFromEntries(colorVarNames, colorVarDefaults));
+
+  // insert meta tags and place variables
+  string = insertMeta(string, /(?<=<meta name="viewport" content="width=device-width, initial-scale=1">)(\n)/, colorVarEntries);
+  string = placeVariables(colorVarEntries, string);
+
   // beautify
   string = beautifyHTML(string);
-
-  // get marketo text variables names
-  let textVarNames: string[] = [];
-  let textVarReg = /(?<=\${text: *("|')?)(([a-z]|[A-Z])([a-z]|[A-Z]|[0-9])*)(?=("|')? *; default:.*})/g
-  let textVarMatches = string.matchAll(textVarReg);
-  for (const match of textVarMatches) {
-    textVarNames.push(match[0]);
-  }
-
-  // get marketo text variables defaults
-  let textVarDefaults: string[] = [];
-  textVarReg = /(?<=\${text: *.* *; *default: *("|')?)(?! )([^"|']([a-z ]|[A-Z]|[0-9]|[!-@]|[[-`]|[{-~])*[^"|'])(?<! )(?=(("|')?) *(}))/g;
-  textVarMatches = string.matchAll(textVarReg);
-  for (const match of textVarMatches) {
-    textVarDefaults.push(match[0]);
-  }
-
-  // remove duplicates from list
-  let textVarEntries = filterDuplicates(tupleArrayFromEntries(textVarNames, textVarDefaults));
-
-  // insert meta for each variable
-  const headReg = /(?<=<meta name="viewport" content="width=device-width, initial-scale=1">)(\n)/;
-  for (const entry of textVarEntries) {
-    string = string.replace(headReg, `\n    <meta class="mktoString" id="${entry[0]}" mktomodulescope="true" mktoname="${entry[0]}" default="${entry[1]}">\n`);
-  }
-
-  // replace each variable with its name
-  string = replaceVariables(textVarEntries, string);
 
   return string;
 }
@@ -196,13 +195,35 @@ function filterDuplicates(array: [string, string][]): [string, string][] {
   return result;
 }
 
-function replaceVariables(array: [string, string][], html: string): string {
+function placeVariables(array: [string, string][], html: string): string {
   let result = html;
 
   for (const variable of array) {
-    const template = `(?<=${'\\'}\${)(text: *("|')?)(${variable[0]})(.*)(?=("|')? *})`;
+    const template = `(?<=${'\\'}\${)[^{}]*${variable[0]}[^{}]*(?=})`;
     const reg = new RegExp(template, 'g');
     result = result.replace(reg, variable[0]);
+  }
+
+  return result;
+}
+
+function getMatches(html: string, regex: RegExp): string[] {
+  let result: string[] = [];
+
+  const textVarReg = regex;
+  const textVarMatches = html.matchAll(textVarReg);
+  for (const match of textVarMatches) {
+    result.push(match[0]);
+  }
+
+  return result;
+}
+
+function insertMeta(html: string, regex: RegExp, entries: [string, string][]): string {
+  let result: string = html;
+
+  for (const entry of entries) {
+    result = result.replace(regex, `\n    <meta class="mktoString" id="${entry[0]}" mktomodulescope="true" mktoname="${entry[0]}" default="${entry[1]}">\n`);
   }
 
   return result;
