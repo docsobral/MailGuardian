@@ -365,45 +365,39 @@ program
 .argument('<recipients>', 'Recipient list (e.g. "davidsobral@me.com, davidcsobral@gmail.com"')
 .option('-m, --marketo', 'sends the Marketo compatible HTML')
 .action(async (name: string, recipientsString: string, options) => {
-  const check = await isLoggedIn();
-
   try {
+    const check = await isLoggedIn();
+
     const bucket = await supabaseAPI.folderExists(name);
     if (bucket.error) {
       throw new Error('BUCKET ERROR: bucket doesn\'t exist! Use \'mailer bucket -c [name]\' to create one before trying to export a project.')
     }
-  }
 
-  catch (e) {
-    console.error(`${chalk.red(e)}`);
-    process.exit(1);
-  }
-
-  if (typeof check === 'string') {
-    process.exit(1);
-  }
-
-  if (typeof check === 'boolean') {
-    if (!check) {
-      console.error(`${chalk.red('Please log in with "mailer login" before trying to send an email')}`);
+    if (typeof check === 'string') {
       process.exit(1);
     }
-  }
 
-  const recipientsList: string[] = recipientsString.split(', ')
-  const htmlBlob = await downloadHTML(name, options.marketo);
+    if (typeof check === 'boolean') {
+      if (!check) {
+        console.error(`${chalk.red('Please log in with "mailer login" before trying to send an email')}`);
+        process.exit(1);
+      }
+    }
 
-  if (htmlBlob) {
-    const htmlString = await htmlBlob.text();
-    console.log(`${chalk.yellow('Sending email...')}`);
-    try {
+    const recipientsList: string[] = recipientsString.split(', ')
+    const htmlBlob = await downloadHTML(name, options.marketo);
+
+    if (htmlBlob) {
+      const htmlString = await htmlBlob.text();
+      console.log(`${chalk.yellow('Sending email...')}`);
       await mailHTML(recipientsList, htmlString);
       console.log(`${chalk.blue('Success!')}`);
     }
+  }
 
-    catch (error) {
-      console.error(`${chalk.red(error)}`);
-    }
+  catch (error) {
+    console.error(`${chalk.red(error)}`);
+    process.exit(1);
   }
 });
 
