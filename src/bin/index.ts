@@ -27,7 +27,7 @@ import { getMJML, getImages, getPath, watch } from '../lib/export.js';
 import { enquire, PromptMessages, PromptNames, PromptTypes } from '../api/enquire.js';
 import { existsSync, mkdirSync, writeFileSync, readdirSync, unlinkSync, readFileSync } from 'node:fs';
 
-program.version('0.5.13');
+program.version('0.5.14');
 
 program
 .command('login')
