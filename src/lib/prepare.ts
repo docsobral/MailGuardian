@@ -37,7 +37,7 @@ export type MJMLBuffer = Buffer;
 
 export function parseMJML(mjml: string, marketo?: boolean) {
   const string = mjml;
-  const htmlObject = mjml2html(string, { validationLevel: 'strict' });
+  const htmlObject = mjml2html(string, { validationLevel: 'soft' });
   const html = beautifyHTML(htmlObject.html);
 
   if (marketo) {
@@ -58,9 +58,6 @@ export function divToTable(html: string) {
   let replacer: RegExp;
   let matcher: RegExp;
   let matches: IterableIterator<RegExpMatchArray>;
-  let sectionClasses: string[] = [];
-  let imgTags: string[] = [];
-  let textDivs: string[] = [];
 
   // mktoname & id generator
   let count = 0;
@@ -70,6 +67,7 @@ export function divToTable(html: string) {
   }
 
   // get classes from sections
+  let sectionClasses: string[] = [];
   const divClass = /(?<=^      <div class=")(?!mj)(.+)(?=" style)/gm;
   matcher = new RegExp(divClass);
   matches = string.matchAll(matcher);
@@ -81,6 +79,7 @@ export function divToTable(html: string) {
   const nextSectionClasses = sectionClasses.splice(1);
 
   // get img tags
+  let imgTags: string[] = [];
   const imgTag = /(?<!<div.*>\n.*)(<img.*\/>)/;
   matcher = new RegExp(imgTag, 'g');
   matches = string.matchAll(matcher);
@@ -89,6 +88,7 @@ export function divToTable(html: string) {
   }
 
   // get text divs
+  let textDivs: string[] = [];
   const textDiv = /(?<=<td.*\n.*)(<div style="font-family)/
   matcher = new RegExp(textDiv, 'g');
   matches = string.matchAll(matcher);
@@ -141,5 +141,69 @@ export function divToTable(html: string) {
   // beautify
   string = beautifyHTML(string);
 
+  // get marketo text variables names
+  let textVarNames: string[] = [];
+  let textVarReg = /(?<=\${text: *("|')?)(([a-z]|[A-Z])([a-z]|[A-Z]|[0-9])*)(?=("|')? *; default:.*})/g
+  let textVarMatches = string.matchAll(textVarReg);
+  for (const match of textVarMatches) {
+    textVarNames.push(match[0]);
+  }
+
+  // get marketo text variables defaults
+  let textVarDefaults: string[] = [];
+  textVarReg = /(?<=\${text: *.* *; *default: *("|')?)(?! )([^"|']([a-z ]|[A-Z]|[0-9]|[!-@]|[[-`]|[{-~])*[^"|'])(?<! )(?=(("|')?) *(}))/g;
+  textVarMatches = string.matchAll(textVarReg);
+  for (const match of textVarMatches) {
+    textVarDefaults.push(match[0]);
+  }
+
+  // remove duplicates from list
+  let textVarEntries = filterDuplicates(tupleArrayFromEntries(textVarNames, textVarDefaults));
+
+  // insert meta for each variable
+  const headReg = /(?<=<meta name="viewport" content="width=device-width, initial-scale=1">)(\n)/;
+  for (const entry of textVarEntries) {
+    string = string.replace(headReg, `\n    <meta class="mktoString" id="${entry[0]}" mktomodulescope="true" mktoname="${entry[0]}" default="${entry[1]}">\n`);
+  }
+
+  // replace each variable with its name
+  string = replaceVariables(textVarEntries, string);
+
   return string;
+}
+
+function tupleArrayFromEntries(keys: string[], values: string[]): [string, string][] {
+  const result: [string, string][] = [];
+
+  for (let i = 0; i < keys.length; i++) {
+    result.push([keys[i], values[i]]);
+  }
+
+  return result;
+}
+
+function filterDuplicates(array: [string, string][]): [string, string][] {
+  let result: [string, string][] = [];
+  const map = new Map();
+
+  for (const [name, def] of array) {
+    if (!map.has(name)) {
+      map.set(name, true);
+      result.push([name, def]);
+    }
+  }
+
+  return result;
+}
+
+function replaceVariables(array: [string, string][], html: string): string {
+  let result = html;
+
+  for (const variable of array) {
+    const template = `(?<=${'\\'}\${)(text: *("|')?)(${variable[0]})(.*)(?=("|')? *})`;
+    const reg = new RegExp(template, 'g');
+    result = result.replace(reg, variable[0]);
+  }
+
+  return result;
 }
