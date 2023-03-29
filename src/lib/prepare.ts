@@ -70,7 +70,7 @@ export function divToTable(html: string) {
   }
 
   // get classes from sections
-  const divClass = /(?<= *<div class=")(?!mj)(.+)(?=" style)/g;
+  const divClass = /(?<=^      <div class=")(?!mj)(.+)(?=" style)/gm;
   matcher = new RegExp(divClass);
   matches = string.matchAll(matcher);
   for (let match of matches) {
@@ -109,12 +109,15 @@ export function divToTable(html: string) {
   // middle second div + ghost table opening (closing div)
   const middleDivGhost = /( *)(<\/div>)(\n)(      )(<!--)(.*)(\n)(.*)(<div class.*)(600px;">\n *)(<table align="center")/;
   replacer = new RegExp(middleDivGhost);
-  while (nextSectionClasses.length > 0) string = string.replace(replacer, `<table align="center" class="mktoModule mj-full-width-mobile ${nextSectionClasses.shift()}" mktoname="${generator()}" id="${generator()}"`);
+  while (nextSectionClasses.length > 0) {
+    const sectionClass = nextSectionClasses.shift();
+    string = string.replace(replacer, `<table align="center" class="mktoModule mj-full-width-mobile ${sectionClass}" mktoname="${sectionClass}" id="${generator()}"`);
+  }
 
   // top div + ghost table opening
   const topDivGhost = /(<!--)(.*)(\n)(.*)(max-width:600px;">\n *)(<table align="center")/;
   replacer = new RegExp(topDivGhost);
-  string = string.replace(replacer, `<table align="center" class="mktoModule mj-full-width-mobile ${topSectionClass}" mktoname="${generator()}" id="${generator()}"`);
+  string = string.replace(replacer, `<table align="center" class="mktoModule mj-full-width-mobile ${topSectionClass}" mktoname="${topSectionClass}" id="${generator()}"`);
 
   // beautify
   string = beautifyHTML(string);
