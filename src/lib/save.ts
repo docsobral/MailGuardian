@@ -12,9 +12,7 @@ export type AppConfig = {
   [key: string]: string;
 }
 
-export type AppPaths = {
-  [key: string]: string;
-}
+export type AppPaths = [string, string][];
 
 export async function checkFirstUse(): Promise<void> {
   if (!existsSync(__dirname + 'config')) {
@@ -102,32 +100,18 @@ export function saveState(key: string, value: string | boolean, encrypt = false)
   writeFileSync(__dirname + 'config\\state.json', stateString);
 }
 
-export async function getConfig(): Promise<AppConfig> {
-  const config = JSON.parse(readFileSync(__dirname + 'config\\config.json', { encoding: 'utf8' }));
+export function get(): {config: AppConfig, paths: AppPaths} {
+  const config: AppConfig = JSON.parse(readFileSync(__dirname + `config\\config.json`, { encoding: 'utf8' }));
+  const paths: AppPaths = Object.entries(JSON.parse(readFileSync(__dirname + `config\\paths.json`, { encoding: 'utf8' })));
 
-  return config;
+  return {config, paths}
 }
 
-export async function saveConfig(key: string, value: string) {
-  let config = JSON.parse(readFileSync(__dirname + 'config\\config.json', { encoding: 'utf8' }));
+export function save(type: 'paths' | 'config', key: string, value: string): void {
+  let info = JSON.parse(readFileSync(__dirname + `config\\${type}.json`, { encoding: 'utf8' }));
 
-  config[key] = value;
+  info[key] = value;
 
-  const configString = JSON.stringify(config, null, 2);
-  writeFileSync(__dirname + 'config\\config.json', configString);
-}
-
-export async function getPaths(): Promise<[string, string][]> {
-  const paths = JSON.parse(readFileSync(__dirname + 'config\\paths.json', { encoding: 'utf8' }));
-
-  return Object.entries(paths);
-}
-
-export async function savePath(key: string, value: string): Promise<void> {
-  let paths = JSON.parse(readFileSync(__dirname + 'config\\paths.json', { encoding: 'utf8' }));
-
-  paths[key] = value;
-
-  const pathsString = JSON.stringify(paths, null, 2);
-  writeFileSync(__dirname + 'config\\paths.json', pathsString);
+  const string = JSON.stringify(info, null, 2);
+  writeFileSync(__dirname + `config\\${type}.json`, string);
 }
