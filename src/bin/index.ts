@@ -128,7 +128,7 @@ program
           try {
             console.log(`${chalk.green('\nUploading mjml file...')}`);
             const mjml = await getMJML(path);
-            const upload = await supabaseAPI.uploadFile(mjml, 'index.mjml', name, 'text/plain', marketo);
+            const upload = await supabaseAPI.uploadFile(mjml, 'index.mjml', name, 'text/plain');
             if (upload.error) {
               throw new Error('Failed to upload mjml file!');
             }
@@ -144,7 +144,7 @@ program
           try {
             console.log(`${chalk.green('\nUploading marketo mjml file...')}`);
             const marketoMJML = await getMJML(path, true);
-            const upload = await supabaseAPI.uploadFile(marketoMJML, 'marketo.mjml', name, 'text/plain', marketo);
+            const upload = await supabaseAPI.uploadFile(marketoMJML, 'marketo.mjml', name, 'text/plain');
             if (upload.error) {
               throw new Error('Failed to upload marketo mjml file!');
             }
@@ -209,7 +209,7 @@ program
           try {
             console.log(`${chalk.green('\nUploading mjml file...')}`);
             const mjml = await getMJML(path);
-            const upload = await supabaseAPI.uploadFile(mjml, 'index.mjml', name, 'text/plain', marketo);
+            const upload = await supabaseAPI.uploadFile(mjml, 'index.mjml', name, 'text/plain');
             if (upload.error) {
               throw new Error('Failed to upload mjml file!');
             }
@@ -225,7 +225,7 @@ program
           try {
             console.log(`${chalk.green('\nUploading marketo mjml file...')}`);
             const marketoMJML = await getMJML(path, true);
-            const upload = await supabaseAPI.uploadFile(marketoMJML, 'marketo.mjml', name , 'text/plain', marketo);
+            const upload = await supabaseAPI.uploadFile(marketoMJML, 'marketo.mjml', name , 'text/plain');
             if (upload.error) {
               throw new Error('Failed to upload marketo mjml file!');
             }
