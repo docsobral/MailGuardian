@@ -15,7 +15,17 @@ It will only export templates with that folder structure and file names. Anythin
 
 ## Requirements
 
- ***ALL top elements in the MJML file (`<mj-section>` or `<mj-wrapper>`) MUST have a `css-class` attribute. The class can be anything you like, but it must have a class.***
+ ***ALL top elements in the MJML file (`<mj-section>` or `<mj-wrapper>`) MUST have a `css-class` attribute. That is how the Marketo modules are going to be name. Try using a name descriptive of the function of the section/wrapper.***
+
+Marketo variables can be input in the MJML file, and they will be read and processed for Marketo. The required syntax is as follows, and **MUST** be followed:
+
+Text variable:   ${text: nameInCamelCase; default: Text with spaces and no quotation marks!}
+Number variable: ${number: nameInCamelCase: default: 10}
+Color variable: ${color: nameInCamelCase: default: #FFFFFF}
+
+The default field is **NOT** optional. The default field for of a text variable can be filled with any kind of text, whitespace and most special characters. It *doesn't* have to be wrapped by single or double quotation marks. Whitespace before and after the start of the text will be ignored.
+
+Remember to follow the template correctly.
 
 ## Commands
 
