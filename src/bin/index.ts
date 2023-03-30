@@ -87,6 +87,8 @@ program
 .option('-n, --new-path', 'Ignore and overwrite current saved path')
 .option('-m, --marketo', 'Exports marketo MJML')
 .action(async (name: string, path: string, options) => {
+  const marketo = options.marketo ? true : false;
+
   try {
     const files = get();
 
@@ -110,7 +112,7 @@ program
       }
 
       if (options.watch) {
-        await watch(path, name);
+        await watch(path, name, marketo);
       }
 
       else {
@@ -191,7 +193,7 @@ program
       save('paths', name, path);
 
       if (options.watch) {
-        await watch(path, name);
+        await watch(path, name, marketo);
       }
 
       else {
