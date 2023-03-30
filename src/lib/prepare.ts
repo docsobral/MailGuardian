@@ -34,9 +34,10 @@ enum ReplacerExpression {
   bottomDiv = '</td></tr></tbody></table>',
 }
 
-export async function downloadMJML(projectName: string) {
+export async function downloadMJML(projectName: string, marketo: boolean = false) {
   try {
-    const { data, error } = await downloadFile(projectName, 'mjml');
+    const type = marketo ? 'marketo' : 'index';
+    const { data, error } = await downloadFile(projectName, 'mjml', type);
     if (error) {
       throw new Error('Failed to get MJML file! Check the project name or the project bucket');
     }

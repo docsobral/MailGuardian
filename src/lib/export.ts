@@ -1,8 +1,7 @@
 import chalk from 'chalk';
 import Watch from 'node-watch';
 import __dirname from '../api/dirname.js';
-import { readdir, unlink, writeFile, mkdir, rm } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
+import { readdir } from 'node:fs/promises';
 // @ts-ignore
 import selectFolder from 'win-select-folder';
 import { getFile, getImage } from '../api/fetch.js';
@@ -28,8 +27,8 @@ export async function getPath(): Promise<string> {
   return await selectFolder(options);
 }
 
-export async function getMJML(path: string): Promise<string> {
-  const mjml = getFile('mjml', path);
+export async function getMJML(path: string, marketo: boolean = false): Promise<string> {
+  const mjml = getFile('mjml', path, marketo);
 
   return mjml;
 }
