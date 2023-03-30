@@ -17,7 +17,7 @@ process.emitWarning = (warning, ...args) => {
 import chalk from 'chalk';
 import { program } from 'commander';
 import __dirname from '../api/dirname.js';
-import { getPaths, saveConfig, savePath } from '../lib/save.js';
+import { save, get } from '../lib/save.js';
 import { importBucket } from '../lib/import.js';
 import * as supabaseAPI from '../api/supabase.js';
 import { isLoggedIn, login } from '../lib/login.js';
@@ -87,9 +87,9 @@ program
 .option('-n, --new-path', 'Ignore and overwrite current saved path')
 .action(async (name: string, path: string, options) => {
   try {
-    const paths = await getPaths();
+    const files = get();
 
-    for (const entry of paths) {
+    for (const entry of files.paths) {
       if (entry[0] === name && !options.newPath) {
         path = entry[1];
       }
@@ -100,11 +100,10 @@ program
       if (!check) {
         throw new Error('The path provided is broken')
       }
-      savePath(name, path);
+      save('paths', name, path);
 
-      let bucket: supabaseAPI.SupabaseStorageResult;
+      const bucket: supabaseAPI.SupabaseStorageResult = await supabaseAPI.folderExists(name);
 
-      bucket = await supabaseAPI.folderExists(name);
       if (bucket.error) {
         throw new Error('BUCKET ERROR: bucket doesn\'t exist! Use \'mailer bucket -c [name]\' to create one before trying to export a project.')
       }
@@ -170,7 +169,7 @@ program
         throw new Error('The path provided is broken')
       }
 
-      savePath(name, path);
+      save('paths', name, path);
 
       if (options.watch) {
         await watch(path, name);
@@ -420,11 +419,11 @@ program
 .option('-a, --author', 'Change the content of the author meta tag')
 .action(async (config, options) => {
   if (options) {
-    const key: any = Object.keys(options)[0]
+    const key: string = Object.keys(options)[0]
 
     try {
       console.log(`${chalk.yellow('Saving config...')}`);
-      await saveConfig((key as keyof typeof Config).toUpperCase(), config);
+      save('config', (key as keyof typeof Config).toUpperCase(), config);
       console.log(`${chalk.blue('Success!')}`);
     }
 
