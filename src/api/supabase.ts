@@ -54,16 +54,25 @@ export async function cleanFolder(projectName: string) {
   return result = await supabase.storage.emptyBucket(projectName);
 }
 
-export async function uploadFile(file: string | Buffer, fileName: string, projectName: string, contentType: 'text/plain' | 'image/png' = 'text/plain') {
-  let result: SupabaseStorageResult = await supabase.storage.from(projectName).upload(
-    fileName,
-    file,
-    {contentType: contentType, upsert: false},
-  );
-  return result;
-}
+export async function uploadFile(file: string | Buffer, fileName: string, projectName: string, contentType: 'text/plain' | 'image/png' = 'text/plain', marketo: boolean = false) {
+  let check: boolean = false;
+  const type = marketo ? 'marketo' : 'index';
+  const files = await listFiles('test');
+  if (files.data) {
+    for (const file of files.data) {
+      if (file.name === `${type}.mjml`) check = true;
+    }
+  }
 
-export async function updateFile(file: string | Buffer, fileName: string, projectName: string, contentType: 'text/plain' | 'image/png' = 'text/plain') {
+  if (!check) {
+    let result: SupabaseStorageResult = await supabase.storage.from(projectName).upload(
+      fileName,
+      file,
+      {contentType: contentType, upsert: false},
+    );
+    return result;
+  }
+
   let result: SupabaseStorageResult = await supabase.storage.from(projectName).update(
     fileName,
     file,
