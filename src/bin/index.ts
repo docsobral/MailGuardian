@@ -86,6 +86,8 @@ program
 .option('-w, --watch', 'Watches template\'s folder for changes and updates bucket accordingly')
 .option('-n, --new-path', 'Ignore and overwrite current saved path')
 .option('-m, --marketo', 'Exports marketo MJML')
+.option('-c, --clean', 'Clean the bucket before export')
+.option('-i, --images', 'Doesn\'t export images')
 .action(async (name: string, path: string, options) => {
   const marketo = options.marketo ? true : false;
 
@@ -96,6 +98,11 @@ program
       if (entry[0] === name && !options.newPath) {
         path = entry[1];
       }
+    }
+
+    if (options.clean) {
+      console.log(`${chalk.yellow('\nCleaning bucket before upload...')}`);
+      console.log(`${chalk.blue((await supabaseAPI.cleanFolder(name)).data?.message)}`);
     }
 
     if (path) {
@@ -116,14 +123,12 @@ program
       }
 
       else {
-        console.log(`${chalk.yellow('\nCleaning bucket before upload...')}`);
-        console.log(`${chalk.blue((await supabaseAPI.cleanFolder(name)).data?.message)}`);
 
         if (!options.marketo) {
           try {
             console.log(`${chalk.green('\nUploading mjml file...')}`);
             const mjml = await getMJML(path);
-            const upload = await supabaseAPI.uploadFile(mjml, 'index.mjml', name);
+            const upload = await supabaseAPI.uploadFile(mjml, 'index.mjml', name, 'text/plain', marketo);
             if (upload.error) {
               throw new Error('Failed to upload mjml file!');
             }
@@ -139,7 +144,7 @@ program
           try {
             console.log(`${chalk.green('\nUploading marketo mjml file...')}`);
             const marketoMJML = await getMJML(path, true);
-            const upload = await supabaseAPI.uploadFile(marketoMJML, 'marketo.mjml', name);
+            const upload = await supabaseAPI.uploadFile(marketoMJML, 'marketo.mjml', name, 'text/plain', marketo);
             if (upload.error) {
               throw new Error('Failed to upload marketo mjml file!');
             }
@@ -153,20 +158,22 @@ program
 
         const images = await getImages(path);
 
-        console.log(`${chalk.green('\nUploading images...')}`);
-        Object.keys(images).forEach(async (imageName) => {
-          try {
-            const upload = await supabaseAPI.uploadFile(images[imageName], `img/${imageName}`, name, 'image/png');
-            if (upload.error) {
-              throw new Error(`Failed to upload ${imageName}! ${upload.error.message}`);
+        if (!options.images) {
+          console.log(`${chalk.green('\nUploading images...')}`);
+          Object.keys(images).forEach(async (imageName) => {
+            try {
+              const upload = await supabaseAPI.uploadFile(images[imageName], `img/${imageName}`, name, 'image/png');
+              if (upload.error) {
+                throw new Error(`Failed to upload ${imageName}! ${upload.error.message}`);
+              }
+              console.log(`${chalk.blue('Succesfully uploaded', imageName)}`);
             }
-            console.log(`${chalk.blue('Succesfully uploaded', imageName)}`);
-          }
 
-          catch (error) {
-            console.error(`${chalk.red(error)}`);
-          }
-        });
+            catch (error) {
+              console.error(`${chalk.red(error)}`);
+            }
+          });
+        }
       }
     }
 
@@ -197,14 +204,12 @@ program
       }
 
       else {
-        console.log(`${chalk.yellow('\nCleaning bucket before upload...')}`);
-        console.log(`${chalk.blue((await supabaseAPI.cleanFolder(name)).data?.message)}`);
 
         if (!options.marketo) {
           try {
             console.log(`${chalk.green('\nUploading mjml file...')}`);
             const mjml = await getMJML(path);
-            const upload = await supabaseAPI.uploadFile(mjml, 'index.mjml', name);
+            const upload = await supabaseAPI.uploadFile(mjml, 'index.mjml', name, 'text/plain', marketo);
             if (upload.error) {
               throw new Error('Failed to upload mjml file!');
             }
@@ -220,7 +225,7 @@ program
           try {
             console.log(`${chalk.green('\nUploading marketo mjml file...')}`);
             const marketoMJML = await getMJML(path, true);
-            const upload = await supabaseAPI.uploadFile(marketoMJML, 'marketo.mjml', name);
+            const upload = await supabaseAPI.uploadFile(marketoMJML, 'marketo.mjml', name , 'text/plain', marketo);
             if (upload.error) {
               throw new Error('Failed to upload marketo mjml file!');
             }
@@ -234,20 +239,22 @@ program
 
         const images = await getImages(path);
 
-        console.log(`${chalk.green('\nUploading images...')}`);
-        Object.keys(images).forEach(async (imageName) => {
-          try {
-            const upload = await supabaseAPI.uploadFile(images[imageName], `img/${imageName}`, name, 'image/png');
-            if (upload.error) {
-              throw new Error(`Failed to upload ${imageName}! ${upload.error.message}`);
+        if (!options.images) {
+          console.log(`${chalk.green('\nUploading images...')}`);
+          Object.keys(images).forEach(async (imageName) => {
+            try {
+              const upload = await supabaseAPI.uploadFile(images[imageName], `img/${imageName}`, name, 'image/png');
+              if (upload.error) {
+                throw new Error(`Failed to upload ${imageName}! ${upload.error.message}`);
+              }
+              console.log(`${chalk.blue('Succesfully uploaded', imageName)}`);
             }
-            console.log(`${chalk.blue(`Succesfully uploaded ${imageName}`)}`);
-          }
 
-          catch (error) {
-            console.error(`${chalk.red(error)}`);
-          }
-        });
+            catch (error) {
+              console.error(`${chalk.red(error)}`);
+            }
+          });
+        }
       }
     }
   }
