@@ -6,6 +6,7 @@ import { downloadFile } from '../api/supabase.js';
 import beautify, { HTMLBeautifyOptions } from 'js-beautify';
 
 const { html_beautify } = beautify
+
 const beautifyOptions: HTMLBeautifyOptions = {
   indent_inner_html: true,
   indent_size: 2,
@@ -16,6 +17,21 @@ const beautifyOptions: HTMLBeautifyOptions = {
   end_with_newline: false,
   wrap_line_length: 0,
   indent_empty_lines: false
+}
+
+enum ReplacerRegex {
+  imgTag = '(?<!<div.*>\n.*)(<img.*\/>)',
+  textTag = '(?<=<td.*\n.*)(<div style="font-family)',
+  topDiv = '(<div)(.*)(>)(?=\n *<!)',
+  bottomDiv = '(<\/div>)(?=\n.*<\/body>)',
+  middleSection = '( *)(<\/div>)(\n)(      )(<!--)(.*)(\n)(.*)(<div class.*)(600px;">\n *)(<table align="center")',
+  topSection = '(<!--)(.*)(\n)(.*)(max-width:600px;">\n *)(<table align="center")',
+  bottomSection = '(<\/div>\n)( *<!.*\n)(?=.*\n.*\n.*\n.*\n.*<\/body>)',
+}
+
+enum ReplacerExpression {
+  topDiv = '<table class="mj-full-width-mobile" align="center"><tbody><tr><td class="mktoContainer" id="container" width="600" style="width: 600px;">',
+  bottomDiv = '</td></tr></tbody></table>',
 }
 
 export async function downloadMJML(projectName: string) {
@@ -55,106 +71,52 @@ function beautifyHTML(html: string) {
 
 export function divToTable(html: string) {
   let string = html;
-  let replacer: RegExp;
-  let matcher: RegExp;
-  let matches: IterableIterator<RegExpMatchArray>;
-
-  // mktoname & id generator
-  let count = 0;
-  function generator() {
-    count++
-    return `a${count}`
-  }
 
   // get classes from sections
-  let sectionClasses: string[] = [];
-  const divClass = /(?<=^      <div class=")(?!mj)(.+)(?=" style)/gm;
-  matcher = new RegExp(divClass);
-  matches = string.matchAll(matcher);
-  for (let match of matches) {
-    sectionClasses.push(match[1]);
-  }
+  let sectionClasses: string[] = getMatches(string, /(?<=^      <div class=")(?!mj)(.+)(?=" style)/, 'gm');
 
-  const topSectionClass = sectionClasses[0];
+  const topSectionClass = [sectionClasses[0]];
   const nextSectionClasses = sectionClasses.splice(1);
 
   // get img tags
-  let imgTags: string[] = [];
-  const imgTag = /(?<!<div.*>\n.*)(<img.*\/>)/;
-  matcher = new RegExp(imgTag, 'g');
-  matches = string.matchAll(matcher);
-  for (let match of matches) {
-    imgTags.push(match[1]);
-  }
+  let imgTags: string[] = getMatches(string, ReplacerRegex.imgTag, 'g');
 
   // get text divs
-  let textDivs: string[] = [];
-  const textDiv = /(?<=<td.*\n.*)(<div style="font-family)/
-  matcher = new RegExp(textDiv, 'g');
-  matches = string.matchAll(matcher);
-  for (let match of matches) {
-    textDivs.push(match[1]);
-  }
+  let textDivs: string[] = getMatches(string, ReplacerRegex.textTag, 'g');
 
-  // first <div> to <table><tbody><tr><td>
-  const firstDivReg = /(<div)(.*)(>)(?=\n *<!)/;
-  replacer = new RegExp(firstDivReg);
-  string = string.replace(replacer, '<table class="mj-full-width-mobile" align="center"><tbody><tr><td class="mktoContainer" id="container" width="600" style="width: 600px;">');
+  // top <div> to <table><tbody><tr><td>
+  string = replace(string, ReplacerRegex.topDiv, ReplacerExpression.topDiv);
 
   // end </div> to </td></tr></tbody></table>
-  const endDivReg = /(<\/div>)(?=\n.*<\/body>)/;
-  replacer = new RegExp(endDivReg, 'g');
-  string = string.replace(replacer, '</td></tr></tbody></table>');
+  string = replace(string, ReplacerRegex.bottomDiv, ReplacerExpression.bottomDiv);
 
   // middle second div + ghost table opening (closing div)
-  const middleDivGhost = /( *)(<\/div>)(\n)(      )(<!--)(.*)(\n)(.*)(<div class.*)(600px;">\n *)(<table align="center")/;
-  replacer = new RegExp(middleDivGhost);
-  while (nextSectionClasses.length > 0) {
-    const sectionClass = nextSectionClasses.shift();
-    string = string.replace(replacer, `<table align="center" class="mktoModule mj-full-width-mobile ${sectionClass}" mktoname="${sectionClass}" id="${generator()}"`);
-  }
+  string = replace(string, ReplacerRegex.middleSection, undefined, undefined, nextSectionClasses);
 
   // top div + ghost table opening
-  const topDivGhost = /(<!--)(.*)(\n)(.*)(max-width:600px;">\n *)(<table align="center")/;
-  replacer = new RegExp(topDivGhost);
-  string = string.replace(replacer, `<table align="center" class="mktoModule mj-full-width-mobile ${topSectionClass}" mktoname="${topSectionClass}" id="${generator()}"`);
+  string = replace(string, ReplacerRegex.topSection, undefined, undefined, topSectionClass);
 
   // beautify
   string = beautifyHTML(string);
 
   // end div + ghost table opening
-  const endDivGhost = /(<\/div>\n)( *<!.*\n)(?=.*\n.*\n.*\n.*\n.*<\/body>)/;
-  replacer = new RegExp(endDivGhost, 'g');
-  string = string.replace(replacer, '');
+  string = replace(string, ReplacerRegex.bottomSection, '');
 
   // surround img tags with divs
-  replacer = new RegExp(imgTag);
-  while (imgTags.length > 0) string = string.replace(imgTag, `<div class="mktoImg" mktoname="${generator()}" id="${generator()}">\n${imgTags.shift()}</div>`);
+  string = replace(string, ReplacerRegex.imgTag, undefined, undefined, undefined, imgTags);
 
   // insert mkto attributes to text divs
-  replacer = new RegExp(textDiv);
-  while (textDivs.length > 0) {
-    string = string.replace(textDiv, `<div class="mktoText" mktoname="${generator()}" id="${generator()}" style="font-family`);
-    textDivs.pop();
-  }
+  string = replace(string, ReplacerRegex.textTag, undefined, undefined, undefined, undefined, textDivs);
 
   // get marketo text variables
   const textVarNames = getMatches(string, /(?<=\${text: *("|')?)(([a-z]|[A-Z])([a-z]|[A-Z]|[0-9])*)(?=("|')? *; default:.*})/g);
   const textVarDefaults = getMatches(string, /(?<=\${text: *.* *; *default: *("|')?)(?! )([^"|']([À-ú]|[a-z ]|[A-Z]|[0-9]|[!-@]|[[-`]|[{-~])*[^"|'])(?<! )(?=(("|')?) *(}))/g);
   const textVarEntries = filterDuplicates(tupleArrayFromEntries(textVarNames, textVarDefaults));
 
-  // insert meta tags and place variables
-  string = insertMeta(string, /(?<=<meta name="viewport" content="width=device-width, initial-scale=1">)(\n)/, textVarEntries, 'String');
-  string = placeVariables(textVarEntries, string);
-
   // get marketo number variables
   const numberVarNames = getMatches(string, /(?<=\${number: *("|')?)(([a-z]|[A-Z])([a-z]|[A-Z]|[0-9])*)(?=("|')? *; default:.*})/g);
   const numberVarDefaults = getMatches(string, /(?<=\${number: *.* *; *default: *)(?! )(([0-9])*)(?<! )(?= *(}))/g);
   const numberVarEntries = filterDuplicates(tupleArrayFromEntries(numberVarNames, numberVarDefaults));
-
-  // insert meta tags and place variables
-  string = insertMeta(string, /(?<=<meta name="viewport" content="width=device-width, initial-scale=1">)(\n)/, numberVarEntries, 'Number');
-  string = placeVariables(numberVarEntries, string);
 
   // get marketo color variables
   const colorVarNames = getMatches(string, /(?<=\${color: *("|')?)(([a-z]|[A-Z])([a-z]|[A-Z]|[0-9])*)(?=("|')? *; default:.*})/g);
@@ -162,13 +124,69 @@ export function divToTable(html: string) {
   const colorVarEntries = filterDuplicates(tupleArrayFromEntries(colorVarNames, colorVarDefaults));
 
   // insert meta tags and place variables
+  string = insertMeta(string, /(?<=<meta name="viewport" content="width=device-width, initial-scale=1">)(\n)/, textVarEntries, 'String');
+  string = insertMeta(string, /(?<=<meta name="viewport" content="width=device-width, initial-scale=1">)(\n)/, numberVarEntries, 'Number');
   string = insertMeta(string, /(?<=<meta name="viewport" content="width=device-width, initial-scale=1">)(\n)/, colorVarEntries, 'Color');
-  string = placeVariables(colorVarEntries, string);
+  string = placeVariables([...textVarEntries, ...numberVarEntries, ...colorVarEntries], string);
 
   // beautify
   string = beautifyHTML(string);
 
   return string;
+}
+
+let count = 0;
+function generator() {
+  count++
+  return `a${count}`
+}
+
+function getMatches(html: string, regex: RegExp | ReplacerRegex, flag?: 'g' | 'gm'): string[] {
+  let result: string[] = [];
+  const reg = new RegExp(regex, flag);
+
+  const matches = html.matchAll(reg);
+  for (const match of matches) {
+    result.push(match[0]);
+  }
+
+  return result;
+}
+
+function replace(html: string, regex: ReplacerRegex, expression?: ReplacerExpression | '', flags?: 'g' | 'gm', sectionArray?: string[], imgArray?: string[], textArray?: string[]): string {
+  let result = html;
+  const replacer = new RegExp(regex, flags);
+
+  if (sectionArray) {
+    while (sectionArray.length > 0) {
+      const sectionClass = sectionArray.shift();
+      result = result.replace(replacer, `<table align="center" class="mktoModule mj-full-width-mobile ${sectionClass}" mktoname="${sectionClass}" id="${generator()}"`)
+    }
+    return result;
+  }
+
+  if (imgArray) {
+    while (imgArray.length > 0) {
+      const img = imgArray.shift();
+      result = result.replace(replacer, `<div class="mktoImg" mktoname="${generator()}" id="${generator()}">\n${img}</div>`);
+    }
+    return result;
+  }
+
+  if (textArray) {
+    while (textArray.length > 0) {
+      result = result.replace(replacer, `<div class="mktoText" mktoname="${generator()}" id="${generator()}" style="font-family`);
+      textArray.pop();
+    }
+    return result;
+  }
+
+  if (!expression && expression !== '') {
+    throw new Error('Missing expression parameter!');
+  }
+
+  result = result.replace(replacer, expression);
+  return result;
 }
 
 function tupleArrayFromEntries(keys: string[], values: string[]): [string, string][] {
@@ -202,18 +220,6 @@ function placeVariables(array: [string, string][], html: string): string {
     const template = `(?<=${'\\'}\${)[^{}]*${variable[0]}[^{}]*(?=})`;
     const reg = new RegExp(template, 'g');
     result = result.replace(reg, variable[0]);
-  }
-
-  return result;
-}
-
-function getMatches(html: string, regex: RegExp): string[] {
-  let result: string[] = [];
-
-  const textVarReg = regex;
-  const textVarMatches = html.matchAll(textVarReg);
-  for (const match of textVarMatches) {
-    result.push(match[0]);
   }
 
   return result;
