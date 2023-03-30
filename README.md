@@ -20,8 +20,8 @@ It will only export templates with that folder structure and file names. Anythin
 Marketo variables can be input in the MJML file, and they will be read and processed for Marketo. The required syntax is as follows, and **MUST** be followed:
 
 **Text variable:**   ${text: nameInCamelCase; default: Text with spaces and no quotation marks!}\
-**Number variable:** ${number: nameInCamelCase: default: 10}\
-**Color variable:** ${color: nameInCamelCase: default: #FFFFFF}\
+**Number variable:** ${number: nameInCamelCase; default: 10}\
+**Color variable:** ${color: nameInCamelCase; default: #FFFFFF}
 
 The default field is **NOT** optional. The default field for of a text variable can be filled with any kind of text, whitespace and most special characters. It *doesn't* have to be wrapped by single or double quotation marks. Whitespace before and after the start of the text will be ignored.
 
