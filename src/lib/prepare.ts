@@ -144,7 +144,7 @@ export function divToTable(html: string) {
   const textVarEntries = filterDuplicates(tupleArrayFromEntries(textVarNames, textVarDefaults));
 
   // insert meta tags and place variables
-  string = insertMeta(string, /(?<=<meta name="viewport" content="width=device-width, initial-scale=1">)(\n)/, textVarEntries);
+  string = insertMeta(string, /(?<=<meta name="viewport" content="width=device-width, initial-scale=1">)(\n)/, textVarEntries, 'String');
   string = placeVariables(textVarEntries, string);
 
   // get marketo number variables
@@ -153,7 +153,7 @@ export function divToTable(html: string) {
   const numberVarEntries = filterDuplicates(tupleArrayFromEntries(numberVarNames, numberVarDefaults));
 
   // insert meta tags and place variables
-  string = insertMeta(string, /(?<=<meta name="viewport" content="width=device-width, initial-scale=1">)(\n)/, numberVarEntries);
+  string = insertMeta(string, /(?<=<meta name="viewport" content="width=device-width, initial-scale=1">)(\n)/, numberVarEntries, 'Number');
   string = placeVariables(numberVarEntries, string);
 
   // get marketo color variables
@@ -162,7 +162,7 @@ export function divToTable(html: string) {
   const colorVarEntries = filterDuplicates(tupleArrayFromEntries(colorVarNames, colorVarDefaults));
 
   // insert meta tags and place variables
-  string = insertMeta(string, /(?<=<meta name="viewport" content="width=device-width, initial-scale=1">)(\n)/, colorVarEntries);
+  string = insertMeta(string, /(?<=<meta name="viewport" content="width=device-width, initial-scale=1">)(\n)/, colorVarEntries, 'Color');
   string = placeVariables(colorVarEntries, string);
 
   // beautify
@@ -219,11 +219,11 @@ function getMatches(html: string, regex: RegExp): string[] {
   return result;
 }
 
-function insertMeta(html: string, regex: RegExp, entries: [string, string][]): string {
+function insertMeta(html: string, regex: RegExp, entries: [string, string][], type: 'String' | 'Color' | 'Number'): string {
   let result: string = html;
 
   for (const entry of entries) {
-    result = result.replace(regex, `\n    <meta class="mktoString" id="${entry[0]}" mktomodulescope="true" mktoname="${entry[0]}" default="${entry[1]}">\n`);
+    result = result.replace(regex, `\n    <meta class="mkto${type}" id="${entry[0]}" mktomodulescope="true" mktoname="${entry[0]}" default="${entry[1]}">\n`);
   }
 
   return result;
