@@ -1,8 +1,6 @@
-import { enquire, PromptMessages, PromptNames, PromptTypes } from '../api/enquire.js';
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
-import __dirname from '../api/dirname.js';
+import { __dirname, checkFirstUse } from '../api/filesystem.js';
+import { readFileSync, writeFileSync } from 'node:fs';
 import Cryptr from 'cryptr';
-import chalk from 'chalk';
 
 export type AppState = {
   [key: string]: [(string | boolean), boolean] | string;
@@ -13,56 +11,6 @@ export type AppConfig = {
 }
 
 export type AppPaths = [string, string][];
-
-export async function checkFirstUse(): Promise<void> {
-  if (!existsSync(__dirname + 'config')) {
-    console.log(`${chalk.blue('Creating save files...\n')}`);
-    mkdirSync(__dirname + 'config');
-  };
-
-  if (!existsSync(__dirname + 'config\\paths.json')) {
-    writeFileSync(__dirname + 'config\\paths.json', JSON.stringify({}, null, 2));
-  }
-
-  if (!existsSync(__dirname + 'config\\state.json') || !existsSync(__dirname + 'config\\config.json')) {
-    const initialState: AppState = {logged: [false, false]};
-    writeFileSync(__dirname + 'config\\state.json', JSON.stringify(initialState, null, 2));
-
-    const answers = await enquire([
-      {
-        type: PromptTypes.input,
-        name: PromptNames.supabaseKey,
-        message: PromptMessages.supabaseKey
-      },
-      {
-        type: PromptTypes.input,
-        name: PromptNames.supabaseSecret,
-        message: PromptMessages.supabaseSecret
-      },
-      {
-        type: PromptTypes.input,
-        name: PromptNames.supabaseURL,
-        message: PromptMessages.supabaseURL
-      },
-      {
-        type: PromptTypes.input,
-        name: PromptNames.secretKey,
-        message: PromptMessages.secretKey
-      }
-    ]);
-
-    const appConfigs = {
-      'SUPA_KEY': answers.supabaseKey,
-      'SUPA_SECRET': answers.supabaseSecret,
-      'SUPA_URL': answers.supabaseURL,
-      'SECRET_KEY': answers.secretKey,
-    }
-
-    writeFileSync(__dirname + 'config\\config.json', JSON.stringify(appConfigs, null, 2));
-    console.log(`${chalk.yellow('Finished creating config files and terminating process. Run the previous command again...')}`);
-    process.exit(1);
-  }
-}
 
 export async function getState(): Promise<AppState> {
   await checkFirstUse();
