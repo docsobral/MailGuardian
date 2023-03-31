@@ -58,7 +58,7 @@ export async function uploadFile(file: string | Buffer, fileName: string, projec
   let result: SupabaseStorageResult = await supabase.storage.from(projectName).upload(
     fileName,
     file,
-    {contentType: contentType, upsert: false},
+    {contentType: contentType, upsert: true},
   );
   return result;
 }
@@ -88,7 +88,7 @@ export async function folderExists(projectName: string) {
 
 export async function downloadFile(projectName: string, extension: 'mjml' | 'html' | 'png', type: 'index' | 'marketo' = 'index', imageName?: string): Promise<SupabaseDownloadResult> {
   if (extension === 'mjml') {
-    return await supabase.storage.from(projectName).download('index.mjml');
+    return await supabase.storage.from(projectName).download(`${type}.mjml`);
   }
 
   else if (extension === 'html') {

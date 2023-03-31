@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import chalk from 'chalk';
 import path from 'path';
 
-export async function getFile(type: 'html' | 'mjml', path: string): Promise<string> {
+export async function getFile(type: 'html' | 'mjml', path: string, marketo: boolean = false): Promise<string> {
   let string: any;
 
   if (type === 'html') {
@@ -18,7 +18,8 @@ export async function getFile(type: 'html' | 'mjml', path: string): Promise<stri
   }
 
   try {
-    string = (await readFile(path + '\\index.mjml')).toString();
+    const name = marketo ? 'marketo' : 'index';
+    string = (await readFile(path + `\\${name}.mjml`)).toString();
     return string.toString();
   }
 

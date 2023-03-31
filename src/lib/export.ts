@@ -1,8 +1,7 @@
 import chalk from 'chalk';
 import Watch from 'node-watch';
 import __dirname from '../api/dirname.js';
-import { readdir, unlink, writeFile, mkdir, rm } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
+import { readdir } from 'node:fs/promises';
 // @ts-ignore
 import selectFolder from 'win-select-folder';
 import { getFile, getImage } from '../api/fetch.js';
@@ -28,8 +27,8 @@ export async function getPath(): Promise<string> {
   return await selectFolder(options);
 }
 
-export async function getMJML(path: string): Promise<string> {
-  const mjml = getFile('mjml', path);
+export async function getMJML(path: string, marketo: boolean = false): Promise<string> {
+  const mjml = getFile('mjml', path, marketo);
 
   return mjml;
 }
@@ -57,16 +56,17 @@ function capitalizeFirstLetter(string: string) {
   return string.charAt(0).toUpperCase() + string.slice(1);
 }
 
-export async function watch(folderPath: string, projectName: string) {
-  const mjml = await getFile('mjml', folderPath);
+export async function watch(folderPath: string, projectName: string, marketo: boolean = false) {
+  const mjml = await getFile('mjml', folderPath, marketo);
   const filesInBucket = await listFiles(projectName);
   let mjmlExists = await fileExists('index.mjml', filesInBucket.data);
 
   if (!mjmlExists) {
+    const type = marketo ? 'marketo' : 'index';
     try {
       console.log(`${chalk.blue('Sending files to bucket')}`);
-      const upload = await uploadFile(mjml, 'index.mjml', projectName);
-      console.log(`${chalk.blue('Successfully uploaded index.mjml')}`);
+      const upload = await uploadFile(mjml, `${type}.mjml`, projectName);
+      console.log(`${chalk.blue(`Successfully uploaded ${type}.mjml`)}`);
       if (upload.error) {
         throw new Error(`Failed to upload MJML!! ${upload.error.message}`);
       }
@@ -99,10 +99,11 @@ export async function watch(folderPath: string, projectName: string) {
   Watch(folderPath + '\\index.mjml', async (evt: string, filePath: string) => {
     console.log(`${chalk.yellow(`${capitalizeFirstLetter(evt)} detected at ${filePath}`)}`);
     const newMJML = await getFile('mjml', folderPath);
+    const type = marketo ? 'marketo' : 'index';
 
     try {
       console.log(`${chalk.blue('Updating MJML')}`);
-      await updateFile(newMJML, 'index.mjml', projectName);
+      await updateFile(newMJML, `${type}.mjml`, projectName);
       console.log(`${chalk.blue('Success!\n')}`);
     }
 
