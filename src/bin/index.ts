@@ -16,9 +16,9 @@ process.emitWarning = (warning, ...args) => {
 
 import chalk from 'chalk';
 import { program } from 'commander';
-import __dirname from '../api/dirname.js';
 import { save, get } from '../lib/save.js';
 import { importBucket } from '../lib/import.js';
+import { __dirname } from '../api/filesystem.js';
 import * as supabaseAPI from '../api/supabase.js';
 import { isLoggedIn, login } from '../lib/login.js';
 import { downloadHTML, mailHTML } from '../lib/mail.js';
