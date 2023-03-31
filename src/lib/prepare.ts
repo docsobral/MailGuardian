@@ -57,70 +57,47 @@ export async function downloadMJML(projectName: string, marketo: boolean = false
   }
 }
 
-export type MJMLBuffer = Buffer;
-
 export function parseMJML(mjml: string, marketo?: boolean) {
   const string = mjml;
   const htmlObject = mjml2html(string, { validationLevel: 'soft' });
   const html = beautifyHTML(htmlObject.html);
 
   if (marketo) {
-    const parsedHTML =  divToTable(html);
+    const parsedHTML =  marketoParse(html);
     return parsedHTML
   }
 
   return html;
 }
 
-function beautifyHTML(html: string) {
-  let beautifiedHTML = html_beautify(html, beautifyOptions);
-  return beautifiedHTML;
-}
-
-export function divToTable(html: string) {
+export function marketoParse(html: string) {
   let string = html;
 
   // get classes from sections
   let sectionClasses: string[] = getMatches(string, /(?<=^      <div class=")(?!mj)(.+)(?=" style)/, 'gm');
-
   const topSectionClass = [sectionClasses[0]];
   const nextSectionClasses = sectionClasses.splice(1);
 
-  // get img tags
+  // get img and text tags
   let imgTags: string[] = getMatches(string, ReplacerRegex.imgTag, 'g');
-
-  // get text divs
   let textDivs: string[] = getMatches(string, ReplacerRegex.textTag, 'g');
 
-  // top <div> to <table><tbody><tr><td>
+  // replace top divs with table and remove section divs (except last section div)
   string = replaceString(string, ReplacerRegex.topDiv, InsertExpression.topDiv);
-
-  // end </div> to </td></tr></tbody></table>
   string = replaceString(string, ReplacerRegex.bottomDiv, InsertExpression.bottomDiv);
-
-  // middle second div + ghost table opening (closing div)
   string = replaceString(string, ReplacerRegex.middleSection, undefined, undefined, nextSectionClasses);
-
-  // top div + ghost table opening
   string = replaceString(string, ReplacerRegex.topSection, undefined, undefined, topSectionClass);
 
-  // beautify
   string = beautifyHTML(string);
 
-  // end div + ghost table opening
+  // remove last section div, wrap img tags with mkto divs and make texs divs into mkto divs
   string = replaceString(string, ReplacerRegex.bottomSection, '');
-
-  // surround img tags with divs
   string = replaceString(string, ReplacerRegex.imgTag, undefined, undefined, undefined, imgTags);
-
-  // insert mkto attributes to text divs
   string = replaceString(string, ReplacerRegex.textTag, undefined, undefined, undefined, undefined, textDivs);
 
   // get marketo text variables
   const textVarNames = getMatches(string, ReplacerRegex.textVarNames, 'g');
-  console.log(ReplacerRegex.textVarNames, textVarNames)
   const textVarDefaults = getMatches(string, ReplacerRegex.textVarDefaults, 'g');
-  console.log(ReplacerRegex.textVarDefaults, textVarDefaults)
   const textVarEntries = filterDuplicates(tupleArrayFromEntries(textVarNames, textVarDefaults));
 
   // get marketo number variables
@@ -139,10 +116,14 @@ export function divToTable(html: string) {
   string = insertMeta(string, InsertExpression.meta, colorVarEntries, 'Color');
   string = placeVariables([...textVarEntries, ...numberVarEntries, ...colorVarEntries], string);
 
-  // beautify
   string = beautifyHTML(string);
 
   return string;
+}
+
+function beautifyHTML(html: string) {
+  let beautifiedHTML = html_beautify(html, beautifyOptions);
+  return beautifiedHTML;
 }
 
 let count = 0;
