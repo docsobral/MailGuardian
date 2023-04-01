@@ -1,6 +1,6 @@
 import chalk from 'chalk';
 import mjml2html from 'mjml';
-import __dirname from '../api/dirname.js';
+import { __dirname } from '../api/filesystem.js';
 import { downloadFile } from '../api/supabase.js';
 // import { readFileSync, writeFileSync } from 'node:fs';
 import beautify, { HTMLBeautifyOptions } from 'js-beautify';

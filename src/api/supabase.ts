@@ -1,7 +1,7 @@
 import chalk from 'chalk';
 import { readFileSync } from 'node:fs';
-import __dirname from '../api/dirname.js';
-import { checkFirstUse } from '../lib/save.js';
+import { __dirname } from './filesystem.js';
+import { checkFirstUse } from './filesystem.js';
 import { createClient } from '@supabase/supabase-js';
 import { Bucket, FileObject, StorageError } from '@supabase/storage-js';
 
