@@ -136,7 +136,7 @@ program
           }
 
           catch (error) {
-            console.error(`${chalk.red(error)}`);
+            console.warn(`${chalk.red(error)}`);
           }
         }
 
@@ -152,7 +152,7 @@ program
           }
 
           catch (error) {
-            console.error(`${chalk.red(error)}`);
+            console.warn(`${chalk.red(error)}`);
           }
         }
 
@@ -170,7 +170,7 @@ program
             }
 
             catch (error) {
-              console.error(`${chalk.red(error)}`);
+              console.warn(`${chalk.red(error)}`);
             }
           });
         }
@@ -233,7 +233,7 @@ program
           }
 
           catch (error) {
-            console.error(`${chalk.red(error)}`);
+            console.warn(`${chalk.red(error)}`);
           }
         }
 
@@ -251,7 +251,7 @@ program
             }
 
             catch (error) {
-              console.error(`${chalk.red(error)}`);
+              console.warn(`${chalk.red(error)}`);
             }
           });
         }
