@@ -1,4 +1,4 @@
-import { enquire, PromptMessages, PromptNames, PromptTypes } from './enquire.js';
+import { enquire, EnquireMessages, EnquireNames, EnquireTypes } from './enquire.js';
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { AppState } from '../lib/save.js';
 import { existsSync } from 'node:fs';
@@ -77,24 +77,24 @@ export async function checkFirstUse(): Promise<void> {
 
     const answers = await enquire([
       {
-        type: PromptTypes.input,
-        name: PromptNames.supabaseKey,
-        message: PromptMessages.supabaseKey
+        type: EnquireTypes.input,
+        name: EnquireNames.supabaseKey,
+        message: EnquireMessages.supabaseKey
       },
       {
-        type: PromptTypes.input,
-        name: PromptNames.supabaseSecret,
-        message: PromptMessages.supabaseSecret
+        type: EnquireTypes.input,
+        name: EnquireNames.supabaseSecret,
+        message: EnquireMessages.supabaseSecret
       },
       {
-        type: PromptTypes.input,
-        name: PromptNames.supabaseURL,
-        message: PromptMessages.supabaseURL
+        type: EnquireTypes.input,
+        name: EnquireNames.supabaseURL,
+        message: EnquireMessages.supabaseURL
       },
       {
-        type: PromptTypes.input,
-        name: PromptNames.secretKey,
-        message: PromptMessages.secretKey
+        type: EnquireTypes.input,
+        name: EnquireNames.secretKey,
+        message: EnquireMessages.secretKey
       }
     ]);
 
