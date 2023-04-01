@@ -271,7 +271,6 @@ program
 .argument('[name]', 'Name of the bucket as it exists in the server')
 .option('-d, --delete', 'deletes a bucket')
 .option('-c, --create', 'creates a bucket')
-.option('-l, --list', 'lists all buckets')
 .action(async (name, options) => {
   try {
     if (options.create) {
@@ -292,17 +291,21 @@ program
       return;
     }
 
-    if (options.list) {
-      const { data, error } = await supabaseAPI.listBuckets();
-      if (error) {
-        throw new Error(`${error.stack?.slice(17)}`);
-      }
+    const { data, error } = await supabaseAPI.listBuckets();
 
-      if (data) {
-        console.log(`${chalk.yellow('Buckets:')}`);
-        for (let index in data) {
-          console.log(`${chalk.blue(data[index].name)}`);
-        }
+    if (error) {
+      throw new Error(`${error.stack?.slice(17)}`);
+    }
+
+    if (data.length === 0) {
+      console.log(`${chalk.yellow('There are no buckets')}`);
+      return;
+    }
+
+    if (data) {
+      console.log(`${chalk.yellow('Buckets:')}`);
+      for (let index in data) {
+        console.log(`${chalk.blue(data[index].name)}`);
       }
     }
   }
