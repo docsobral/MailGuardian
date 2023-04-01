@@ -20,19 +20,19 @@ const beautifyOptions: HTMLBeautifyOptions = {
 }
 
 enum ReplacerRegex {
-  imgTag = '(?<!<div.*>\n.*)(<img.*\/>)',
-  textTag = '(?<=<td.*\n.*)(<div style="font-family)',
-  topDiv = '(<div)(.*)(>)(?=\n *<!)',
-  bottomDiv = '(<\/div>)(?=\n.*<\/body>)',
-  middleSection = '( *)(<\/div>)(\n)(      )(<!--)(.*)(\n)(.*)(<div class.*)(600px;">\n *)(<table align="center")',
-  topSection = '(<!--)(.*)(\n)(.*)(max-width:600px;">\n *)(<table align="center")',
-  bottomSection = '(<\/div>\n)( *<!.*\n)(?=.*\n.*\n.*\n.*\n.*<\/body>)',
-  textVarNames = '(?<=\\${text: *("|\')?)(([a-z]|[A-Z])([a-z]|[A-Z]|[0-9])*)(?=("|\')? *; default:.*})',
-  textVarDefaults = '(?<=\\${text: *.* *; *default: *("|\')?)(?! )([^"|\']([À-ú]|[a-z ]|[A-Z]|[0-9]|[!-@]|[[-`]|[{-~])*[^"|\'])(?<! )(?=(("|\')?) *(}))',
-  numberVarNames = '(?<=\\${number: *("|\')?)(([a-z]|[A-Z])([a-z]|[A-Z]|[0-9])*)(?=("|\')? *; default:.*})',
-  numberVarDefaults = '(?<=\\${number: *.* *; *default: *)(?! )(([0-9])*)(?<! )(?= *(}))',
-  colorVarNames = '(?<=\\${color: *("|\')?)(([a-z]|[A-Z])([a-z]|[A-Z]|[0-9])*)(?=("|\')? *; default:.*})',
-  colorVarDefaults = '(?<=\\${color: *.* *; *default: *)(?! )(#([A-Z]|[a-z]|[0-9])*)(?<! )(?= *(}))',
+  imgTag = '(?<!<div.*>\n.*)<img.*\/>',
+  textTag = '(?<=<td.*\n.*)<div style="font-family',
+  topDiv = '<div.*>(?=\n *<!)',
+  bottomDiv = '<\/div>(?=\n.*<\/body>)',
+  middleSection = ' {6}<\/div>\n {6}<!--.*\n.*<div class.*600px;">\n {8}<table align="center"',
+  topSection = ' {6}<!--.*\n.*max-width:600px;">\n *<table align="center"',
+  bottomSection = '<\/div>\n *<!.*\n(?=.*\n.*\n.*\n.*\n.*<\/body>)',
+  textVarNames = '(?<=\\${text: *(["\'])?)(?! )[\\w ]+(?<! )(?=\\1 *; *default: *(["\'])?[\\w ]+\\2 *})',
+  textVarDefaults = '(?<=\\${text: *["\']?[\\w ]+["\']? *; *default: *(["\']?))(?! )[\\w ]+(?=\\1 *})',
+  numberVarNames = '(?<=\\${number: *(["\'])?)(?! )[\\w ]+(?<! )(?=\\1 *; *default: *(["\'])?[0-9]+\\2 *})',
+  numberVarDefaults = '(?<=\\${number: *["\']?[\\w ]+["\']? *; *default: *(["\']?))(?! )[0-9]+(?=\\1 *})',
+  colorVarNames = '(?<=\\${color: *(["\'])?)(?! )[\\w ]+(?<! )(?=\\1 *; *default: *(["\'])?#(\\w{6}|\\w{3})\\2 *})',
+  colorVarDefaults = '(?<=\\${color: *["\']?[\\w ]+["\']? *; *default: *(["\']?))#(?:\\w{6}|\\w{3})(?=\\1 *})',
 }
 
 enum InsertExpression {
