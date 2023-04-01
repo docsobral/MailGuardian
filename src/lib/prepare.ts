@@ -20,12 +20,12 @@ const beautifyOptions: HTMLBeautifyOptions = {
 }
 
 enum ReplacerRegex {
-  imgTag = '(?<!<div.*>\n.*)(<img.*\/>)',
-  textTag = '(?<=<td.*\n.*)(<div style="font-family)',
+  imgTag = '(?<!<div.*>\n.*)<img.*\/>',
+  textTag = '(?<=<td.*\n.*)<div style="font-family',
   topDiv = '<div.*>(?=\n *<!)',
   bottomDiv = '<\/div>(?=\n.*<\/body>)',
   middleSection = ' {6}<\/div>\n {6}<!--.*\n.*<div class.*600px;">\n {8}<table align="center"',
-  topSection = '(<!--)(.*)(\n)(.*)(max-width:600px;">\n *)(<table align="center")',
+  topSection = ' {6}<!--.*\n.*max-width:600px;">\n *<table align="center"',
   bottomSection = '<\/div>\n *<!.*\n(?=.*\n.*\n.*\n.*\n.*<\/body>)',
   textVarNames = '(?<=\\${text: *(["\'])?)(?! )[\\w ]+(?<! )(?=\\1 *; *default: *(["\'])?[\\w ]+\\2 *})',
   textVarDefaults = '(?<=\\${text: *["\']?[\\w ]+["\']? *; *default: *(["\']?))(?! )[\\w ]+(?=\\1 *})',
