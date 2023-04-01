@@ -59,7 +59,8 @@ function capitalizeFirstLetter(string: string) {
 export async function watch(folderPath: string, projectName: string, marketo: boolean = false) {
   const mjml = await getFile('mjml', folderPath, marketo);
   const filesInBucket = await listFiles(projectName);
-  const mjmlExists = await fileExists('index.mjml', filesInBucket.data);
+  const fileName = marketo ? 'marketo.mjml' : 'index.mjml';
+  const mjmlExists = await fileExists(fileName, filesInBucket.data);
 
   if (!mjmlExists) {
     const type = marketo ? 'marketo' : 'index';
