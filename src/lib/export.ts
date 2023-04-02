@@ -61,9 +61,9 @@ export async function watch(folderPath: string, projectName: string, marketo: bo
   const filesInBucket = await listFiles(projectName);
   const fileName = marketo ? 'marketo.mjml' : 'index.mjml';
   const mjmlExists = await fileExists(fileName, filesInBucket.data);
+  const type = marketo ? 'marketo' : 'index';
 
   if (!mjmlExists) {
-    const type = marketo ? 'marketo' : 'index';
     try {
       console.log(`${chalk.blue('Sending files to bucket')}`);
       const upload = await uploadFile(mjml, `${type}.mjml`, projectName);
@@ -97,10 +97,9 @@ export async function watch(folderPath: string, projectName: string, marketo: bo
   console.log(`${chalk.yellow(`Watching MJML for changes\n`)}`);
 
   // @ts-ignore
-  Watch(folderPath + '\\index.mjml', async (evt: string, filePath: string) => {
+  Watch(folderPath + `\\${type}.mjml`, async (evt: string, filePath: string) => {
     console.log(`${chalk.yellow(`${capitalizeFirstLetter(evt)} detected at ${filePath}`)}`);
-    const newMJML = await getFile('mjml', folderPath);
-    const type = marketo ? 'marketo' : 'index';
+    const newMJML = await getFile('mjml', folderPath, marketo);
 
     try {
       console.log(`${chalk.blue('Updating MJML')}`);
