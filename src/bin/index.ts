@@ -27,7 +27,7 @@ import { getMJML, getImages, getPath, watch } from '../lib/export.js';
 import { enquire, EnquireMessages, EnquireNames, EnquireTypes } from '../api/enquire.js';
 import { existsSync, mkdirSync, writeFileSync, readdirSync, unlinkSync, readFileSync } from 'node:fs';
 
-program.version('0.6.6');
+program.version('0.6.7');
 
 program
 .command('login')
@@ -136,7 +136,7 @@ program
           }
 
           catch (error) {
-            console.error(`${chalk.red(error)}`);
+            console.warn(`${chalk.red(error)}`);
           }
         }
 
@@ -152,7 +152,7 @@ program
           }
 
           catch (error) {
-            console.error(`${chalk.red(error)}`);
+            console.warn(`${chalk.red(error)}`);
           }
         }
 
@@ -170,7 +170,7 @@ program
             }
 
             catch (error) {
-              console.error(`${chalk.red(error)}`);
+              console.warn(`${chalk.red(error)}`);
             }
           });
         }
@@ -233,7 +233,7 @@ program
           }
 
           catch (error) {
-            console.error(`${chalk.red(error)}`);
+            console.warn(`${chalk.red(error)}`);
           }
         }
 
@@ -251,7 +251,7 @@ program
             }
 
             catch (error) {
-              console.error(`${chalk.red(error)}`);
+              console.warn(`${chalk.red(error)}`);
             }
           });
         }
