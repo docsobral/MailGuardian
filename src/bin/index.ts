@@ -24,10 +24,10 @@ import { isLoggedIn, login } from '../lib/login.js';
 import { downloadHTML, mailHTML } from '../lib/mail.js';
 import { downloadMJML, parseMJML } from '../lib/prepare.js';
 import { getMJML, getImages, getPath, watch } from '../lib/export.js';
-import { enquire, PromptMessages, PromptNames, PromptTypes } from '../api/enquire.js';
+import { enquire, EnquireMessages, EnquireNames, EnquireTypes } from '../api/enquire.js';
 import { existsSync, mkdirSync, writeFileSync, readdirSync, unlinkSync, readFileSync } from 'node:fs';
 
-program.version('0.6.6');
+program.version('0.6.7');
 
 program
 .command('login')
@@ -42,9 +42,9 @@ program
       console.log(`${chalk.yellow('You are already logged in... do you want to change accounts?')}`);
       const { confirm } = await enquire([
         {
-          type: PromptTypes.confirm,
-          name: PromptNames.confirm,
-          message: PromptMessages.confirm
+          type: EnquireTypes.confirm,
+          name: EnquireNames.confirm,
+          message: EnquireMessages.confirm
         }
       ]);
 
@@ -136,7 +136,7 @@ program
           }
 
           catch (error) {
-            console.error(`${chalk.red(error)}`);
+            console.warn(`${chalk.red(error)}`);
           }
         }
 
@@ -152,7 +152,7 @@ program
           }
 
           catch (error) {
-            console.error(`${chalk.red(error)}`);
+            console.warn(`${chalk.red(error)}`);
           }
         }
 
@@ -170,7 +170,7 @@ program
             }
 
             catch (error) {
-              console.error(`${chalk.red(error)}`);
+              console.warn(`${chalk.red(error)}`);
             }
           });
         }
@@ -233,7 +233,7 @@ program
           }
 
           catch (error) {
-            console.error(`${chalk.red(error)}`);
+            console.warn(`${chalk.red(error)}`);
           }
         }
 
@@ -251,7 +251,7 @@ program
             }
 
             catch (error) {
-              console.error(`${chalk.red(error)}`);
+              console.warn(`${chalk.red(error)}`);
             }
           });
         }
