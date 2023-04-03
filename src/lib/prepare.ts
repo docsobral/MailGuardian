@@ -20,6 +20,7 @@ const beautifyOptions: HTMLBeautifyOptions = {
 }
 
 enum ReplacerRegex {
+  sectionClasses = '(?<=^ {6}<div class=")(?!mj)(.+)(?=" style)',
   imgTag = '(?<!<div.*>\n.*)<img.*\/>',
   textTag = '(?<=<td.*\n.*)<div style="font-family',
   topDiv = '<div.*>(?=\n *<!)',
@@ -74,7 +75,7 @@ export function marketoParse(html: string) {
   let string = html;
 
   // get classes from sections
-  let sectionClasses: string[] = getMatches(string, /(?<=^      <div class=")(?!mj)(.+)(?=" style)/, 'gm');
+  let sectionClasses: string[] = getMatches(string, ReplacerRegex.sectionClasses, 'gm');
   const topSectionClass = [sectionClasses[0]];
   const nextSectionClasses = sectionClasses.splice(1);
 
@@ -132,7 +133,7 @@ function generator() {
   return `a${count}`
 }
 
-function getMatches(html: string, regex: RegExp | ReplacerRegex, flag?: 'g' | 'gm'): string[] {
+function getMatches(html: string, regex: ReplacerRegex, flag?: 'g' | 'gm'): string[] {
   let result: string[] = [];
   const reg = new RegExp(regex, flag);
 
