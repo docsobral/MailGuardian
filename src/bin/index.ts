@@ -374,10 +374,10 @@ program
       };
 
       // save mjml with new paths
-      writeFileSync(__dirname + 'temp\\index.mjml', mjmlString);
+      writeFileSync(__dirname + 'temp\\source.mjml', mjmlString);
 
       if (options.marketo) {
-        const parsedHTML = parseMJML(readFileSync(__dirname + 'temp\\index.mjml', { encoding: 'utf8' }), true);
+        const parsedHTML = parseMJML(readFileSync(__dirname + 'temp\\source.mjml', { encoding: 'utf8' }), true);
         writeFileSync(__dirname + `temp\\parsed.html`, parsedHTML);
       }
 
