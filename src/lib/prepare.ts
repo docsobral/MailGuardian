@@ -28,7 +28,7 @@ enum ReplacerRegex {
   topSection = ' {6}<!--.*\n.*max-width:600px;">\n *<table align="center"',
   bottomSection = '<\/div>\n *<!.*\n(?=.*\n.*\n.*\n.*\n.*<\/body>)',
   textVarNames = '(?<=\\${text: *(["\'])?)(?! )[\\w ]+(?<! )(?=\\1 *; *default: *(["\'])?[\\w ]+\\2 *})',
-  textVarDefaults = '(?<=\\${text: *["\']?[\\w ]+["\']? *; *default: *(["\']?))(?! )[\\w ]+(?=\\1 *})',
+  textVarDefaults = '(?<=\\${text: *["\']?[\\w ]+["\']? *; *default: *(["\']?))(?! )[\\-\\w:/. ]+(?! )(?=\\1 *})',
   numberVarNames = '(?<=\\${number: *(["\'])?)(?! )[\\w ]+(?<! )(?=\\1 *; *default: *(["\'])?[0-9]+\\2 *})',
   numberVarDefaults = '(?<=\\${number: *["\']?[\\w ]+["\']? *; *default: *(["\']?))(?! )[0-9]+(?=\\1 *})',
   colorVarNames = '(?<=\\${color: *(["\'])?)(?! )[\\w ]+(?<! )(?=\\1 *; *default: *(["\'])?#(\\w{6}|\\w{3})\\2 *})',
