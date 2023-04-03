@@ -80,7 +80,7 @@ program
 
 program
 .command('export')
-.description('Exports MJML project into host server')
+.description('Exports MJML template into host server')
 .argument('<name>', 'Name of the bucket you want to export to')
 .argument('[path]', '(Optional) Path to the folder where the files are located')
 .option('-w, --watch', 'Watches template\'s folder for changes and updates bucket accordingly')
@@ -326,7 +326,7 @@ program
     // check is bucket exists
     const bucket = await supabaseAPI.folderExists(name);
     if (bucket.error) {
-      throw new Error('BUCKET ERROR: bucket doesn\'t exist! Use \'mailer bucket -c [name]\' to create one before trying to export a project.')
+      throw new Error('BUCKET ERROR: bucket doesn\'t exist! Use \'mailer bucket -c [name]\' to create one before trying to export a template.')
     }
 
     // check if temp folder exists
@@ -410,7 +410,7 @@ program
 program
 .command('mail')
 .description('Mails a HTML file to a recipient list')
-.argument('<name>', 'Name of the bucket where the project is located')
+.argument('<name>', 'Name of the bucket where the template is located')
 .argument('<recipients>', 'Recipient list (e.g. "davidsobral@me.com, davidcsobral@gmail.com"')
 .option('-m, --marketo', 'sends the Marketo compatible HTML')
 .action(async (name: string, recipientsString: string, options) => {
@@ -419,7 +419,7 @@ program
 
     const bucket = await supabaseAPI.folderExists(name);
     if (bucket.error) {
-      throw new Error('BUCKET ERROR: bucket doesn\'t exist! Use \'mailer bucket -c [name]\' to create one before trying to export a project.')
+      throw new Error('BUCKET ERROR: bucket doesn\'t exist! Use \'mailer bucket -c [name]\' to create one before trying to export a template.')
     }
 
     if (typeof check === 'string') {
@@ -493,7 +493,7 @@ program
   try {
     const bucket = await supabaseAPI.folderExists(name);
     if (bucket.error) {
-      throw new Error('BUCKET ERROR: bucket doesn\'t exist! Use \'mailer bucket -c [name]\' to create one before trying to export a project.')
+      throw new Error('BUCKET ERROR: bucket doesn\'t exist! Use \'mailer bucket -c [name]\' to create one before trying to export a template.')
     }
   }
 

@@ -66,7 +66,7 @@ Sends the template on a bucket to all recipients. Recipient list should be surro
 
 ### import \[-m] \<name\>
 
-Downloads the projects files from the supabase bucket.
+Downloads the template's files from the supabase bucket.
 
 -m will download the Marketo compatible HTML.
 
