@@ -208,7 +208,6 @@ function placeVariables(array: [string, string][], html: string): string {
   let result = html;
 
   for (const variable of array) {
-    console.log(variable);
     const template = `(?<=${'\\'}\${)[^{}]*${variable[0]}[^{}]*(?=})`;
     const reg = new RegExp(template, 'g');
     result = result.replace(reg, variable[0]);
