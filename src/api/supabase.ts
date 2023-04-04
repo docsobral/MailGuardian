@@ -86,7 +86,9 @@ export async function folderExists(projectName: string) {
   return result = await supabase.storage.getBucket(projectName);
 }
 
-export async function downloadFile(projectName: string, extension: 'mjml' | 'html' | 'png', type: 'index' | 'marketo' = 'index', imageName?: string): Promise<SupabaseDownloadResult> {
+export async function downloadFile(projectName: string, extension: 'mjml' | 'html' | 'png', marketo: boolean = false, imageName?: string): Promise<SupabaseDownloadResult> {
+  const type = marketo ? 'marketo' : 'index';
+
   if (extension === 'mjml') {
     return await supabase.storage.from(projectName).download(`${type}.mjml`);
   }
