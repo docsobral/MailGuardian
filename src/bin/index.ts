@@ -345,7 +345,7 @@ program
 
     // fetches mjml file
     const marketo = options.marketo ? true : false;
-    console.log(`${chalk.yellow('Fetching MJML file from the', name, 'bucket')}`);
+    console.log(`${chalk.yellow('\nFetching MJML file from the', name, 'bucket')}`);
     const mjmlBlob = await downloadMJML(name, marketo);
     if (mjmlBlob) {
       let mjmlString = await mjmlBlob.text()
