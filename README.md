@@ -16,15 +16,19 @@ It will only export templates with that folder structure and file names. Anythin
 
 ## Requirements for Marketo MJML
 
- ***ALL top elements in the MJML file (`<mj-section>` or `<mj-wrapper>`) MUST have a `css-class` attribute. That is how the Marketo modules are going to be name. Try using a name descriptive of the function of the section/wrapper.***
+ ***ALL top elements in the MJML file (`<mj-section>` or `<mj-wrapper>`) MUST have a `css-class` attribute. That is how the Marketo modules are going to be named. Try using a name descriptive of the function of the section/wrapper.***
 
-Marketo variables can be input in the MJML file, and they will be read and processed for Marketo. The required syntax is as follows, and **MUST** be followed:
+ ***All lateral padding (that is, left and right padding) of top elements (`<mj-section>` or `<mj-wrapper>`), MUST be fixed. Variables are NOT allowed as values for top elements.***
+
+Marketo variables can be used with the MJML, and they will be read and processed for Marketo. The required syntax is as follows, and **MUST** be followed:
 
 **Text variable:**   ${text: nameInCamelCase; default: Text with spaces and no quotation marks!}\
 **Number variable:** ${number: nameInCamelCase; default: 10}\
 **Color variable:** ${color: nameInCamelCase; default: #FFFFFF}
 
-The default field is **NOT** optional. The default field for of a text variable can be filled with any kind of text, whitespace and most special characters. It *doesn't* have to be wrapped by single or double quotation marks. Whitespace before and after the start of the text will be ignored.
+e.g. `<mj-column background-color="${color: columnBgColor; default: #F2F2F2}" padding="0px ${number: columnHPadding; default: 10}px"> stuff </mj-column>`
+
+The default field is **NOT** optional. The default field of a text variable can be filled with any kind of text, whitespace and most special characters. It can be wrapped by single quotes. Whitespace before and after the start of the text will be trimmed.
 
 Remember to follow the template correctly.
 
