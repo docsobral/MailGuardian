@@ -467,7 +467,7 @@ program
     const key: string = Object.keys(options)[0]
 
     try {
-      console.log(`${chalk.yellow('Saving config...')}`);
+      console.log(`${chalk.yellow('\nSaving config...')}`);
       save('config', (key as keyof typeof Config).toUpperCase(), config);
       console.log(`${chalk.blue('Success!')}`);
     }
@@ -512,7 +512,7 @@ program
     mkdirSync(__dirname + `downloads\\${name}\\img`);
   }
 
-  console.log(`${chalk.yellow(`Importing files:`)}`);
+  console.log(`${chalk.yellow(`\nImporting files:`)}`);
   const files = await importBucket(name, options.marketo ? true : false);
 
   try {
