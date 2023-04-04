@@ -151,7 +151,21 @@ function replaceString(html: string, regex: ReplacerRegex, expression?: InsertEx
   if (sectionArray) {
     while (sectionArray.length > 0) {
       const sectionClass = sectionArray.shift();
-      result = result.replace(replacer, `<table align="center" class="mktoModule mj-full-width-mobile ${sectionClass}" mktoname="${sectionClass}" id="${generator()}"`)
+      let classes: string[] = [];
+
+      if (sectionClass) {
+        classes = sectionClass.split(' ');
+      }
+
+      let string: string = `<table align="center" class="${classes[0]} mktoModule" mktoname="${classes[0]}"`;
+
+      if (sectionClass?.match('mktoInactive') || sectionClass?.match('mktoinactive')) {
+        string += ' mktoactive="false"'
+      }
+
+      string += ` id="${generator()}"`
+
+      result = result.replace(replacer, string);
     }
     return result;
   }
