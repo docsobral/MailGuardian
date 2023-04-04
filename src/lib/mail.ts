@@ -5,7 +5,7 @@ import { downloadFile } from '../api/supabase.js';
 
 export async function downloadHTML(projectName: string, marketo?: boolean): Promise<Blob | null> {
   try {
-    const { data, error } = await downloadFile(projectName, 'html', `${marketo? 'marketo' : 'index'}`);
+    const { data, error } = await downloadFile(projectName, 'html', marketo);
     if (error) {
       throw new Error('Failed to get HTML file! Check the bucket name or the project bucket. If you tried to mail a Marketo HTML, don\'t forget to prepare it first with "mailer prepare -m <bucketname>"');
     }

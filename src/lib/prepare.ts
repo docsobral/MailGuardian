@@ -44,8 +44,7 @@ enum InsertExpression {
 
 export async function downloadMJML(projectName: string, marketo: boolean = false) {
   try {
-    const type = marketo ? 'marketo' : 'index';
-    const { data, error } = await downloadFile(projectName, 'mjml', type);
+    const { data, error } = await downloadFile(projectName, 'mjml', marketo);
     if (error) {
       throw new Error('Failed to get MJML file! Check the project name or the project bucket');
     }
