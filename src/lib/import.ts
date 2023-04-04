@@ -4,8 +4,9 @@ import chalk from 'chalk';
 interface BucketFiles {
   images?: [string, Buffer][];
   mjml?: string;
-  index?: string;
-  marketo?: string;
+  mktomjml?: string;
+  html?: string;
+  mktohtml?: string;
 }
 
 export async function importBucket(projectName: string, marketo: boolean = false): Promise<BucketFiles> {
@@ -14,7 +15,9 @@ export async function importBucket(projectName: string, marketo: boolean = false
   let bucketFiles: BucketFiles = {};
   let images: [string, Buffer][] = [];
 
+  // get images
   try {
+    console.log(`${chalk.green('\nDownloading images...')}`);
     const fetch = await listImages(projectName);
     if (fetch.error) {
       throw new Error('Failed to fetch list of image names!');
@@ -38,15 +41,22 @@ export async function importBucket(projectName: string, marketo: boolean = false
 
   bucketFiles.images = images;
 
+  // get mjml
   try {
-    console.log(`${chalk.yellow('\nDownloading index.mjml')}`)
-    const download = await (await downloadFile(projectName, 'mjml')).data?.text();
-    if (download) {
-      bucketFiles.mjml = download;
+    console.log(`${chalk.green('Downloading MJML...')}`);
+    const mjml = await (await downloadFile(projectName, 'mjml')).data?.text();
+    const mktomjml = marketo ? await (await downloadFile(projectName, 'mjml', marketo)).data?.text() : undefined;
+
+    if (mjml) {
+      bucketFiles.mjml = mjml;
+    }
+
+    if (mktomjml) {
+      bucketFiles.mktomjml = mktomjml;
     }
 
     else {
-      throw new Error('Couldn\'t download the MJML file. Does it exist in the bucket?')
+      throw new Error('Download of MJML failed!');
     }
   }
 
@@ -55,41 +65,26 @@ export async function importBucket(projectName: string, marketo: boolean = false
   }
 
   // get html
-  if (!marketo) {
-    try {
-      console.log(`${chalk.yellow('Downloading index.html')}`)
-      const download = await (await downloadFile(projectName, 'html')).data?.text();
-      if (download) {
-        bucketFiles.index = download;
-      }
+  try {
+    console.log(`${chalk.green('Downloading HTML...')}`);
+    const html = await (await downloadFile(projectName, 'html', marketo)).data?.text();
+    const mktohtml = marketo ? await (await downloadFile(projectName, 'html', marketo)).data?.text() : undefined;
 
-      else {
-        throw new Error('Couldn\'t download the HTML file. Does it exist in the bucket?')
-      }
+    if (html) {
+      bucketFiles.html = html;
     }
 
-    catch (error) {
-      console.error(`${chalk.red(error)}`);
+    if (mktohtml) {
+      bucketFiles.mktohtml = mktohtml;
+    }
+
+    else {
+      throw new Error('Download of HTML failed!');
     }
   }
 
-  // get marketo html
-  if (marketo) {
-    try {
-        console.log(`${chalk.yellow('Downloading marketo.html')}`)
-        const download = await (await downloadFile(projectName, 'html', 'marketo')).data?.text();
-        if (download) {
-          bucketFiles.marketo = download;
-        }
-
-        else {
-          throw new Error('Couldn\'t download the Marketo HTML. Does it exist in the bucket?')
-        }
-    }
-
-    catch (error) {
-      console.error(`${chalk.red(error)}`);
-    }
+  catch (error) {
+    console.error(`${chalk.red(error)}`);
   }
 
   return bucketFiles;
