@@ -163,6 +163,10 @@ function replaceString(html: string, regex: ReplacerRegex, expression?: InsertEx
         string += ' mktoactive="false"'
       }
 
+      if (sectionClass?.match('mktoNoAdd') || sectionClass?.match('mktonoadd')) {
+        string += ' mktoaddbydefault="false"'
+      }
+
       string += ` id="${generator()}"`
 
       result = result.replace(replacer, string);
