@@ -345,7 +345,7 @@ program
 
     // fetches mjml file
     const marketo = options.marketo ? true : false;
-    console.log(`${chalk.yellow('\nFetching MJML file from the', name, 'bucket')}`);
+    console.log(`${chalk.yellow('\nFetching MJML file from the', name, 'bucket...')}`);
     const mjmlBlob = await downloadMJML(name, marketo);
     if (mjmlBlob) {
       let mjmlString = await mjmlBlob.text()
@@ -423,7 +423,7 @@ program
 
     if (typeof check === 'boolean') {
       if (!check) {
-        console.error(`${chalk.red('Please log in with "mailer login" before trying to send an email')}`);
+        console.error(`${chalk.red('\nPlease log in with "mailer login" before trying to send an email')}`);
         process.exit(1);
       }
     }
@@ -433,7 +433,7 @@ program
 
     if (htmlBlob) {
       const htmlString = await htmlBlob.text();
-      console.log(`${chalk.yellow('Sending email...')}`);
+      console.log(`${chalk.yellow('\nSending email...')}`);
       await mailHTML(recipientsList, htmlString);
       console.log(`${chalk.blue('Success!')}`);
     }
