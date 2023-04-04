@@ -376,15 +376,8 @@ program
       // save mjml with new paths
       writeFileSync(__dirname + 'temp\\source.mjml', mjmlString);
 
-      if (options.marketo) {
-        const parsedHTML = parseMJML(readFileSync(__dirname + 'temp\\source.mjml', { encoding: 'utf8' }), true);
-        writeFileSync(__dirname + `temp\\parsed.html`, parsedHTML);
-      }
-
-      else {
-        const parsedHTML = parseMJML(readFileSync(__dirname + 'temp\\index.mjml', { encoding: 'utf8' }));
-        writeFileSync(__dirname + 'temp\\parsed.html', parsedHTML);
-      }
+      const parsedHTML = parseMJML(readFileSync(__dirname + 'temp\\source.mjml', { encoding: 'utf8' }), marketo);
+      writeFileSync(__dirname + `temp\\parsed.html`, parsedHTML);
 
       const list = await supabaseAPI.listFiles(name);
       const exists = await supabaseAPI.fileExists(`${options.marketo? 'marketo.html' : 'index.html'}`, list.data);
