@@ -274,20 +274,22 @@ program
 .action(async (name, options) => {
   try {
     if (options.create) {
-      console.log(`${chalk.yellow(`Creating bucket named ${name}`)}`);
+      console.log(`${chalk.yellow(`\nCreating bucket named ${name}`)}`);
       const { data, error } = await supabaseAPI.createFolder(name);
       if (error) {
         throw new Error(`${error.stack?.slice(17)}`);
       }
+      console.log(`${chalk.blue('Success!')}`);
       return;
     }
 
     if (options.delete) {
-      console.log(`${chalk.magenta(`Deleting bucket named ${name}`)}`);
+      console.log(`${chalk.magenta(`\nDeleting bucket named ${name}`)}`);
       const { data, error } = await supabaseAPI.deleteFolder(name);
       if (error) {
         throw new Error(`${error.stack?.slice(17)}`);
       }
+      console.log(`${chalk.blue('Success!')}`);
       return;
     }
 
@@ -298,12 +300,12 @@ program
     }
 
     if (data.length === 0) {
-      console.log(`${chalk.yellow('There are no buckets')}`);
+      console.log(`${chalk.yellow('\nThere are no buckets')}`);
       return;
     }
 
     if (data) {
-      console.log(`${chalk.yellow('Buckets:')}`);
+      console.log(`${chalk.yellow('\nBuckets:')}`);
       for (let index in data) {
         console.log(`${chalk.blue(data[index].name)}`);
       }
