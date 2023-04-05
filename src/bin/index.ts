@@ -22,6 +22,7 @@ import { importBucket } from '../lib/import.js';
 import { __dirname } from '../api/filesystem.js';
 import * as supabaseAPI from '../api/supabase.js';
 import { isLoggedIn, login } from '../lib/login.js';
+import { isStorageError } from '@supabase/storage-js';
 import { downloadHTML, mailHTML } from '../lib/mail.js';
 import { downloadMJML, parseMJML } from '../lib/prepare.js';
 import { getMJML, getImages, getPath, watch } from '../lib/export.js';
@@ -516,12 +517,12 @@ program
   try {
     const bucket = await supabaseAPI.folderExists(name);
     if (bucket.error) {
-      throw new Error('BUCKET ERROR: bucket doesn\'t exist! Use \'mailer bucket -c [name]\' to create one before trying to export a template.')
+      throw new Error('\nBUCKET ERROR: bucket doesn\'t exist! Use \'mailer bucket -c [name]\' to create one before trying to export a template.');
     }
   }
 
-  catch (e) {
-    console.error(`${chalk.red(e)}`);
+  catch (error) {
+    console.error(`${chalk.red(error)}`);
     process.exit(1);
   }
 
@@ -540,8 +541,14 @@ program
     mkdirSync(__dirname + `downloads\\${name}\\img`);
   }
 
-  console.log(`${chalk.yellow(`\nImporting files:`)}`);
+  process.stdout.write('\n');
+  const spinner = ora(`${chalk.yellow(`Importing files...`)}`).start();
   const files = await importBucket(name, options.marketo ? true : false);
+
+  if (isStorageError(files)) {
+    spinner.fail();
+    throw new Error(files.stack);
+  }
 
   try {
     Object.keys(files).forEach(key => {
@@ -572,11 +579,13 @@ program
         writeFileSync(__dirname + `downloads\\${name}\\marketo.html`, files[key]);
       }
     });
-    console.log(`${chalk.blue('\nSuccess!')}`)
+    spinner.succeed();
   }
 
   catch (error) {
+    spinner.fail();
     console.error(`${chalk.red(error)}`);
+    process.exit(1);
   }
 });
 
