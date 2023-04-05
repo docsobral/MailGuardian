@@ -14,6 +14,7 @@ process.emitWarning = (warning, ...args) => {
   return emitWarning(warning, ...args);
 }
 
+import ora from 'ora';
 import chalk from 'chalk';
 import { program } from 'commander';
 import { save, get } from '../lib/save.js';
@@ -274,22 +275,26 @@ program
 .action(async (name, options) => {
   try {
     if (options.create) {
-      console.log(`${chalk.yellow(`\nCreating bucket named ${name}`)}`);
+      process.stdout.write('\n');
+      const spinner = ora(`${chalk.yellow(`Creating bucket named ${name}`)}`).start();
       const { data, error } = await supabaseAPI.createFolder(name);
       if (error) {
+        spinner.fail();
         throw new Error(`${error.stack?.slice(17)}`);
       }
-      console.log(`${chalk.blue('Success!')}`);
+      spinner.succeed();
       return;
     }
 
     if (options.delete) {
-      console.log(`${chalk.magenta(`\nDeleting bucket named ${name}`)}`);
+      process.stdout.write('\n');
+      const spinner = ora(`${chalk.yellow(`Deleting bucket named ${name}`)}`).start();
       const { data, error } = await supabaseAPI.deleteFolder(name);
       if (error) {
+        spinner.fail();
         throw new Error(`${error.stack?.slice(17)}`);
       }
-      console.log(`${chalk.blue('Success!')}`);
+      spinner.succeed();
       return;
     }
 
@@ -306,8 +311,10 @@ program
 
     if (data) {
       console.log(`${chalk.yellow('\nBuckets:')}`);
+      let count = 1;
       for (let index in data) {
-        console.log(`${chalk.blue(data[index].name)}`);
+        console.log(`${chalk.yellow(`${count}.`)} ${chalk.blue(data[index].name)}`);
+        count++
       }
     }
   }
