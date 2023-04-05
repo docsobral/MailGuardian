@@ -425,30 +425,42 @@ program
   try {
     const check = await isLoggedIn();
 
-    const bucket = await supabaseAPI.folderExists(name);
-    if (bucket.error) {
-      throw new Error('BUCKET ERROR: bucket doesn\'t exist! Use \'mailer bucket -c [name]\' to create one before trying to export a template.')
-    }
-
-    if (typeof check === 'string') {
+    if (!check) {
+      console.error(`${chalk.red('\nPlease log in with "mailer login" before trying to send an email')}`);
       process.exit(1);
     }
 
-    if (typeof check === 'boolean') {
-      if (!check) {
-        console.error(`${chalk.red('\nPlease log in with "mailer login" before trying to send an email')}`);
-        process.exit(1);
-      }
+    const bucket = await supabaseAPI.folderExists(name);
+    if (bucket.error) {
+      throw new Error('\nBUCKET ERROR: bucket doesn\'t exist! Use \'mailer bucket -c [name]\' to create one before trying to export a template.')
     }
 
-    const recipientsList: string[] = recipientsString.split(', ')
-    const htmlBlob = await downloadHTML(name, options.marketo);
+    const recipientsList: string[] = recipientsString.split(', ');
 
-    if (htmlBlob) {
-      const htmlString = await htmlBlob.text();
-      console.log(`${chalk.yellow('\nSending email...')}`);
-      await mailHTML(recipientsList, htmlString);
-      console.log(`${chalk.blue('Success!')}`);
+    process.stdout.write('\n');
+    const spinner = ora(`${chalk.yellow('Fetching HTML file from the bucket')}`).start();
+    const { data, error } = await downloadHTML(name, options.marketo);
+
+    if (error) {
+      spinner.fail();
+      throw new Error('Failed to download HTML file!');
+    }
+
+    spinner.succeed();
+
+    if (data) {
+      const htmlString = await data.text();
+      try {
+        process.stdout.write('\n');
+        const spinner = ora(`${chalk.yellow('Sending email...')}`).start();
+        await mailHTML(recipientsList, htmlString);
+        spinner.succeed();
+      }
+
+      catch (error) {
+        spinner.fail();
+        process.exit(1);
+      }
     }
   }
 
