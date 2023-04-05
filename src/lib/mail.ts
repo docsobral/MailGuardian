@@ -2,20 +2,11 @@ import chalk from 'chalk';
 import nodemailer from 'nodemailer';
 import { getState } from './save.js';
 import { downloadFile } from '../api/supabase.js';
+import { StorageError } from '@supabase/storage-js';
 
-export async function downloadHTML(projectName: string, marketo?: boolean): Promise<Blob | null> {
-  try {
-    const { data, error } = await downloadFile(projectName, 'html', marketo);
-    if (error) {
-      throw new Error('Failed to get HTML file! Check the bucket name or the project bucket. If you tried to mail a Marketo HTML, don\'t forget to prepare it first with "mailer prepare -m <bucketname>"');
-    }
-    return data
-  }
-
-  catch (error) {
-    console.error(`${chalk.red(error)}`);
-    process.exit(1);
-  }
+export async function downloadHTML(projectName: string, marketo?: boolean): Promise<{data: Blob |null, error: StorageError | null}> {
+  const { data, error } = await downloadFile(projectName, 'html', marketo);
+  return { data, error };
 }
 
 export async function mailHTML(recipients: string[], htmlString: string) {
