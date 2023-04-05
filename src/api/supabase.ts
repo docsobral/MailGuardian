@@ -77,8 +77,8 @@ export async function listFiles(projectName: string) {
 }
 
 export async function deleteFile(fileName: string, projectName: string) {
-  let result: SupabaseStorageResult;
-  return result = await supabase.storage.from(projectName).remove([`${fileName}`]);
+  let result: SupabaseStorageResult = await supabase.storage.from(projectName).remove([`${fileName}`]);
+  return result;
 }
 
 export async function folderExists(projectName: string) {
