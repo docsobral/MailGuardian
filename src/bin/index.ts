@@ -492,13 +492,16 @@ program
     const key: string = Object.keys(options)[0]
 
     try {
-      console.log(`${chalk.yellow('\nSaving config...')}`);
+      process.stdout.write('\n');
+      const spinner = ora(`${chalk.yellow('Saving config...')}`).start();
       save('config', (key as keyof typeof Config).toUpperCase(), config);
-      console.log(`${chalk.blue('Success!')}`);
+      await delay(1000);
+      spinner.succeed();
     }
 
     catch (error) {
       console.error(`${chalk.red(error)}`);
+      process.exit(1);
     }
   }
 });
