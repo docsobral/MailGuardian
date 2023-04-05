@@ -14,6 +14,7 @@
     "mjml": "^4.13.0",
     "node-watch": "^0.7.3",
     "nodemailer": "^6.9.1",
+    "ora": "^6.3.0",
     "win-select-folder": "^1.0.1"
   },
   "devDependencies": {
