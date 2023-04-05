@@ -116,7 +116,7 @@ program
       const bucket: supabaseAPI.SupabaseStorageResult = await supabaseAPI.folderExists(name);
 
       if (bucket.error) {
-        throw new Error('BUCKET ERROR: bucket doesn\'t exist! Use \'mailer bucket -c [name]\' to create one before trying to export a project.')
+        throw new Error('BUCKET ERROR: bucket doesn\'t exist! Use \'mailer bucket -c [name]\' to create one before trying to export a template.');
       }
 
       if (options.watch) {
@@ -127,13 +127,15 @@ program
 
         if (!options.marketo) {
           try {
-            console.log(`${chalk.green('\nUploading mjml file...')}`);
+            process.stdout.write('\n');
+            const spinner = ora(`${chalk.green('Uploading mjml file...')}`).start();
             const mjml = await getMJML(path);
             const upload = await supabaseAPI.uploadFile(mjml, 'index.mjml', name, 'text/plain');
             if (upload.error) {
+              spinner.fail();
               throw new Error('Failed to upload mjml file!');
             }
-            console.log(`${chalk.blue('Upload succesfull!')}`);
+            spinner.succeed();
           }
 
           catch (error) {
@@ -143,13 +145,15 @@ program
 
         if (options.marketo) {
           try {
-            console.log(`${chalk.green('\nUploading marketo mjml file...')}`);
+            process.stdout.write('\n');
+            const spinner = ora(`${chalk.green('Uploading marketo mjml file...')}`).start();
             const marketoMJML = await getMJML(path, true);
             const upload = await supabaseAPI.uploadFile(marketoMJML, 'marketo.mjml', name, 'text/plain');
             if (upload.error) {
+              spinner.fail();
               throw new Error('Failed to upload marketo mjml file!');
             }
-            console.log(`${chalk.blue('Upload succesfull!')}`);
+            spinner.succeed();
           }
 
           catch (error) {
@@ -160,20 +164,17 @@ program
         const images = await getImages(path);
 
         if (!options.images) {
-          console.log(`${chalk.green('\nUploading images...')}`);
+          process.stdout.write('\n');
+          const spinner = ora(`${chalk.green('Uploading images...')}`).start();
           Object.keys(images).forEach(async (imageName) => {
-            try {
-              const upload = await supabaseAPI.uploadFile(images[imageName], `img/${imageName}`, name, 'image/png');
-              if (upload.error) {
-                throw new Error(`Failed to upload ${imageName}! ${upload.error.message}`);
-              }
-              console.log(`${chalk.blue('Succesfully uploaded', imageName)}`);
+            const upload = await supabaseAPI.uploadFile(images[imageName], `img/${imageName}`, name, 'image/png');
+            if (upload.error) {
+              spinner.text = `${spinner.text}\n${chalk.red(`Failed to upload ${imageName}! ${upload.error.message}`)}`;
             }
-
-            catch (error) {
-              console.warn(`${chalk.red(error)}`);
-            }
+            spinner.text = `${spinner.text}\n${chalk.blue('Succesfully uploaded', imageName)}`;
           });
+          await delay(3000);
+          spinner.succeed();
         }
       }
     }
@@ -183,7 +184,7 @@ program
 
       bucket = await supabaseAPI.folderExists(name);
       if (bucket.error) {
-        throw new Error('BUCKET ERROR: bucket doesn\'t exist! Use \'mailer bucket -c [name]\' to create one before trying to export a project.')
+        throw new Error('BUCKET ERROR: bucket doesn\'t exist! Use \'mailer bucket -c [name]\' to create one before trying to export a template.');
       }
 
       path = await getPath();
@@ -195,7 +196,7 @@ program
       const check = existsSync(path);
 
       if (!check) {
-        throw new Error('The path provided is broken')
+        throw new Error('The path provided is broken');
       }
 
       save('paths', name, path);
@@ -208,13 +209,15 @@ program
 
         if (!options.marketo) {
           try {
-            console.log(`${chalk.green('\nUploading mjml file...')}`);
+            process.stdout.write('\n');
+            const spinner = ora(`${chalk.green('Uploading mjml file...')}`).start();
             const mjml = await getMJML(path);
             const upload = await supabaseAPI.uploadFile(mjml, 'index.mjml', name, 'text/plain');
             if (upload.error) {
+              spinner.fail();
               throw new Error('Failed to upload mjml file!');
             }
-            console.log(`${chalk.blue('Upload succesfull!')}`);
+            spinner.succeed();
           }
 
           catch (error) {
@@ -224,13 +227,15 @@ program
 
         if (options.marketo) {
           try {
-            console.log(`${chalk.green('\nUploading marketo mjml file...')}`);
+            process.stdout.write('\n');
+            const spinner = ora(`${chalk.green('Uploading marketo mjml file...')}`).start();
             const marketoMJML = await getMJML(path, true);
             const upload = await supabaseAPI.uploadFile(marketoMJML, 'marketo.mjml', name , 'text/plain');
             if (upload.error) {
+              spinner.fail();
               throw new Error('Failed to upload marketo mjml file!');
             }
-            console.log(`${chalk.blue('Upload succesfull!')}`);
+            spinner.succeed();
           }
 
           catch (error) {
@@ -241,20 +246,17 @@ program
         const images = await getImages(path);
 
         if (!options.images) {
-          console.log(`${chalk.green('\nUploading images...')}`);
+          process.stdout.write('\n');
+          const spinner = ora(`${chalk.green('Uploading images...')}`).start();
           Object.keys(images).forEach(async (imageName) => {
-            try {
-              const upload = await supabaseAPI.uploadFile(images[imageName], `img/${imageName}`, name, 'image/png');
-              if (upload.error) {
-                throw new Error(`Failed to upload ${imageName}! ${upload.error.message}`);
-              }
-              console.log(`${chalk.blue('Succesfully uploaded', imageName)}`);
+            const upload = await supabaseAPI.uploadFile(images[imageName], `img/${imageName}`, name, 'image/png');
+            if (upload.error) {
+              spinner.text = `${spinner.text}\n${chalk.red(`Failed to upload ${imageName}! ${upload.error.message}`)}`;
             }
-
-            catch (error) {
-              console.warn(`${chalk.red(error)}`);
-            }
+            spinner.text = `${spinner.text}\n${chalk.blue('Succesfully uploaded', imageName)}`;
           });
+          await delay(3000);
+          spinner.succeed();
         }
       }
     }
@@ -265,6 +267,10 @@ program
     process.exit(1);
   }
 });
+
+async function delay(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 program
 .command('bucket')
