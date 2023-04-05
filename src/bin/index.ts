@@ -41,7 +41,7 @@ program
     const check = await isLoggedIn();
 
     if (check) {
-      console.log(`${chalk.yellow('You are already logged in... do you want to change accounts?')}`);
+      console.log(`${chalk.yellow('\nYou are already logged in... do you want to change accounts?')}`);
       const { confirm } = await enquire([
         {
           type: EnquireTypes.confirm,
@@ -51,11 +51,14 @@ program
       ]);
 
       if (confirm) {
-        console.log(`${chalk.yellow('\nLogging in...')}`);
+        process.stdout.write('\n');
+        const spinner = ora('Logging in...').start();
         const success = await login(id, password);
         if (!success) {
+          spinner.fail();
           throw new Error('Failed to login!');
         }
+        spinner.succeed();
         console.log(`${chalk.blueBright('Success! Saving your credentials')}`);
       }
 
@@ -66,10 +69,14 @@ program
     }
 
     else {
+      process.stdout.write('\n');
+      const spinner = ora('Logging in...').start();
       const success = await login(id, password);
       if (!success) {
+        spinner.fail();
         throw new Error('Failed to login!');
       }
+      spinner.succeed();
       console.log(`${chalk.blueBright('Success! Saving your credentials')}`);
     }
   }
