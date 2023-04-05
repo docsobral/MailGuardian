@@ -29,7 +29,7 @@ import { getMJML, getImages, getPath, watch } from '../lib/export.js';
 import { enquire, EnquireMessages, EnquireNames, EnquireTypes } from '../api/enquire.js';
 import { existsSync, mkdirSync, writeFileSync, readdirSync, unlinkSync, readFileSync } from 'node:fs';
 
-program.version('0.7.0');
+program.version('0.7.1');
 
 program
 .command('login')
