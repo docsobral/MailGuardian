@@ -70,11 +70,9 @@ Sends the template on a bucket to all recipients. Recipient list should be surro
 
 -m or --marketo will mail the Marketo compatible HTML.
 
-### import \[-m] \<name\>
+### import \<name\>
 
 Downloads the template's files from the supabase bucket.
-
--m or --marketo will download the Marketo compatible HTML if it exists.
 
 ## Usage
 
