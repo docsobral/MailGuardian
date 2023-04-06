@@ -48,9 +48,9 @@ export async function importBucket(projectName: string, marketo: boolean = false
     bucketFiles.mktomjml = mktomjml;
   }
 
-  if (marketo && typeof mktomjml === 'undefined' || !marketo && typeof mjml === 'undefined') {
-    return new StorageError(`${chalk.red('Download of MJML failed!')}`);
-  }
+  // if (marketo && typeof mktomjml === 'undefined' || !marketo && typeof mjml === 'undefined') {
+  //   return new StorageError(`${chalk.red('Download of MJML failed!')}`);
+  // }
 
   // get html
   // console.log(`${chalk.green('Downloading HTML...')}`);
@@ -65,9 +65,9 @@ export async function importBucket(projectName: string, marketo: boolean = false
     bucketFiles.mktohtml = mktohtml;
   }
 
-  if (marketo && typeof mktohtml === 'undefined' || !marketo && typeof html === 'undefined') {
-    return new StorageError(`${chalk.red('Download of HTML failed!')}`);
-  }
+  // if (marketo && typeof mktohtml === 'undefined' || !marketo && typeof html === 'undefined') {
+  //   return new StorageError(`${chalk.red('Download of HTML failed!')}`);
+  // }
 
   return bucketFiles;
 }

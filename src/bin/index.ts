@@ -564,7 +564,7 @@ program
 
   process.stdout.write('\n');
   const spinner = ora(`${chalk.yellow(`Importing files...`)}`).start();
-  const files = await importBucket(name, options.marketo ? true : false);
+  const files = await importBucket(name, true);
 
   if (isStorageError(files)) {
     spinner.fail();
