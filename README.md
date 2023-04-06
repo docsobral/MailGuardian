@@ -32,7 +32,7 @@ The name value *MUST* be a single word. Camel case is not mandatory. Both the na
 **`${text: fontWeight; default: bold}`**\
 **`${text: textAlignment; default: 'left'}`**\
 **`${color: 'bgColor'; default: '#F7F7F7'}`**\
-**``${number: 'name' ; default: '20' }`**
+**`${number: 'name' ; default: '20' }`**
 
 The last example is meant to demonstrate that whitespaces before and after the name and default values or before and after the semi-colon will be trimmed. Whitespace before the name attribute (text, color, number) is not allowed:
 
