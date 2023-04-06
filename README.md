@@ -18,15 +18,40 @@ It will only export templates with that folder structure and file names. Anythin
 
  ***ALL top elements in the MJML file (`<mj-section>` or `<mj-wrapper>`) MUST have a `css-class` attribute. That is how the Marketo modules are going to be named. Try using a name descriptive of the function of the section/wrapper.***
 
- ***All lateral padding (that is, left and right padding) of top elements (`<mj-section>` or `<mj-wrapper>`), MUST be fixed. Variables are NOT allowed as values for top elements.***
+ ***All lateral padding (that is, left and right padding) of top elements (`<mj-section>` or `<mj-wrapper>`), MUST be fixed. Variables are NOT allowed as values for top elements. Blame it on Outlook.***
 
-Marketo variables can be used with the MJML, and they will be read and processed for Marketo. The required syntax is as follows, and **MUST** be followed:
+Marketo variables can be used with the MJML, and they will be parsed for Marketo. The required syntax is as follows, and **MUST** be followed:
 
-**Text variable:**   ${text: nameInCamelCase; default: Text with spaces and no quotation marks!}\
-**Number variable:** ${number: nameInCamelCase; default: 10}\
-**Color variable:** ${color: nameInCamelCase; default: #FFFFFF}
+**Text variable:**   \${text: NAME; default: Text with spaces and no quotation marks!}\
+**Number variable:** \${number: NAME; default: 10} (ONLY NUMBERS)\
+**Color variable:** \${color: NAME; default: #FFFFFF} (ONLY HEX COLORS)\
+<!-- **HTML variable:** ${html: NAME; default: <html>something</html>} (ONLY HTML) -->
 
-e.g. `<mj-column background-color="${color: columnBgColor; default: #F2F2F2}" padding="0px ${number: columnHPadding; default: 10}px"> stuff </mj-column>`
+The name value *MUST* be a single word. Camel case is not mandatory. Both the name and default fields can be wrapped in single quotes. Double quotes are ***FORBIDDEN*** to avoid conflict with the HTML. All following examples are valid Marketo variables and will be correctly parsed by Mailer:
+
+**`${text: fontWeight; default: bold}`**\
+**`${text: textAlignment; default: 'left'}`**\
+**`${color: 'bgColor'; default: '#F7F7F7'}`**\
+**``${number: 'name' ; default: '20' }`**
+
+The last example is meant to demonstrate that whitespaces before and after the name and default values or before and after the semi-colon will be trimmed. Whitespace before the name attribute (text, color, number) is not allowed:
+
+**`${   text: someName; default: some text}`**
+
+The above variable is invalid. Even though the rest of the variable is valid, the whitespace between '${' and 'text' renders it invalid.
+
+It is preferable that you just follow the regular `**\${text: coolName; default: someText}**` with no whitespaces and quotes.
+
+<br>
+
+e.g.:\
+`<mj-column`\
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`background-color="${color: columnBgColor; default: #F2F2F2}"`\
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`padding="0px ${number: columnHPadding; default: 10}px">`\
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;***CHILDREN***\
+`</mj-column>`
+
+<br>
 
 The default field is **NOT** optional. The default field of a text variable can be filled with any kind of text, whitespace and most special characters. It can be wrapped by single quotes. Whitespace before and after the start of the text will be trimmed.
 
