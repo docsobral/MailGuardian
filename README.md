@@ -22,25 +22,25 @@ It will only export templates with that folder structure and file names. Anythin
 
 Marketo variables can be used with the MJML, and they will be parsed for Marketo. The required syntax is as follows, and **MUST** be followed:
 
-**Text variable:**   \${text: NAME; default: Text with spaces and no quotation marks!}\
-**Number variable:** \${number: NAME; default: 10} (ONLY NUMBERS)\
-**Color variable:** \${color: NAME; default: #FFFFFF} (ONLY HEX COLORS)\
+**Text variable:** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`${text: variableName; default: Text with spaces and no quotation marks!}`\
+**Number variable:** `${number: variableName; default: 10}` **(ONLY NUMBERS)**\
+**Color variable:** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`${color: variableName; default: #FFFFFF}` **(ONLY HEX COLORS)**
 <!-- **HTML variable:** ${html: NAME; default: <html>something</html>} (ONLY HTML) -->
 
-The name value *MUST* be a single word. Camel case is not mandatory. Both the name and default fields can be wrapped in single quotes. Double quotes are ***FORBIDDEN*** to avoid conflict with the HTML. All following examples are valid Marketo variables and will be correctly parsed by Mailer:
+The name value *MUST* be a single word. Camel case is not mandatory. Single quotes are optional around name and default values. Double quotes are ***FORBIDDEN*** to avoid conflict with the HTML. All following examples are valid Marketo variables and will be correctly parsed by Mailer:
 
-**`${text: fontWeight; default: bold}`**\
+**<code>${text: fontWeight; default: bold}</code>**\
 **`${text: textAlignment; default: 'left'}`**\
 **`${color: 'bgColor'; default: '#F7F7F7'}`**\
-**`${number: 'name' ; default: '20' }`**
+**<code>${number:&nbsp;&nbsp;&nbsp;'name'&nbsp;&nbsp;&nbsp;; &nbsp;&nbsp;&nbsp;default:&nbsp;&nbsp;&nbsp;'20'&nbsp;&nbsp;&nbsp;}</code>**
 
 The last example is meant to demonstrate that whitespaces before and after the name and default values or before and after the semi-colon will be trimmed. Whitespace before the name attribute (text, color, number) is not allowed:
 
-**`${   text: someName; default: some text}`**
+**`${   text: 'someName'; default: 'some text'}`**
 
 The above variable is invalid. Even though the rest of the variable is valid, the whitespace between '${' and 'text' renders it invalid.
 
-It is preferable that you just follow the regular `**\${text: coolName; default: someText}**` with no whitespaces and quotes.
+It is preferable that you just follow the regular `**\${text: coolName; default: someText}**` with no whitespaces and quotation marks.
 
 <br>
 
