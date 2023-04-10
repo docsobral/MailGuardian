@@ -22,43 +22,23 @@ const __filename = dirname(fileURLToPath(import.meta.url));
 export const __dirname = escapeBackslashes(__filename.split('build')[0]);
 
 export async function getFile(type: 'html' | 'mjml', path: string, marketo: boolean = false): Promise<string> {
-  let string: any;
+  let string: string;
 
   if (type === 'html') {
-    try {
-      string = await readFile(path + '\\index.html');
-      return string.toString();
-    }
-
-    catch (error) {
-      console.error(`${chalk.red(error)}`);
-      process.exit(1);
-    }
+    string = (await readFile(path + '\\index.html')).toString();
+    return string;
   }
 
-  try {
-    const name = marketo ? 'marketo' : 'index';
-    string = (await readFile(path + `\\${name}.mjml`)).toString();
-    return string.toString();
-  }
-
-  catch (error) {
-    console.error(`${chalk.red(error)}`);
-    process.exit(1);
-  }
+  const name = marketo ? 'marketo' : 'index';
+  string = (await readFile(path + `\\${name}.mjml`)).toString();
+  return string;
 }
 
 export async function getImage(path: string, imageName: string): Promise<Buffer> {
   let image: Buffer;
-  try {
-    image = await readFile(path + `\\img\\${imageName}`);
-    return image;
-  }
 
-  catch (error) {
-    console.error(`${chalk.red(error)}`);
-    process.exit(1);
-  }
+  image = await readFile(path + `\\img\\${imageName}`);
+  return image;
 }
 
 export async function checkFirstUse(): Promise<void> {
@@ -68,29 +48,32 @@ export async function checkFirstUse(): Promise<void> {
   };
 
   if (!existsSync(__dirname + 'config\\paths.json')) {
-    await writeFile(__dirname + 'config\\paths.json', JSON.stringify({}, null, 2));
+    writeFile(__dirname + 'config\\paths.json', JSON.stringify({}, null, 2));
   }
 
   if (!existsSync(__dirname + 'config\\state.json') || !existsSync(__dirname + 'config\\config.json')) {
     const initialState: AppState = {logged: [false, false]};
-    await writeFile(__dirname + 'config\\state.json', JSON.stringify(initialState, null, 2));
+    writeFile(__dirname + 'config\\state.json', JSON.stringify(initialState, null, 2));
 
     const answers = await enquire([
-      {
-        type: EnquireTypes.input,
-        name: EnquireNames.supabaseKey,
-        message: EnquireMessages.supabaseKey
-      },
+      // {
+      //   type: EnquireTypes.input,
+      //   name: EnquireNames.supabaseKey,
+      //   message: EnquireMessages.supabaseKey
+      // },
+
       {
         type: EnquireTypes.input,
         name: EnquireNames.supabaseSecret,
         message: EnquireMessages.supabaseSecret
       },
+
       {
         type: EnquireTypes.input,
         name: EnquireNames.supabaseURL,
         message: EnquireMessages.supabaseURL
       },
+
       {
         type: EnquireTypes.input,
         name: EnquireNames.secretKey,
@@ -99,14 +82,14 @@ export async function checkFirstUse(): Promise<void> {
     ]);
 
     const appConfigs = {
-      'SUPA_KEY': answers.supabaseKey,
+      // 'SUPA_KEY': answers.supabaseKey,
       'SUPA_SECRET': answers.supabaseSecret,
       'SUPA_URL': answers.supabaseURL,
       'SECRET_KEY': answers.secretKey,
     }
 
     await writeFile(__dirname + 'config\\config.json', JSON.stringify(appConfigs, null, 2));
-    console.log(`${chalk.yellow('Finished creating config files and terminating process. Run the previous command again...')}`);
+    console.log(`${chalk.yellow('Finished creating config files and terminating process. Now run \'mailer login <email> <passoword>\'.')}`);
     process.exit(1);
   }
 }

@@ -22,25 +22,25 @@ It will only export templates with that folder structure and file names. Anythin
 
 Marketo variables can be used with the MJML, and they will be parsed for Marketo. The required syntax is as follows, and **MUST** be followed:
 
-**Text variable:**   \${text: NAME; default: Text with spaces and no quotation marks!}\
-**Number variable:** \${number: NAME; default: 10} (ONLY NUMBERS)\
-**Color variable:** \${color: NAME; default: #FFFFFF} (ONLY HEX COLORS)\
+**Text variable:** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`${text: variableName; default: Text with spaces and no quotation marks!}`\
+**Number variable:** `${number: variableName; default: 10}` **(ONLY NUMBERS)**\
+**Color variable:** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`${color: variableName; default: #FFFFFF}` **(ONLY HEX COLORS)**
 <!-- **HTML variable:** ${html: NAME; default: <html>something</html>} (ONLY HTML) -->
 
-The name value *MUST* be a single word. Camel case is not mandatory. Both the name and default fields can be wrapped in single quotes. Double quotes are ***FORBIDDEN*** to avoid conflict with the HTML. All following examples are valid Marketo variables and will be correctly parsed by Mailer:
+The name value *MUST* be a single word. Camel case is not mandatory. Single quotes are optional around name and default values. Double quotes are ***FORBIDDEN*** to avoid conflict with the HTML. All following examples are valid Marketo variables and will be correctly parsed by Mailer:
 
-**`${text: fontWeight; default: bold}`**\
-**`${text: textAlignment; default: 'left'}`**\
-**`${color: 'bgColor'; default: '#F7F7F7'}`**\
-**`${number: 'name' ; default: '20' }`**
+<code>${text: fontWeight; default: bold}</code>\
+`${text: textAlignment; default: 'left'}`\
+`${color: 'bgColor'; default: '#F7F7F7'}`\
+<code>${number:&nbsp;&nbsp;&nbsp;'name'&nbsp;&nbsp;&nbsp;; &nbsp;&nbsp;&nbsp;default:&nbsp;&nbsp;&nbsp;'20'&nbsp;&nbsp;&nbsp;}</code>
 
 The last example is meant to demonstrate that whitespaces before and after the name and default values or before and after the semi-colon will be trimmed. Whitespace before the name attribute (text, color, number) is not allowed:
 
-**`${   text: someName; default: some text}`**
+`${   text: 'someName'; default: 'some text'}`
 
 The above variable is invalid. Even though the rest of the variable is valid, the whitespace between '${' and 'text' renders it invalid.
 
-It is preferable that you just follow the regular `**\${text: coolName; default: someText}**` with no whitespaces and quotes.
+It is preferable that you just follow the regular `\${text: coolName; default: someText}` with no whitespaces and quotation marks.
 
 <br>
 
@@ -75,13 +75,15 @@ Creates or deletes a bucket or lists all buckets on supabase. Each bucket acts a
 
 Exports a template's .mjml and .png files to a bucket. Path is optional on Windows only.
 
--m or --marketo will keep watching the folder's index.mjml for changes.
+-w or --watch will keep watching the folder's index.mjml for changes.
 
 -n or --new-path will ignore and overwrite the saved path at paths.json.
 
 -i or --images will skip uploading images.
 
--c or --clean will clean the
+-c or --clean will clean the bucket before uploading any file.
+
+-m or --marketo will upload marketo.mjml to the bucket.
 
 ### prepare \[-m] \<name\>
 
@@ -91,26 +93,26 @@ Replaces all image URLs from local to remote paths with temporary URLs generated
 
 ### mail \[-m] \<name\> \<recipients\>
 
-Sends the template on a bucket to all recipients. Recipient list should be surrounded by quotation marks and separated by commas e.g. ', '.
+Sends the template on a bucket to all recipients. Recipient list should be surrounded by quotation marks and separated by commas e.g. `first@email.com, second@email.com, ...`. If you are sending to a single recipient, you can just input the email with no quotation marks, like `mailer mail someBucket some@email.com`
 
--m or --marketo will mail the Marketo compatible HTML.
+-m or --marketo will mail the Marketo HTML. **WARNING**: if there are any variables in the MJML, Mailer will send it as is. A future implementation should replace all variables with their respective defaults when sending a Marketo HTML.
 
 ### import \<name\>
 
-Downloads the template's files from the supabase bucket.
+Downloads the template's files from the supabase bucket. Files are saved at `root/downloads`.
 
 ## Usage
 
-First, run `mailer`. You will be prompted for the supabase keys and URL. Then run `mailer login <your@email.adress> <yourpassword>` to connect to the email from which samples will be sent.
+First, run `mailer`. You will be prompted for the supabase key and URL. Then run `mailer login <your@email.adress> <yourpassword>` to connect to the email from which samples will be sent.
 
-Each template should have its own folder, implemented on supabase as buckets. Create a bucket with `mailer bucket -c <bucketname>`. The name should preferably relate to the template.
+Each template should have its own folder, implemented on supabase as buckets. Create a bucket with `mailer bucket -c <bucketname>`. Use a name that makes sense and that you will remember.
 
-Export the .mjml and .png files to the remote bucket with `mailer export <bucketname> [localpath]`. The path argument is optional. If you don't input a path, the app will open a folder select window where you can browse the filesystem for the folder where the template's files are located. The template folder MUST follow the example at [about](#about) for the export to work succesfully. The `-w` flag will watch the folder's MJML file for changes and will continuously upload the newest version to supabase. The `-m` flag will export `marketo.mjml`.
+**TIP**: if you ever forget a bucket name or if it even exists and you don't want to check supabase manually, just run `mailer bucket` and Mailer will list all buckets.
 
-You can use `mailer parse [-m] <bucketname>` to parse the .MJML file into an HTML file that can then be sent over email.
+Export the .mjml and .png files to the remote bucket with `mailer export <bucketname> [localpath]`. The path argument is optional. If you don't input a path, the app will open a folder select window where you can browse the filesystem for the folder where the template's files are located. The template folder MUST follow the template [here](#about) for the export to work succesfully.
 
-The optional `-m` flag instructs the parser to create Adobe Marketo compatible HTML.
+Use `mailer parse [-m] <bucketname>` to parse the .MJML file into an HTML file that can then be sent over email.
 
-To send a sample, use `mailer mail <bucketname> <"first@recipient.com, second@recipient.com, ...">` The `-m` flag will instruct the Marketo compatible html to be sent, if it exists.
+To send a test email, use `mailer mail <bucketname> <"first@recipient.com, second@recipient.com, ...">`.
 
-To download the a template's files, including images, the MJML file and either regular or Marketo HTML, use `mailer import <bucketname>`. If you don't use any flag, the regular HTML will be downloaded. If you use the `-m` flag, the Marketo HTML will be downloaded. The files will be downloaded at root/downloads.
+To download the a template's files, including images, the MJML file and either regular or Marketo HTML, use `mailer import <bucketname>`. If you don't use any flag, the regular HTML will be downloaded.
