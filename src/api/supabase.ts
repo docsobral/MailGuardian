@@ -20,7 +20,7 @@ catch (error) {
 
 const config: Config = JSON.parse(readFileSync(__dirname + 'config\\config.json', { encoding: 'utf8' }));
 
-if (typeof config['SUPA_URL'] === 'undefined' || typeof config['SUPA_KEY'] === 'undefined' || typeof config['SUPA_SECRET'] === 'undefined') {
+if (typeof config['SUPA_URL'] === 'undefined' || typeof config['SUPA_SECRET'] === 'undefined') {
   console.log(`${chalk.red('Missing API url, key or secret key!')}`);
   process.exit(1);
 }
