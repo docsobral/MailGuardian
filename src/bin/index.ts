@@ -17,6 +17,7 @@ process.emitWarning = (warning, ...args) => {
 import ora from 'ora';
 import chalk from 'chalk';
 import { program } from 'commander';
+import { spawn } from 'child_process';
 import { save, get } from '../lib/save.js';
 import { importBucket } from '../lib/import.js';
 import { __dirname } from '../api/filesystem.js';
@@ -608,6 +609,26 @@ program
     console.error(`${chalk.red(error)}`);
     process.exit(1);
   }
+});
+
+program
+.command('build')
+.description('Build the SpamAssassin Docker image')
+.action(() => {
+  const dockerBuild = spawn('docker', ['build', '-t', 'spamassassin-image:latest', '.']);
+  dockerBuild.stdout.on('data', (data) => {
+    console.log(data.toString());
+  });
+  dockerBuild.stderr.on('data', (data) => {
+    console.error(data.toString());
+  });
+  dockerBuild.on('exit', (code) => {
+    if (code !== 0) {
+      console.error(`${chalk.red(`Docker build process exited with code ${code}`)}`);
+    } else {
+      console.log(`${chalk.green('Docker build process completed successfully!')}`);
+    }
+  });
 });
 
 program.parse(process.argv);
