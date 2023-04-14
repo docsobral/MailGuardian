@@ -615,7 +615,7 @@ program
 .command('build')
 .description('Build the SpamAssassin Docker image')
 .action(() => {
-  const dockerBuild = spawn('docker', ['build', '-t', 'spamassassin-image:latest', '.']);
+  const dockerBuild = spawn('docker', ['build', '-t', 'spamassassin:latest', 'sa']);
   dockerBuild.stdout.on('data', (data) => {
     console.log(data.toString());
   });
