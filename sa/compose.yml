@@ -1,6 +1,7 @@
 version: '3'
 services:
-  spamassassin:
+  spamassassin-app:
     image: spamassassin
+    container_name: spamassassin-app
     stdin_open: true
     tty: true
