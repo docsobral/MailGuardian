@@ -17,9 +17,9 @@ function escapeBackslashes(path: string) {
   return newArray.join('');
 };
 
-const __filename = dirname(fileURLToPath(import.meta.url));
+const __filename: string = dirname(fileURLToPath(import.meta.url));
 
-export const __dirname = escapeBackslashes(__filename.split('build')[0]);
+export const __dirname: string = escapeBackslashes(__filename.split('build')[0]);
 
 export async function getFile(type: 'html' | 'mjml', path: string, marketo: boolean = false): Promise<string> {
   let string: string;
@@ -32,6 +32,10 @@ export async function getFile(type: 'html' | 'mjml', path: string, marketo: bool
   const name = marketo ? 'marketo' : 'index';
   string = (await readFile(path + `\\${name}.mjml`)).toString();
   return string;
+}
+
+export async function getPrepared(): Promise<string> {
+  return (await readFile(__dirname + 'temp\\parsed.html')).toString();
 }
 
 export async function getImage(path: string, imageName: string): Promise<Buffer> {
