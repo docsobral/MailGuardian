@@ -107,13 +107,13 @@ Sends the template on a bucket to all recipients. Recipient list should be surro
 
 Downloads the template's files from the supabase bucket. Files are saved at `root/downloads`.
 
-### build
+### spam \[-b, -t]
 
-Builds the SpamAssassin Docker image.
+This command runs the functions required to set up and run SpamAssassin.
 
-### test
+-b or --build will build SpamAssassin's Docker image.
 
-Tests a previously prepared HTML file for spam score.
+-t or --test will fetch the last email compiled with `mailer prepare`, convert it to RFC822 and run it through SpamAssassin's tests. Will print a score to the terminal and save a log file containing more detailed information about the test.
 
 ## Usage
 
@@ -129,6 +129,6 @@ Use `mailer parse [-m] <bucketname>` to parse the .MJML file into an HTML file t
 
 To send a test email, use `mailer mail <bucketname> <"first@recipient.com, second@recipient.com, ...">`.
 
-If you'd like to gauge the spam score of the email you've build, then first you need to build a Docker image of SpamAssassin. After installing Docker, run `mailer build` to build the image. Then run `mailer test` to run the test. Keep in mind that Mailer will run the last email you've ran `mailer prepare` on before, so make sure to have the email you want to test compiled.
+If you'd like to gauge the spam score of the email you've build, then first you need to build a Docker image of SpamAssassin. After installing Docker, run `mailer spam --build` to build the image. Then run `mailer spam --test` to run the test. Keep in mind that Mailer will run the last email you've ran `mailer prepare` on before, so make sure to have the email you want to test compiled.
 
 To download the a template's files, including images, the MJML file and either regular or Marketo HTML, use `mailer import <bucketname>`. If you don't use any flag, the regular HTML will be downloaded.
