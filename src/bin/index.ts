@@ -648,3 +648,5 @@ program
     await isSpam(path);
   }
 });
+
+program.parse(process.argv);
