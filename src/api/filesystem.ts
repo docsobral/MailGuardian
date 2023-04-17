@@ -45,6 +45,10 @@ export async function getImage(path: string, imageName: string): Promise<Buffer>
   return image;
 }
 
+export async function saveFile(path: string, name: string, file: string | Buffer): Promise<void> {
+  await writeFile(`${path}\\${name}`, file);
+}
+
 export async function checkFirstUse(): Promise<void> {
   if (!existsSync(__dirname + 'config')) {
     console.log(`${chalk.blue('Creating save files...\n')}`);

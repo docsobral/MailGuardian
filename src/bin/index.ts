@@ -32,7 +32,7 @@ import { getMJML, getImages, getPath, watch } from '../lib/export.js';
 import { enquire, EnquireMessages, EnquireNames, EnquireTypes } from '../api/enquire.js';
 import { existsSync, mkdirSync, writeFileSync, readdirSync, unlinkSync, readFileSync } from 'node:fs';
 
-program.version('0.8.0');
+program.version('0.8.1');
 
 program
 .command('login')
@@ -614,36 +614,39 @@ program
 });
 
 program
-.command('build')
-.description('Build the SpamAssassin Docker image')
-.action(() => {
-  const dockerBuild = spawn('docker', ['build', '-t', 'spamassassin:latest', 'sa']);
-  dockerBuild.stdout.on('data', (data) => {
-    console.log(data.toString());
-  });
-  dockerBuild.stderr.on('data', (data) => {
-    console.error(data.toString());
-  });
-  dockerBuild.on('exit', (code) => {
-    if (code !== 0) {
-      console.error(`${chalk.red(`Docker build process exited with code ${code}`)}`);
-    } else {
-      console.log(`${chalk.green('Docker build process completed successfully!')}`);
-    }
-  });
+.command('spam')
+.description('Runs commands related to Mailer\'s SpamAssassin functionalities')
+.option('-b, --build', 'Builds the SpamAssassin image', false)
+.option('-t, --test', 'Runs a prepared email through SpamAssassin\'s tests', false)
+.action(async options => {
+  if (options.build) {
+    const dockerBuild = spawn('docker', ['build', '-t', 'spamassassin:latest', 'sa']);
+    dockerBuild.stdout.on('data', (data) => {
+      console.log(data.toString());
+    });
+
+    dockerBuild.stderr.on('data', (data) => {
+      console.error(data.toString());
+    });
+
+    dockerBuild.on('exit', (code) => {
+      if (code !== 0) {
+        console.error(`${chalk.red(`Docker build process exited with code ${code}`)}`);
+      } else {
+        console.log(`${chalk.green('Docker build process completed successfully!')}`);
+      }
+    });
+  }
+
+  if (options.test) {
+    const html = await getPrepared();
+    const RFC822 = await convertHTML(html);
+
+    const path = __dirname + 'temp\\rfc822.txt'
+    writeFileSync(path, RFC822);
+
+    await isSpam(path);
+  }
 });
-
-program
-.command('test')
-.description('Tests an email on SpamAssassin and prints out it\'s spam status and score')
-.action(async () => {
-  const html = await getPrepared();
-  const RFC822 = await convertHTML(html);
-
-  const path = __dirname + 'temp\\rfc822.txt'
-  writeFileSync(path, RFC822);
-
-  await isSpam(path);
-})
 
 program.parse(process.argv);
