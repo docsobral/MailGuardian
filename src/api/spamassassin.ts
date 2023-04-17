@@ -1,61 +1,9 @@
 import ora from 'ora';
 import chalk from 'chalk';
-import { spawn } from 'child_process';
 // @ts-ignore
 import mailcomposer from 'mailcomposer';
-import { __dirname } from './filesystem.js';
-
-async function composeUp(): Promise<void> {
-  return new Promise<void>((resolve, reject) => {
-    const composeUp = spawn('docker-compose', ['-f', './sa/compose.yml', 'up', '--detach']);
-
-    composeUp.stdout.on('data', data => {
-      // console.log(`${data}`);
-    });
-
-    composeUp.stderr.on('data', data => {
-      // console.error(`${data}`);
-    });
-
-    composeUp.on('close', code => {
-      if (code !== 0) {
-        console.log(`child process exited with code ${code}`);
-        reject();
-      }
-
-      else {
-        // console.log(`${chalk.green('Started SpamAssassin container successfully!')}`);
-        resolve();
-      }
-    });
-  });
-}
-
-async function composeDown(): Promise<void> {
-  return new Promise<void>((resolve, reject) => {
-    const composeUp = spawn('docker-compose', ['-f', './sa/compose.yml', 'down']);
-
-    composeUp.stdout.on('data', data => {
-      // console.log(`${data}`);
-    });
-
-    composeUp.stderr.on('data', data => {
-      // console.error(`${data}`);
-    });
-
-    composeUp.on('close', code => {
-      if (code !== 0) {
-        console.log(`child process exited with code ${code}`);
-        reject();
-      }
-
-      else {
-        // console.log(`${chalk.green('Closed SpamAssassin container successfully!')}`);
-        resolve();
-      }
-    });
-  })
-}
+import { spawn, exec } from 'child_process';
+import { __dirname, saveFile } from './filesystem.js';
 
 async function copyEmail(path: string): Promise<void> {
   return new Promise<void>((resolve, reject) => {
@@ -88,6 +36,7 @@ async function testEmail(): Promise<void> {
     const sa = spawn('docker', ['exec', 'spamassassin-app', 'spamassassin', '-x', 'email.txt']);
     let score: number;
     let spam: string;
+    let logBuffer: Buffer = Buffer.from('');
 
     process.stdout.write('\n');
     const spinner = ora(`${chalk.yellow(`Testing email...`)}`).start();
@@ -98,7 +47,8 @@ async function testEmail(): Promise<void> {
         spam = match[1];
         score = parseFloat(match[2]);
       }
-      // console.log(`${data}`);
+
+      logBuffer = Buffer.concat([logBuffer, data]);
     });
 
     sa.stderr.on('data', data => {
@@ -107,20 +57,84 @@ async function testEmail(): Promise<void> {
 
     sa.on('close', code => {
       if (code !== 0) {
-        spinner.fail(`SpamAssassin exited with code ${code}`);
+        reject(spinner.fail(`SpamAssassin exited with code ${code}`));
       } else if (score === null) {
-        spinner.fail('Could not determine spam score');
+        reject(spinner.fail('Could not determine spam score'));
       } else {
         spinner.succeed(`${chalk.yellow('Results:')}\n${chalk.green(`Spam: ${spam}`)}\n${chalk.green(`Score: ${score}`)}`);
       }
+
+      saveFile(__dirname + 'temp', 'log.txt', logBuffer)
+        .then(() => resolve())
+        .catch(err => reject(err));
     });
   });
 }
 
+async function startContainer() {
+  // Make the shell script executable
+  return new Promise<void>((resolve, reject) => {
+    exec('chmod +x start.sh', (error, stdout, stderr) => {
+      if (error) {
+        console.error(`Error making script executable: ${error.message}`);
+        reject();
+      }
+      if (stderr) {
+        console.error(`Error making script executable: ${stderr}`);
+        reject();
+      }
+
+      // Run the shell script
+      exec('start.sh', (error, stdout, stderr) => {
+        if (error) {
+          console.error(`Error running script: ${error.message}`);
+          reject();
+        }
+        if (stderr) {
+          console.error(`Error running script: ${stderr}`);
+          reject();
+        }
+
+        resolve();
+      });
+    });
+  })
+}
+
+async function stopContainer() {
+  // Make the shell script executable
+  return new Promise<void>((resolve, reject) => {
+    exec('chmod +x stop.sh', (error, stdout, stderr) => {
+      if (error) {
+        console.error(`Error making script executable: ${error.message}`);
+        reject();
+      }
+      if (stderr) {
+        console.error(`Error making script executable: ${stderr}`);
+        reject();
+      }
+
+      // Run the shell script
+      exec('stop.sh', (error, stdout, stderr) => {
+        if (error) {
+          console.error(`Error running script: ${error.message}`);
+          reject();
+        }
+        if (stderr) {
+          console.error(`Error running script: ${stderr}`);
+          reject();
+        }
+
+        resolve();
+      });
+    });
+  })
+}
+
+
 export async function isSpam(path: string): Promise<void> {
-  await composeUp();
-  copyEmail(path).then(async () => await testEmail());
-  await composeDown();
+  await startContainer();
+  copyEmail(path).then(async () => await testEmail()).then(async () => await stopContainer());
 }
 
 export async function convertHTML(html: string): Promise<string> {
