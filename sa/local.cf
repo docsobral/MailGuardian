@@ -20,7 +20,7 @@
 #   Save spam messages as a message/rfc822 MIME attachment instead of
 #   modifying the original message (0: off, 2: use text/plain instead)
 #
-# report_safe 1
+report_safe 0
 
 
 #   Set which networks or hosts are considered 'trusted' by your mail
@@ -46,8 +46,16 @@ required_score 5.0
 
 #   Bayesian classifier auto-learning (default: 1)
 #
-# bayes_auto_learn 1
+bayes_auto_learn 0
 
+
+#   Extra stuff
+#
+use_dcc 0
+use_pyzor 0
+skip_rbl_checks 1
+dns_available no
+bayes_use_hapaxes 0
 
 #   Set headers which may provide inappropriate cues to the Bayesian
 #   classifier
