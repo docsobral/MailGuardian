@@ -33,7 +33,7 @@ async function copyEmail(path: string): Promise<void> {
 
 async function testEmail(): Promise<void> {
   return new Promise<void>((resolve, reject) => {
-    const sa = spawn('docker', ['exec', 'spamassassin-app', 'spamassassin', '-x', 'email.txt']);
+    const sa = spawn('docker', ['exec', 'spamassassin-app', 'spamassassin', '-x', '-t', 'email.txt']);
     let score: number;
     let spam: string;
     let logBuffer: Buffer = Buffer.from('');
