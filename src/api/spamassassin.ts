@@ -80,17 +80,12 @@ async function startContainer() {
 
     child.on('error', (error) => {
       spinner.fail(error.message);
-      reject();
-    });
-
-    child.stderr.on('data', (data) => {
-      spinner.fail(data.toString());
-      reject();
+      throw new Error(error.message);
     });
 
     child.on('close', (code) => {
       if (code === 0) {
-        spinner.succeed(`${chalk.green('Started SpamAssassin container')}`);
+        spinner.succeed(`${chalk.yellow('Started SpamAssassin container...')}`);
         resolve();
       } else {
         console.error(`Script exited with code ${code}`);
@@ -104,26 +99,21 @@ async function stopContainer() {
   // Make the shell script executable
   return new Promise<void>((resolve, reject) => {
     process.stdout.write('\n');
-    const spinner = ora(`${chalk.yellow('Stopping SpamAssassin container...')}`).start();
+    const spinner = ora(`${chalk.yellow('Stopping container...')}`).start();
     const child = spawn('sh', ['stop.sh']);
 
     child.on('error', (error) => {
       spinner.fail(error.message);
-      reject();
-    });
-
-    child.stderr.on('data', (data) => {
-      spinner.fail(data.toString());
-      reject();
+      reject(error.message);
     });
 
     child.on('close', (code) => {
       if (code === 0) {
-        spinner.succeed(`${chalk.green('Stopped SpamAssassin container')}`);
+        spinner.succeed(`${chalk.yellow('Stopped container...')}`);
         resolve();
       } else {
-        console.error(`Script exited with code ${code}`);
-        reject();
+        spinner.fail(`Script exited with code ${code}`);
+        reject(`Script exited with code ${code}`);
       }
     });
   });
@@ -132,31 +122,33 @@ async function stopContainer() {
 async function trainSpamAssassin() {
   // Make the shell script executable
   return new Promise<void>((resolve, reject) => {
-    exec('chmod +x train.sh', (error, stdout, stderr) => {
-      if (error) {
-        console.error(`Error making script executable: ${error.message}`);
-        reject();
-      }
-      if (stderr) {
-        console.error(`Error making script executable: ${stderr}`);
-        reject();
-      }
+    process.stdout.write('\n');
+    const spinner = ora(`${chalk.yellow('Training...\n')}`).start();
+    const child = spawn('sh', ['train.sh']);
 
-      // Run the shell script
-      exec('train.sh', (error, stdout, stderr) => {
-        if (error) {
-          console.error(`Error running script: ${error.message}`);
-          reject();
-        }
-        if (stderr) {
-          console.error(`Error running script: ${stderr}`);
-          reject();
-        }
-
-        resolve();
-      });
+    child.on('error', (error) => {
+      spinner.fail(error.message);
+      reject(error.message);
     });
-  })
+
+    child.stderr.on('data', (data) => {
+      spinner.text = `${spinner.text}${data.toString()}`;
+    });
+
+    child.stdout.on('data', data => {
+      spinner.text = `${spinner.text}${data}`;
+    })
+
+    child.on('close', (code) => {
+      if (code === 0) {
+        spinner.succeed();
+        resolve();
+      } else {
+        spinner.fail(`Script exited with code ${code}`);
+        reject(`Script exited with code ${code}`);
+      }
+    });
+  });
 }
 
 export async function isSpam(path: string): Promise<void> {
@@ -186,6 +178,5 @@ export async function convertHTML(html: string): Promise<string> {
 
 export async function train(): Promise<void> {
   await startContainer();
-  // await trainSpamAssassin().then(async () => await stopContainer());
-  await trainSpamAssassin();
+  await trainSpamAssassin().then(async () => await stopContainer());
 }
