@@ -5,6 +5,7 @@
   "license": "AGPL-3.0-only",
   "type": "module",
   "dependencies": {
+    "@stdlib/datasets-spam-assassin": "^0.0.8",
     "@supabase/supabase-js": "^2.12.0",
     "chalk": "^5.2.0",
     "commander": "^10.0.0",
