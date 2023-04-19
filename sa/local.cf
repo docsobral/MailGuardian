@@ -9,7 +9,7 @@
 
 #    A 'contact address' users should contact for more info. (replaces
 #    _CONTACTADDRESS_ in the report template)
-# report_contact youremailaddress@domain.tld
+report_contact david.sobral@valtech.com
 
 
 #   Add *****SPAM***** to the Subject header of spam e-mails
@@ -52,7 +52,7 @@ bayes_min_spam_num 100
 
 #   Extra stuff
 #
-use_dcc 0
+# use_dcc 0
 use_pyzor 0
 skip_rbl_checks 1
 dns_available no
