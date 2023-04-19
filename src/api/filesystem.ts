@@ -34,8 +34,8 @@ export async function getFile(type: 'html' | 'mjml', path: string, marketo: bool
   return string;
 }
 
-export async function getPrepared(): Promise<string> {
-  return (await readFile(__dirname + 'temp\\parsed.html')).toString();
+export async function getHTML(path: string): Promise<string> {
+  return (await readFile(path)).toString();
 }
 
 export async function getImage(path: string, imageName: string): Promise<Buffer> {
