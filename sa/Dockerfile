@@ -5,7 +5,8 @@ RUN groupadd -r spamassassin && useradd -r -g spamassassin spamassassin
 
 # Installs SpamAssassin
 RUN apt-get update && \
-    apt-get install -y curl spamassassin spamc libnet-dns-perl libmail-dkim-perl libdb-file-lock-perl libdbi-perl libencode-detect-perl libio-socket-inet6-perl libio-socket-ssl-perl libnet-cidr-perl libnet-ident-perl libnet-patricia-perl libsocket6-perl && \
+    apt-rdepends spamassassin | grep -v "^ " | xargs apt-get install -y && \
+    apt-get install -y curl spamassassin && \
     apt-get autoremove -y && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
@@ -49,11 +50,20 @@ RUN sa-update --install /etc/spamassassin/rules/Mail-SpamAssassin-rules-4.0.0.r1
 COPY local.cf /etc/spamassassin/
 COPY local.cf /usr/share/spamassassin/
 
+# Create required directories
+RUN mkdir /home/spamassassin/ /data/
+
+# Remove extra files
 RUN rm SA-4.0.0.tar.gz && \
-    rm -rf /Mail-SpamAssassin-4.0.0
+    rm -rf /Mail-SpamAssassin-4.0.0 && \
+    rm GPG.KEY
+#
+
+# Compile rules
+RUN sa-compile
 
 # Change ownership of files and directories
-RUN chown -R spamassassin:spamassassin /etc/spamassassin /var/lib/spamassassin
+RUN chown -R spamassassin:spamassassin /etc/spamassassin /var/lib/spamassassin /home/spamassassin/ /data/
 
 # Set user and group for SpamAssassin
 USER spamassassin
