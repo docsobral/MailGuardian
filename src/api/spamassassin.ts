@@ -131,6 +131,35 @@ async function stopContainer() {
   })
 }
 
+async function trainSpamAssassin() {
+  // Make the shell script executable
+  return new Promise<void>((resolve, reject) => {
+    exec('chmod +x train.sh', (error, stdout, stderr) => {
+      if (error) {
+        console.error(`Error making script executable: ${error.message}`);
+        reject();
+      }
+      if (stderr) {
+        console.error(`Error making script executable: ${stderr}`);
+        reject();
+      }
+
+      // Run the shell script
+      exec('train.sh', (error, stdout, stderr) => {
+        if (error) {
+          console.error(`Error running script: ${error.message}`);
+          reject();
+        }
+        if (stderr) {
+          console.error(`Error running script: ${stderr}`);
+          reject();
+        }
+
+        resolve();
+      });
+    });
+  })
+}
 
 export async function isSpam(path: string): Promise<void> {
   await startContainer();
@@ -155,4 +184,10 @@ export async function convertHTML(html: string): Promise<string> {
       }
     });
   });
+}
+
+export async function train(): Promise<void> {
+  await startContainer();
+  // await trainSpamAssassin().then(async () => await stopContainer());
+  await trainSpamAssassin();
 }

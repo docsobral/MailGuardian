@@ -22,12 +22,12 @@ import { save, get } from '../lib/save.js';
 import { importBucket } from '../lib/import.js';
 import { __dirname } from '../api/filesystem.js';
 import * as supabaseAPI from '../api/supabase.js';
-import { getPrepared } from '../api/filesystem.js';
+import { getHTML } from '../api/filesystem.js';
 import { isLoggedIn, login } from '../lib/login.js';
 import { isStorageError } from '@supabase/storage-js';
 import { downloadHTML, mailHTML } from '../lib/mail.js';
 import { downloadMJML, parseMJML } from '../lib/prepare.js';
-import { convertHTML, isSpam } from '../api/spamassassin.js';
+import { convertHTML, isSpam, train } from '../api/spamassassin.js';
 import { getMJML, getImages, getPath, watch } from '../lib/export.js';
 import { enquire, EnquireMessages, EnquireNames, EnquireTypes } from '../api/enquire.js';
 import { existsSync, mkdirSync, writeFileSync, readdirSync, unlinkSync, readFileSync } from 'node:fs';
@@ -617,7 +617,8 @@ program
 .command('spam')
 .description('Runs commands related to Mailer\'s SpamAssassin functionalities')
 .option('-b, --build', 'Builds the SpamAssassin image', false)
-.option('-t, --test', 'Runs a prepared email through SpamAssassin\'s tests', false)
+.option('-t, --test [path]', 'Runs a prepared email through SpamAssassin\'s tests')
+.option('-l, --learn', 'Runs sa-learn on the Spam Assassin Public Corpus')
 .action(async options => {
   if (options.build) {
     const dockerBuild = spawn('docker', ['build', '-t', 'spamassassin:latest', 'sa']);
@@ -639,13 +640,17 @@ program
   }
 
   if (options.test) {
-    const html = await getPrepared();
+    const htmlPath = options.test === true ? __dirname + 'temp\\parsed.html' : options.test;
+    const html = await getHTML(htmlPath);
     const RFC822 = await convertHTML(html);
+    const rfcPath = __dirname + 'temp\\rfc822.txt'
+    writeFileSync(rfcPath, RFC822);
 
-    const path = __dirname + 'temp\\rfc822.txt'
-    writeFileSync(path, RFC822);
+    await isSpam(rfcPath);
+  }
 
-    await isSpam(path);
+  if (options.learn) {
+    await train();
   }
 });
 
