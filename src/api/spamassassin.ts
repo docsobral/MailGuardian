@@ -1,8 +1,8 @@
 import ora from 'ora';
 import chalk from 'chalk';
+import { spawn } from 'child_process';
 // @ts-ignore
 import mailcomposer from 'mailcomposer';
-import { spawn, exec } from 'child_process';
 import { __dirname, saveFile } from './filesystem.js';
 
 async function copyEmail(path: string): Promise<void> {
@@ -75,7 +75,7 @@ async function startContainer() {
   // Make the shell script executable
   return new Promise<void>((resolve, reject) => {
     process.stdout.write('\n');
-    const spinner = ora(`${chalk.yellow('Starting SpamAssassin container...')}`).start();
+    const spinner = ora(`${chalk.yellow('Starting container...')}`).start();
     const child = spawn('sh', ['start.sh']);
 
     child.on('error', (error) => {
@@ -85,7 +85,7 @@ async function startContainer() {
 
     child.on('close', (code) => {
       if (code === 0) {
-        spinner.succeed(`${chalk.yellow('Started SpamAssassin container...')}`);
+        spinner.succeed(`${chalk.yellow('Started container...')}`);
         resolve();
       } else {
         console.error(`Script exited with code ${code}`);
