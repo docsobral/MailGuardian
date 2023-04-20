@@ -35,16 +35,20 @@ import { enquire, EnquireMessages, EnquireNames, EnquireTypes } from '../api/enq
 program.version('0.10.0');
 
 program
-.command('login')
+.command('save-credentials')
 .description('Valitades and stores sender email address credentials')
 .argument('<id>', 'User ID e.g. email@address.com')
 .argument('<password>', 'If you use 2FA, your regular password will not work')
-.action(async (id, password) => {
+.action(async (id: string, password: string) => {
+  password = password.replace(/\\/g, '');
+  console.log(password);
+
   try {
     const check = await isLoggedIn();
 
     if (check) {
-      console.log(`${chalk.yellow('\nYou are already logged in... do you want to change accounts?')}`);
+      console.log(`${chalk.yellow('\nYou already have saved credentials... do you want to switch accounts?')}`);
+
       const { confirm } = await enquire([
         {
           type: EnquireTypes.confirm,
@@ -55,38 +59,37 @@ program
 
       if (confirm) {
         process.stdout.write('\n');
-        const spinner = ora('Logging in...').start();
-        const success = await login(id, password);
-        if (!success) {
+        const spinner = ora('Validating credentials...').start();
+
+        if (!(await login(id, password))) {
           spinner.fail();
           throw new Error('Failed to login!');
         }
-        spinner.succeed();
-        console.log(`${chalk.blueBright('Success! Saving your credentials')}`);
+
+        spinner.succeed(`${chalk.green('Success! Your credentials were saved.')}`);
       }
 
       else {
-        console.log(`${chalk.red('\nAborting...')}`);
+        console.log(`${chalk.blueBright('Ok, exiting...')}`);
         process.exit();
       }
     }
 
     else {
       process.stdout.write('\n');
-      const spinner = ora('Logging in...').start();
-      const success = await login(id, password);
-      if (!success) {
+      const spinner = ora('Validating credentials...').start();
+
+      if (await login(id, password)) {
         spinner.fail();
-        throw new Error('Failed to login!');
+        throw new Error('Something went wrong... try again!');
       }
-      spinner.succeed();
-      console.log(`${chalk.blueBright('Success! Saving your credentials')}`);
+
+      spinner.succeed(`${chalk.blueBright('Success! Your credentials were saved.')}`);
     }
   }
 
   catch (error) {
     console.error(`${chalk.red(error)}`);
-    process.exit(1);
   }
 });
 
@@ -401,19 +404,19 @@ program
       await saveFile(__dirname + 'temp\\', 'parsed.html', parsedHTML);
 
       const list = await supabaseAPI.listFiles(name);
-      const exists = await supabaseAPI.fileExists(`${options.marketo? 'marketo.html' : 'index.html'}`, list.data);
+      const exists = await supabaseAPI.fileExists(`${options.marketo? 'marketo.mjml' : 'index.mjml'}`, list.data);
 
       if (exists) {
-        const result = await supabaseAPI.deleteFile(`${options.marketo? 'marketo.html' : 'index.html'}`, name);
+        const result = await supabaseAPI.deleteFile(`${options.marketo? 'marketo.mjml' : 'index.mjml'}`, name);
 
         if (result.error) {
           spinner.fail();
-          throw new Error(`Failed to delete ${options.marketo? 'marketo.html' : 'index.html'} file! ${result.error.stack?.slice(17)}`);
+          throw new Error(`Failed to delete ${options.marketo? 'marketo.mjml' : 'index.mjml'} file! ${result.error.stack?.slice(17)}`);
         }
       }
 
       else {
-        throw new Error(`File ${options.marketo? 'marketo.html' : 'index.html'} does not exist!`);
+        throw new Error(`File ${options.marketo? 'marketo.mjml' : 'index.mjml'} does not exist!`);
       }
 
       const results = await supabaseAPI.uploadFile(readFileSync(__dirname + 'temp\\parsed.html', { encoding: 'utf8' }), `${options.marketo? 'marketo.html' : 'index.html'}`, name);
