@@ -1,9 +1,11 @@
+import ora from 'ora';
 import chalk from 'chalk';
 import Watch from 'node-watch';
 import { readdir } from 'node:fs/promises';
 // @ts-ignore
 import selectFolder from 'win-select-folder';
 import { __dirname } from '../api/filesystem.js';
+import * as supabaseAPI from '../api/supabase.js';
 import { getFile, getImage } from '../api/filesystem.js';
 import { fileExists, listFiles, updateFile, uploadFile } from '../api/supabase.js';
 
@@ -112,4 +114,46 @@ export async function watch(folderPath: string, projectName: string, marketo: bo
       process.exit(1);
     }
   });
+}
+
+export async function uploadMJML(bucketName: string, path: string, marketo: boolean = false): Promise<void> {
+  try {
+    process.stdout.write('\n');
+    const spinner = ora(`${chalk.green(`Uploading ${marketo ? 'Marketo MJML' : 'MJML'} file...`)}`).start();
+    const mjml = await getMJML(path);
+
+    const upload = await supabaseAPI.uploadFile(mjml, `${marketo ? 'marketo' : 'index'}.mjml`, bucketName, 'text/plain');
+    if (upload.error) {
+      spinner.fail();
+      throw new Error(`Failed to upload ${marketo ? 'Marketo MJML' : 'MJML'} file!`);
+    }
+
+    spinner.succeed();
+  }
+
+  catch (error) {
+    console.warn(`${chalk.red(error)}`);
+  }
+}
+
+export async function uploadImages(bucketName: string, path: string): Promise<void> {
+  const images = await getImages(path);
+
+  process.stdout.write('\n');
+  const spinner = ora(`${chalk.green('Uploading images...')}`).start();
+
+  Object.keys(images).forEach(async (imageName) => {
+    const upload = await supabaseAPI.uploadFile(images[imageName], `img/${imageName}`, bucketName, 'image/png');
+    if (upload.error) {
+      spinner.text = `${spinner.text}\n${chalk.red(`  Failed to upload ${imageName}! ${upload.error.message}`)}`;
+    }
+    spinner.text = `${spinner.text}\n${chalk.blue('  Succesfully uploaded', imageName)}`;
+  });
+
+  await delay(1000);
+  spinner.succeed();
+}
+
+async function delay(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
