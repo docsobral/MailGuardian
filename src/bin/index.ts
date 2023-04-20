@@ -17,18 +17,17 @@ process.emitWarning = (warning, ...args) => {
 import ora from 'ora';
 import chalk from 'chalk';
 import { program } from 'commander';
-import { spawn } from 'child_process';
 import { save, get } from '../lib/save.js';
 import { importBucket } from '../lib/import.js';
-import { __dirname } from '../api/filesystem.js';
 import * as supabaseAPI from '../api/supabase.js';
-import { getHTML } from '../api/filesystem.js';
+import { pathAndFile } from '../api/filesystem.js';
 import { isLoggedIn, login } from '../lib/login.js';
 import { isStorageError } from '@supabase/storage-js';
 import { downloadHTML, mailHTML } from '../lib/mail.js';
 import { downloadMJML, parseMJML } from '../lib/prepare.js';
-import { convertHTML, isSpam, train } from '../api/spamassassin.js';
 import { getMJML, getImages, getPath, watch } from '../lib/export.js';
+import { __dirname, absolutePath, getFile } from '../api/filesystem.js';
+import { buildImage, convertHTML, isSpam, train } from '../api/spamassassin.js';
 import { enquire, EnquireMessages, EnquireNames, EnquireTypes } from '../api/enquire.js';
 import { existsSync, mkdirSync, writeFileSync, readdirSync, unlinkSync, readFileSync } from 'node:fs';
 
@@ -535,8 +534,7 @@ program
 .command('import')
 .description('Fetch all files from a template bucket (including the .html file')
 .argument('<name>', 'The bucket\'s name')
-.option('-m, --marketo', 'Includes the marketo HTML')
-.action(async (name, options) => {
+.action(async (name: string) => {
   // check if bucket exists
   try {
     const bucket = await supabaseAPI.folderExists(name);
@@ -617,31 +615,17 @@ program
 .command('spam')
 .description('Runs commands related to Mailer\'s SpamAssassin functionalities')
 .option('-b, --build', 'Builds the SpamAssassin image', false)
-.option('-t, --test [path]', 'Runs a prepared email through SpamAssassin\'s tests')
-.option('-l, --learn', 'Runs sa-learn on the Spam Assassin Public Corpus')
+.option('-t, --test [path]', 'Runs a prepared email through SpamAssassin\'s tests', false)
+.option('-l, --learn', 'Runs sa-learn on the Spam Assassin Public Corpus', false)
 .action(async options => {
   if (options.build) {
-    const dockerBuild = spawn('docker', ['build', '-t', 'spamassassin:latest', 'sa']);
-    dockerBuild.stdout.on('data', (data) => {
-      console.log(data.toString());
-    });
-
-    dockerBuild.stderr.on('data', (data) => {
-      console.error(data.toString());
-    });
-
-    dockerBuild.on('exit', (code) => {
-      if (code !== 0) {
-        console.error(`${chalk.red(`Docker build process exited with code ${code}`)}`);
-      } else {
-        console.log(`${chalk.green('Docker build process completed successfully!')}`);
-      }
-    });
+    await buildImage();
   }
 
   if (options.test) {
-    const htmlPath = options.test === true ? __dirname + 'temp\\parsed.html' : options.test;
-    const html = await getHTML(htmlPath);
+    const pathToFile = options.test === true ? __dirname + 'temp\\parsed.html' : absolutePath(options.test);
+    const [path, filename] = pathAndFile(pathToFile);
+    const html = await getFile('html', path, false, filename);
     const RFC822 = await convertHTML(html);
     const rfcPath = __dirname + 'temp\\rfc822.txt'
     writeFileSync(rfcPath, RFC822);
