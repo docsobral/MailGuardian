@@ -18,18 +18,19 @@ import ora from 'ora';
 import chalk from 'chalk';
 import { program } from 'commander';
 import { save, get } from '../lib/save.js';
+import { BucketError } from '../lib/error.js';
 import { importBucket } from '../lib/import.js';
 import * as supabaseAPI from '../api/supabase.js';
-import { pathAndFile } from '../api/filesystem.js';
+import { cleanTemp, createFolders, pathAndFile, saveFile } from '../api/filesystem.js';
 import { isLoggedIn, login } from '../lib/login.js';
 import { isStorageError } from '@supabase/storage-js';
 import { downloadHTML, mailHTML } from '../lib/mail.js';
 import { downloadMJML, parseMJML } from '../lib/prepare.js';
+import { existsSync, writeFileSync, readFileSync } from 'node:fs';
 import { getMJML, getImages, getPath, watch } from '../lib/export.js';
 import { __dirname, absolutePath, getFile } from '../api/filesystem.js';
 import { buildImage, convertHTML, isSpam, train } from '../api/spamassassin.js';
 import { enquire, EnquireMessages, EnquireNames, EnquireTypes } from '../api/enquire.js';
-import { existsSync, mkdirSync, writeFileSync, readdirSync, unlinkSync, readFileSync } from 'node:fs';
 
 program.version('0.10.0');
 
@@ -113,7 +114,7 @@ program
 
     if (options.clean) {
       console.log(`${chalk.yellow('\nCleaning bucket before upload...')}`);
-      console.log(`${chalk.blue((await supabaseAPI.cleanFolder(name)).data?.message)}`);
+      console.log(`${chalk.blue((await supabaseAPI.cleanBucket(name)).data?.message)}`);
     }
 
     if (path) {
@@ -123,7 +124,7 @@ program
       }
       save('paths', name, path);
 
-      const bucket: supabaseAPI.SupabaseStorageResult = await supabaseAPI.folderExists(name);
+      const bucket: supabaseAPI.SupabaseStorageResult = await supabaseAPI.bucketExists(name);
 
       if (bucket.error) {
         throw new Error('BUCKET ERROR: bucket doesn\'t exist! Use \'mailer bucket -c [name]\' to create one before trying to export a template.');
@@ -192,7 +193,7 @@ program
     else {
       let bucket: supabaseAPI.SupabaseStorageResult;
 
-      bucket = await supabaseAPI.folderExists(name);
+      bucket = await supabaseAPI.bucketExists(name);
       if (bucket.error) {
         throw new Error('BUCKET ERROR: bucket doesn\'t exist! Use \'mailer bucket -c [name]\' to create one before trying to export a template.');
       }
@@ -286,17 +287,17 @@ program
 .command('bucket')
 .description('Lists, creates or deletes a remote bucket')
 .argument('[name]', 'Name of the bucket as it exists in the server')
-.option('-d, --delete', 'deletes a bucket')
-.option('-c, --create', 'creates a bucket')
-.action(async (name, options) => {
+.option('-d, --delete', 'deletes a bucket', false)
+.option('-c, --create', 'creates a bucket', false)
+.action(async (name: string, options: {delete: boolean, create: boolean}) => {
   try {
     if (options.create) {
       process.stdout.write('\n');
       const spinner = ora(`${chalk.yellow(`Creating bucket named ${name}`)}`).start();
-      const { data, error } = await supabaseAPI.createFolder(name);
+      const { error } = await supabaseAPI.createBucket(name);
       if (error) {
         spinner.fail();
-        throw new Error(`${error.stack?.slice(17)}`);
+        throw new BucketError(`Failed to create bucket named ${name}! ${error.stack?.slice(17)}`);
       }
       spinner.succeed();
       return;
@@ -305,39 +306,39 @@ program
     if (options.delete) {
       process.stdout.write('\n');
       const spinner = ora(`${chalk.yellow(`Deleting bucket named ${name}`)}`).start();
-      const { data, error } = await supabaseAPI.deleteFolder(name);
+      const { error } = await supabaseAPI.deleteBucket(name);
       if (error) {
         spinner.fail();
-        throw new Error(`${error.stack?.slice(17)}`);
+        throw new BucketError(`Failed to delete bucket named ${name}! ${error.stack?.slice(17)}`);
       }
       spinner.succeed();
       return;
     }
 
+    process.stdout.write('\n');
+    const spinner = ora(`${chalk.yellow('Fetching buckets...')}`).start();
     const { data, error } = await supabaseAPI.listBuckets();
 
     if (error) {
-      throw new Error(`${error.stack?.slice(17)}`);
+      spinner.fail();
+      throw new BucketError(`Failed to fetch buckets! ${error.stack?.slice(17)}`);
     }
 
     if (data.length === 0) {
-      console.log(`${chalk.yellow('\nThere are no buckets')}`);
+      spinner.fail(`${chalk.red('There are no buckets in the server. Use \'mailer bucket -c [name]\' to create one.')}`);
       return;
     }
 
-    if (data) {
-      console.log(`${chalk.yellow('\nBuckets:')}`);
-      let count = 1;
-      for (let index in data) {
-        console.log(`${chalk.yellow(`${count}.`)} ${chalk.blue(data[index].name)}`);
-        count++
-      }
+    spinner.succeed(`${chalk.yellow('Buckets:')}`);
+    let count = 1;
+    for (let index in data) {
+      console.log(`  ${chalk.yellow(`${count}.`)} ${chalk.blue(data[index].name)}`);
+      count++
     }
   }
 
-  catch (error) {
+  catch (error: any) {
     console.log(`${chalk.red(error)}`);
-    process.exit(1);
   }
 });
 
@@ -346,29 +347,18 @@ program
 .description('Parses MJML file into HTML according to provided parameters')
 .argument('<name>', 'Name of the bucket where the MJML you want to parse is located')
 .option('-m, --marketo', 'parses MJML for Marketo', false)
-.action(async (name, options) => {
+.action(async (name: string, options: {marketo: boolean}) => {
   try {
-    // check is bucket exists
-    const bucket = await supabaseAPI.folderExists(name);
-    if (bucket.error) {
-      throw new Error('BUCKET ERROR: bucket doesn\'t exist! Use \'mailer bucket -c [name]\' to create one before trying to export a template.')
-    }
+    // Check if bucket exists
+    await supabaseAPI.bucketExists(name);
 
-    // check if temp folder exists
-    if (!existsSync(__dirname + 'temp')) {
-      mkdirSync(__dirname + 'temp');
-    }
-
-    else {
-      const files = readdirSync(__dirname + 'temp');
-      for (let file of files) {
-        unlinkSync(__dirname + 'temp\\' + file);
-      }
-    }
+    // Prepare temp folder
+    await createFolders(name);
+    await cleanTemp();
 
     // fetches mjml file
     process.stdout.write('\n');
-    const spinner = ora(`${chalk.yellow('Fetching MJML file from the', name, 'bucket...')}`).start();
+    const spinner = ora(`${chalk.yellow('Fetching and parsing MJML file from the', name, 'bucket...')}`).start();
     const mjmlBlob = await downloadMJML(name, options.marketo);
 
     if (mjmlBlob) {
@@ -381,7 +371,7 @@ program
 
       if (firstFetch.error) {
         spinner.fail();
-        throw new Error('Failed to fetch list of image names!');
+        throw new Error(`Failed to fetch list of image names! ${firstFetch.error.stack?.slice(17)}`);
       }
 
       firstFetch.data.forEach(fileObject => imgList.push(fileObject.name));
@@ -391,11 +381,12 @@ program
 
       if (secondFetch.error) {
         spinner.fail();
-        throw new Error('Failed to get signed URLs!');
+        throw new Error(`Failed to get signed URLs! ${secondFetch.error.stack?.slice(17)}`);
       }
 
       secondFetch.data.forEach(object => signedUrlList.push(object.signedUrl));
 
+      // MOVE THIS FUNCTION TO A SEPARATE FILE
       // replace local paths for remote paths
       for (let index in imgList) {
         const localPath = `(?<=src=")(.*)(${imgList[index]})(?=")`;
@@ -404,10 +395,10 @@ program
       };
 
       // save mjml with new paths
-      writeFileSync(__dirname + 'temp\\source.mjml', mjmlString);
+      await saveFile(__dirname + 'temp\\', 'source.mjml', mjmlString);
 
       const parsedHTML = parseMJML(readFileSync(__dirname + 'temp\\source.mjml', { encoding: 'utf8' }), options.marketo);
-      writeFileSync(__dirname + `temp\\parsed.html`, parsedHTML);
+      await saveFile(__dirname + 'temp\\', 'parsed.html', parsedHTML);
 
       const list = await supabaseAPI.listFiles(name);
       const exists = await supabaseAPI.fileExists(`${options.marketo? 'marketo.html' : 'index.html'}`, list.data);
@@ -417,25 +408,27 @@ program
 
         if (result.error) {
           spinner.fail();
-          console.error(`${chalk.red(result.error.stack)}`);
-          process.exit(1);
+          throw new Error(`Failed to delete ${options.marketo? 'marketo.html' : 'index.html'} file! ${result.error.stack?.slice(17)}`);
         }
+      }
+
+      else {
+        throw new Error(`File ${options.marketo? 'marketo.html' : 'index.html'} does not exist!`);
       }
 
       const results = await supabaseAPI.uploadFile(readFileSync(__dirname + 'temp\\parsed.html', { encoding: 'utf8' }), `${options.marketo? 'marketo.html' : 'index.html'}`, name);
 
       if (results.error) {
         spinner.fail();
-        throw new Error('Failed to upload HTML file!');
+        throw new Error(`Failed to upload HTML file! ${results.error.stack?.slice(17)}`);
       }
-      spinner.succeed();
-      console.log(`${chalk.blue('Successfully parsed MJML and uploaded HTML to server')}`);
+
+      spinner.succeed(`${chalk.green('Successfully parsed MJML and uploaded HTML to server')}`);
     }
   }
 
   catch (error) {
     console.error(`${chalk.red(error)}`);
-    process.exit(1);
   }
 });
 
@@ -454,7 +447,7 @@ program
       process.exit(1);
     }
 
-    const bucket = await supabaseAPI.folderExists(name);
+    const bucket = await supabaseAPI.bucketExists(name);
     if (bucket.error) {
       throw new Error('\nBUCKET ERROR: bucket doesn\'t exist! Use \'mailer bucket -c [name]\' to create one before trying to export a template.')
     }
@@ -537,7 +530,7 @@ program
 .action(async (name: string) => {
   // check if bucket exists
   try {
-    const bucket = await supabaseAPI.folderExists(name);
+    const bucket = await supabaseAPI.bucketExists(name);
     if (bucket.error) {
       throw new Error('\nBUCKET ERROR: bucket doesn\'t exist! Use \'mailer bucket -c [name]\' to create one before trying to export a template.');
     }
@@ -548,20 +541,8 @@ program
     process.exit(1);
   }
 
-  // check if downloads folder exists
-  if (!existsSync(__dirname + 'downloads')) {
-    mkdirSync(__dirname + 'downloads');
-  }
-
-  // check if template folder exists
-  if (!existsSync(__dirname + `downloads\\${name}`)) {
-    mkdirSync(__dirname + `downloads\\${name}`);
-  }
-
-  // check if downloads folder exists
-  if (!existsSync(__dirname + `downloads\\${name}\\img`)) {
-    mkdirSync(__dirname + `downloads\\${name}\\img`);
-  }
+  // Create template folders
+  await createFolders(name);
 
   process.stdout.write('\n');
   const spinner = ora(`${chalk.yellow(`Importing files...`)}`).start();
