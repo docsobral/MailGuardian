@@ -51,8 +51,7 @@ export async function deleteBucket(projectName: string) {
 }
 
 export async function cleanBucket(projectName: string) {
-  let result: SupabaseStorageResult;
-  return result = await supabase.storage.emptyBucket(projectName);
+  return await supabase.storage.emptyBucket(projectName);
 }
 
 export async function uploadFile(file: string | Buffer, fileName: string, projectName: string, contentType: 'text/plain' | 'image/png' = 'text/plain') {
