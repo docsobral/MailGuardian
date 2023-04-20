@@ -107,11 +107,20 @@ program
   try {
     const files = getConfigAndPath();
 
-    // Checks if there is a path saved for the bucket and if there is, it will use it (if not, it will use the path provided by the user) REFACTOR SOON
-    for (const entry of files.paths) {
-      if (entry[0] === name && !options.newPath) {
-        path = entry[1];
+    // Checks if there is a path saved for the bucket and if there is, it will use it (if not, it will use the path provided by the user)
+    // Skips if the user provided a path and the --new-path option
+    // If the user provided a path and the --new-path option, it will overwrite the saved path
+    // Refactor soon, because it will take too much CPU time once the number of buckets increases
+    if (!path || options.newPath) {
+      for (const entry of files.paths) {
+        if (entry[0] === name) {
+          path = absolutePath(entry[1]);
+        }
       }
+    }
+
+    else {
+      path = absolutePath(path);
     }
 
     if (options.clean) {
