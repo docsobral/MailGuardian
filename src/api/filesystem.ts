@@ -1,9 +1,9 @@
 import { enquire, EnquireMessages, EnquireNames, EnquireTypes } from './enquire.js';
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
+import { dirname, resolve, basename } from 'path';
 import { AppState } from '../lib/save.js';
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'url';
-import { dirname } from 'path';
 import chalk from 'chalk';
 
 function escapeBackslashes(path: string) {
@@ -21,16 +21,27 @@ const __filename: string = dirname(fileURLToPath(import.meta.url));
 
 export const __dirname: string = escapeBackslashes(__filename.split('build')[0]);
 
-export async function getFile(type: 'html' | 'mjml', path: string, marketo: boolean = false): Promise<string> {
+export function absolutePath(path: string): string {
+  if (path.startsWith('C:\\')) {
+    return path;
+  } else {
+    return resolve(__dirname, path);
+  }
+}
+
+export function pathAndFile(path: string): [string, string] {
+  return [dirname(path), basename(path)];
+}
+
+export async function getFile(fileType: 'html' | 'mjml', pathToFile: string, marketo: boolean = false, fileName: string = 'index'): Promise<string> {
   let string: string;
 
-  if (type === 'html') {
-    string = (await readFile(path + '\\index.html')).toString();
+  if (fileType === 'html') {
+    string = (await readFile(pathToFile + `\\${fileName}`)).toString();
     return string;
   }
 
-  const name = marketo ? 'marketo' : 'index';
-  string = (await readFile(path + `\\${name}.mjml`)).toString();
+  string = (await readFile(pathToFile + `\\${marketo ? 'marketo' : 'index'}.mjml`)).toString();
   return string;
 }
 
