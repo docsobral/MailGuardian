@@ -17,19 +17,19 @@ process.emitWarning = (warning, ...args) => {
 import ora from 'ora';
 import chalk from 'chalk';
 import { program } from 'commander';
-import { save, get } from '../lib/save.js';
 import { BucketError } from '../lib/error.js';
 import { importBucket } from '../lib/import.js';
 import * as supabaseAPI from '../api/supabase.js';
-import { cleanTemp, createFolders, pathAndFile, saveFile } from '../api/filesystem.js';
 import { isLoggedIn, login } from '../lib/login.js';
 import { isStorageError } from '@supabase/storage-js';
 import { downloadHTML, mailHTML } from '../lib/mail.js';
+import { save, getConfigAndPath } from '../lib/save.js';
 import { downloadMJML, parseMJML } from '../lib/prepare.js';
 import { existsSync, writeFileSync, readFileSync } from 'node:fs';
-import { getMJML, getImages, getPath, watch } from '../lib/export.js';
 import { __dirname, absolutePath, getFile } from '../api/filesystem.js';
+import { getPath, watch, uploadMJML, uploadImages } from '../lib/export.js';
 import { buildImage, convertHTML, isSpam, train } from '../api/spamassassin.js';
+import { cleanTemp, createFolders, pathAndFile, saveFile } from '../api/filesystem.js';
 import { enquire, EnquireMessages, EnquireNames, EnquireTypes } from '../api/enquire.js';
 
 program.version('0.10.0');
@@ -98,17 +98,16 @@ program
 .description('Exports MJML template into host server')
 .argument('<name>', 'Name of the bucket you want to export to')
 .argument('[path]', '(Optional) Path to the folder where the files are located')
-.option('-w, --watch', 'Watches template\'s folder for changes and updates bucket accordingly')
-.option('-n, --new-path', 'Ignore and overwrite current saved path')
-.option('-m, --marketo', 'Exports marketo MJML')
-.option('-c, --clean', 'Clean the bucket before export')
-.option('-i, --images', 'Doesn\'t export images')
+.option('-w, --watch', 'Watches template\'s folder for changes and updates bucket accordingly', false)
+.option('-n, --new-path', 'Ignore and overwrite current saved path', false)
+.option('-m, --marketo', 'Exports marketo MJML', false)
+.option('-c, --clean', 'Clean the bucket before export', false)
+.option('-i, --images', 'Doesn\'t export images', false)
 .action(async (name: string, path: string, options) => {
-  const marketo = options.marketo ? true : false;
-
   try {
-    const files = get();
+    const files = getConfigAndPath();
 
+    // Checks if there is a path saved for the bucket and if there is, it will use it (if not, it will use the path provided by the user) REFACTOR SOON
     for (const entry of files.paths) {
       if (entry[0] === name && !options.newPath) {
         path = entry[1];
@@ -116,79 +115,46 @@ program
     }
 
     if (options.clean) {
-      console.log(`${chalk.yellow('\nCleaning bucket before upload...')}`);
-      console.log(`${chalk.blue((await supabaseAPI.cleanBucket(name)).data?.message)}`);
+      process.stdout.write('\n');
+      const spinner = ora(`${chalk.yellow('Cleaning bucket...')}`).start();
+      const result = await supabaseAPI.cleanBucket(name);
+
+      if (result.error) {
+        spinner.fail('Failed to clean bucket!');
+        process.exit(1);
+      }
+
+      spinner.succeed(`${chalk.green(result.data.message + ' bucket!')}`);
     }
 
     if (path) {
       const check = existsSync(path);
       if (!check) {
-        throw new Error('The path provided is broken')
+        throw new Error('The path provided is broken... try again!');
       }
+
       save('paths', name, path);
 
       const bucket: supabaseAPI.SupabaseStorageResult = await supabaseAPI.bucketExists(name);
-
       if (bucket.error) {
         throw new Error('BUCKET ERROR: bucket doesn\'t exist! Use \'mailer bucket -c [name]\' to create one before trying to export a template.');
       }
 
       if (options.watch) {
-        await watch(path, name, marketo);
+        await watch(path, name, options.marketo);
       }
 
       else {
-
         if (!options.marketo) {
-          try {
-            process.stdout.write('\n');
-            const spinner = ora(`${chalk.green('Uploading mjml file...')}`).start();
-            const mjml = await getMJML(path);
-            const upload = await supabaseAPI.uploadFile(mjml, 'index.mjml', name, 'text/plain');
-            if (upload.error) {
-              spinner.fail();
-              throw new Error('Failed to upload mjml file!');
-            }
-            spinner.succeed();
-          }
-
-          catch (error) {
-            console.warn(`${chalk.red(error)}`);
-          }
+          await uploadMJML(name, path);
         }
 
-        if (options.marketo) {
-          try {
-            process.stdout.write('\n');
-            const spinner = ora(`${chalk.green('Uploading marketo mjml file...')}`).start();
-            const marketoMJML = await getMJML(path, true);
-            const upload = await supabaseAPI.uploadFile(marketoMJML, 'marketo.mjml', name, 'text/plain');
-            if (upload.error) {
-              spinner.fail();
-              throw new Error('Failed to upload marketo mjml file!');
-            }
-            spinner.succeed();
-          }
-
-          catch (error) {
-            console.warn(`${chalk.red(error)}`);
-          }
+        else {
+          await uploadMJML(name, path, true);
         }
-
-        const images = await getImages(path);
 
         if (!options.images) {
-          process.stdout.write('\n');
-          const spinner = ora(`${chalk.green('Uploading images...')}`).start();
-          Object.keys(images).forEach(async (imageName) => {
-            const upload = await supabaseAPI.uploadFile(images[imageName], `img/${imageName}`, name, 'image/png');
-            if (upload.error) {
-              spinner.text = `${spinner.text}\n${chalk.red(`Failed to upload ${imageName}! ${upload.error.message}`)}`;
-            }
-            spinner.text = `${spinner.text}\n${chalk.blue('Succesfully uploaded', imageName)}`;
-          });
-          await delay(3000);
-          spinner.succeed();
+          await uploadImages(name, path);
         }
       }
     }
@@ -198,79 +164,36 @@ program
 
       bucket = await supabaseAPI.bucketExists(name);
       if (bucket.error) {
-        throw new Error('BUCKET ERROR: bucket doesn\'t exist! Use \'mailer bucket -c [name]\' to create one before trying to export a template.');
+        throw new BucketError(`Bucket ${name} doesn\'t exist! Use \'mailer bucket -c [name]\' to create one before trying to export a template.`);
       }
 
       path = await getPath();
-
       if (path === 'cancelled') {
         throw new Error('Operation cancelled by the user');
       }
 
       const check = existsSync(path);
-
       if (!check) {
-        throw new Error('The path provided is broken');
+        throw new Error('The path provided is invalid... try again!');
       }
 
       save('paths', name, path);
 
       if (options.watch) {
-        await watch(path, name, marketo);
+        await watch(path, name, options.marketo);
       }
 
       else {
-
         if (!options.marketo) {
-          try {
-            process.stdout.write('\n');
-            const spinner = ora(`${chalk.green('Uploading mjml file...')}`).start();
-            const mjml = await getMJML(path);
-            const upload = await supabaseAPI.uploadFile(mjml, 'index.mjml', name, 'text/plain');
-            if (upload.error) {
-              spinner.fail();
-              throw new Error('Failed to upload mjml file!');
-            }
-            spinner.succeed();
-          }
-
-          catch (error) {
-            console.error(`${chalk.red(error)}`);
-          }
+          await uploadMJML(name, path);
         }
 
-        if (options.marketo) {
-          try {
-            process.stdout.write('\n');
-            const spinner = ora(`${chalk.green('Uploading marketo mjml file...')}`).start();
-            const marketoMJML = await getMJML(path, true);
-            const upload = await supabaseAPI.uploadFile(marketoMJML, 'marketo.mjml', name , 'text/plain');
-            if (upload.error) {
-              spinner.fail();
-              throw new Error('Failed to upload marketo mjml file!');
-            }
-            spinner.succeed();
-          }
-
-          catch (error) {
-            console.warn(`${chalk.red(error)}`);
-          }
+        else {
+          await uploadMJML(name, path, true);
         }
-
-        const images = await getImages(path);
 
         if (!options.images) {
-          process.stdout.write('\n');
-          const spinner = ora(`${chalk.green('Uploading images...')}`).start();
-          Object.keys(images).forEach(async (imageName) => {
-            const upload = await supabaseAPI.uploadFile(images[imageName], `img/${imageName}`, name, 'image/png');
-            if (upload.error) {
-              spinner.text = `${spinner.text}\n${chalk.red(`Failed to upload ${imageName}! ${upload.error.message}`)}`;
-            }
-            spinner.text = `${spinner.text}\n${chalk.blue('Succesfully uploaded', imageName)}`;
-          });
-          await delay(3000);
-          spinner.succeed();
+          await uploadImages(name, path);
         }
       }
     }
@@ -278,7 +201,6 @@ program
 
   catch (error) {
     console.error(`${chalk.red(error)}`);
-    process.exit(1);
   }
 });
 
