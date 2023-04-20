@@ -136,3 +136,13 @@ If you'd like to gauge the spam score of the email you've build, then first you 
 SpamAssassin results can be improved if you train it with real examples of spam and ham. The SpamAssassin Public Corpus has been added as a dependency, and will be used to train SpamAssassin if you run the `mailer spam --learn` command. It takes a few minutes, but results can be dramatically improved.
 
 To download the a template's files, including images, the MJML file and either regular or Marketo HTML, use `mailer import <bucketname>`. If you don't use any flag, the regular HTML will be downloaded.
+
+## Known bugs
+
+### After selecting a folder, Mailer says the path is invalid
+
+Sometimes, when selecting a folder from the dialog, Mailer will accuse the path of being broken. That is because win-select-folder is not working properly. If you encounter this bug, just select the folder again and it should work.
+
+### After running `mailer export` and trying to run `mailer prepare`, Mailer says it can't find the template
+
+Sometimes, after running `mailer export`, the template will not be found when running `mailer prepare`. This is because something went wrong with the upload. There could be many reasons for that, out of our control. If you encounter this bug, just run `mailer export` again and it should work.
