@@ -48,7 +48,7 @@ export function saveState(key: string, value: string | boolean, encrypt = false)
   writeFileSync(__dirname + 'config\\state.json', stateString);
 }
 
-export function get(): {config: AppConfig, paths: AppPaths} {
+export function getConfigAndPath(): {config: AppConfig, paths: AppPaths} {
   const config: AppConfig = JSON.parse(readFileSync(__dirname + `config\\config.json`, { encoding: 'utf8' }));
   const paths: AppPaths = Object.entries(JSON.parse(readFileSync(__dirname + `config\\paths.json`, { encoding: 'utf8' })));
 
