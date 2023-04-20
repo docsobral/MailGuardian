@@ -1,5 +1,5 @@
 import { enquire, EnquireMessages, EnquireNames, EnquireTypes } from './enquire.js';
-import { readFile, mkdir, writeFile } from 'node:fs/promises';
+import { readFile, mkdir, writeFile, readdir, unlink } from 'node:fs/promises';
 import { dirname, resolve, basename } from 'path';
 import { AppState } from '../lib/save.js';
 import { existsSync } from 'node:fs';
@@ -110,5 +110,44 @@ export async function checkFirstUse(): Promise<void> {
     await writeFile(__dirname + 'config\\config.json', JSON.stringify(appConfigs, null, 2));
     console.log(`${chalk.yellow('Finished creating config files and terminating process. Now run \'mailer login <email> <passoword>\'.')}`);
     process.exit(1);
+  }
+}
+
+export async function createFolders(templateName: string): Promise<void> {
+  // check if downloads folder exists
+  if (!existsSync(__dirname + 'downloads')) {
+    await mkdir(__dirname + 'downloads');
+  }
+
+  // check if template folder exists
+  if (!existsSync(__dirname + `downloads\\${templateName}`)) {
+    await mkdir(__dirname + `downloads\\${templateName}`);
+  }
+
+  // check if downloads folder exists
+  if (!existsSync(__dirname + `downloads\\${templateName}\\img`)) {
+    await mkdir(__dirname + `downloads\\${templateName}\\img`);
+  }
+
+  // check if temp folder exists
+  if (!existsSync(__dirname + 'temp')) {
+    await mkdir(__dirname + 'temp');
+  }
+}
+
+export async function cleanTemp(): Promise<void> {
+  const files = await readdir(__dirname + 'temp');
+
+  for (let file of files) {
+    await unlink(__dirname + `temp\\${file}`);
+  }
+}
+
+// IMPLEMENT THIS
+export async function cleanDownloads(): Promise<void> {
+  const files = await readdir(__dirname + 'downloads');
+
+  for (let file of files) {
+    await unlink(__dirname + `downloads\\${file}`);
   }
 }
