@@ -180,3 +180,22 @@ export async function train(): Promise<void> {
   await startContainer();
   await trainSpamAssassin().then(async () => await stopContainer());
 }
+
+export async function buildImage(): Promise<void> {
+  const dockerBuild = spawn('docker', ['build', '-t', 'spamassassin:latest', 'sa']);
+  dockerBuild.stdout.on('data', (data) => {
+    console.log(data.toString());
+  });
+
+  dockerBuild.stderr.on('data', (data) => {
+    console.error(data.toString());
+  });
+
+  dockerBuild.on('exit', (code) => {
+    if (code !== 0) {
+      console.error(`${chalk.red(`Docker build process exited with code ${code}`)}`);
+    } else {
+      console.log(`${chalk.green('Docker build process completed successfully!')}`);
+    }
+  });
+}
