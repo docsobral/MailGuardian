@@ -35,27 +35,32 @@ Marketo variables can be used with the MJML, and they will be parsed for Marketo
 
 The name value *MUST* be a single word. Camel case is not mandatory. Single quotes are optional around name and default values. Double quotes are ***FORBIDDEN*** to avoid conflict with the HTML. All following examples are valid Marketo variables and will be correctly parsed by Mailer:
 
-<code>${text: fontWeight; default: bold}</code>\
-`${text: textAlignment; default: 'left'}`\
-`${color: 'bgColor'; default: '#F7F7F7'}`\
-<code>${number:&nbsp;&nbsp;&nbsp;'name'&nbsp;&nbsp;&nbsp;; &nbsp;&nbsp;&nbsp;default:&nbsp;&nbsp;&nbsp;'20'&nbsp;&nbsp;&nbsp;}</code>
+```
+${text: fontWeight; default: bold}</code>
+${text: textAlignment; default: 'left'}
+${color: 'bgColor'; default: '#F7F7F7'}
+${number:  'name'  ; '20'  }
+${number:   name    ;  20   }
+```
 
-The last example is meant to demonstrate that whitespaces before and after the name and default values or before and after the semi-colon will be trimmed. Whitespace before the name attribute (text, color, number) is not allowed:
+The last two examples are meant to demonstrate that whitespaces before and after the name and default values or before and after the semi-colon will be trimmed. Whitespace before the name attribute (text, color, number) is not allowed:
 
 `${   text: 'someName'; default: 'some text'}`
 
 The above variable is invalid. Even though the rest of the variable is valid, the whitespace between '${' and 'text' renders it invalid.
 
-It is preferable that you just follow the regular `\${text: coolName; default: someText}` with no whitespaces and quotation marks.
+It is preferable that you just follow the regular `${text: coolName; default: someText}` with no whitespaces and quotation marks.
 
 <br>
 
 e.g.:\
-<code><mj-column\
-&nbsp;&nbsp;&nbsp;&nbsp;background-color="\${color: columnBgColor; default: #F2F2F2}"\
-&nbsp;&nbsp;&nbsp;&nbsp;padding="0px \${number: columnHPadding; default: 10}px">\
-&nbsp;&nbsp;&nbsp;&nbsp;***CHILDREN***\
-\</mj-column></code>
+```
+<mj-column
+  background-color="${color: columnBgColor; default: #F2F2F2}"
+  padding="0px ${number: columnHPadding; default: 10}px">
+  ***CHILDREN***
+</mj-column>
+```
 
 <br>
 
