@@ -42,7 +42,6 @@ program
 .argument('<password>', 'If you use 2FA, your regular password will not work')
 .action(async (id: string, password: string) => {
   password = password.replace(/\\/g, '');
-  console.log(password);
 
   try {
     const check = await isLoggedIn();
@@ -104,7 +103,7 @@ program
 .option('-m, --marketo', 'Exports marketo MJML', false)
 .option('-c, --clean', 'Clean the bucket before export', false)
 .option('-i, --images', 'Doesn\'t export images', false)
-.action(async (name: string, path: string, options) => {
+.action(async (name: string, path: string, options: { watch: boolean, newPath: boolean, marketo: boolean, clean: boolean, images: boolean}) => {
   try {
     const files = getConfigAndPath();
 
@@ -422,7 +421,6 @@ program
 });
 
 enum Config {
-  key = 'SUPA_KEY',
   secret = 'SUPA_SECRET',
   url = 'SUPA_URL',
   secretKey = 'SECRET_KEY',
@@ -511,7 +509,8 @@ program
         writeFileSync(__dirname + `downloads\\${name}\\marketo.html`, files[key]);
       }
     });
-    spinner.succeed();
+
+    spinner.succeed(`Imported files from ${chalk.green(name)} bucket to ${chalk.green(__dirname + `downloads\\\\${name}`)}`);
   }
 
   catch (error) {
