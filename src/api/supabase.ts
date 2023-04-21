@@ -1,6 +1,7 @@
 import chalk from 'chalk';
 import { readFileSync } from 'node:fs';
 import { __dirname } from './filesystem.js';
+import { BucketError } from '../lib/error.js';
 import { checkFirstUse } from './filesystem.js';
 import { createClient } from '@supabase/supabase-js';
 import { Bucket, FileObject, StorageError } from '@supabase/storage-js';
@@ -21,7 +22,7 @@ catch (error) {
 const config: Config = JSON.parse(readFileSync(__dirname + 'config\\config.json', { encoding: 'utf8' }));
 
 if (typeof config['SUPA_URL'] === 'undefined' || typeof config['SUPA_SECRET'] === 'undefined') {
-  console.log(`${chalk.red('Missing API url, key or secret key!')}`);
+  console.log(`${chalk.red('Missing API url, key or secret key! Please run \'mailer config\' to set them.')}`);
   process.exit(1);
 }
 
@@ -38,20 +39,19 @@ export type SupabaseDownloadResult = {
 const options = { db: { schema: 'public' }, auth: { autoRefreshToken: true, persistSession: true, detectSessionInUrl: true } };
 const supabase = createClient(config['SUPA_URL'], config['SUPA_SECRET'], options);
 
-export async function createFolder(projectName: string) {
+export async function createBucket(projectName: string) {
   let result: SupabaseStorageResult = await supabase.storage.createBucket(projectName, { public: false });
   return result;
 }
 
-export async function deleteFolder(projectName: string) {
+export async function deleteBucket(projectName: string) {
   await supabase.storage.emptyBucket(projectName);
   let result: SupabaseStorageResult = await supabase.storage.deleteBucket(projectName);
   return result;
 }
 
-export async function cleanFolder(projectName: string) {
-  let result: SupabaseStorageResult;
-  return result = await supabase.storage.emptyBucket(projectName);
+export async function cleanBucket(projectName: string) {
+  return await supabase.storage.emptyBucket(projectName);
 }
 
 export async function uploadFile(file: string | Buffer, fileName: string, projectName: string, contentType: 'text/plain' | 'image/png' = 'text/plain') {
@@ -81,9 +81,12 @@ export async function deleteFile(fileName: string, projectName: string) {
   return result;
 }
 
-export async function folderExists(projectName: string) {
-  let result: SupabaseStorageResult;
-  return result = await supabase.storage.getBucket(projectName);
+export async function bucketExists(projectName: string) {
+  let result: SupabaseStorageResult = await supabase.storage.getBucket(projectName);
+  if (result.error) {
+    throw new BucketError(`Bucket ${name} doesn\'t exist! Use \'mailer bucket -c [name]\' to create one before trying to export a template.`);
+  }
+  return result;
 }
 
 export async function downloadFile(projectName: string, extension: 'mjml' | 'html' | 'png', marketo: boolean = false, imageName?: string): Promise<SupabaseDownloadResult> {

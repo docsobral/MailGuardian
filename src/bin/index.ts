@@ -17,34 +17,38 @@ process.emitWarning = (warning, ...args) => {
 import ora from 'ora';
 import chalk from 'chalk';
 import { program } from 'commander';
-import { spawn } from 'child_process';
-import { save, get } from '../lib/save.js';
+import { BucketError } from '../lib/error.js';
 import { importBucket } from '../lib/import.js';
-import { __dirname } from '../api/filesystem.js';
+import { AuthError } from '@supabase/supabase-js';
 import * as supabaseAPI from '../api/supabase.js';
-import { getHTML } from '../api/filesystem.js';
 import { isLoggedIn, login } from '../lib/login.js';
 import { isStorageError } from '@supabase/storage-js';
 import { downloadHTML, mailHTML } from '../lib/mail.js';
+import { save, getConfigAndPath } from '../lib/save.js';
 import { downloadMJML, parseMJML } from '../lib/prepare.js';
-import { convertHTML, isSpam, train } from '../api/spamassassin.js';
-import { getMJML, getImages, getPath, watch } from '../lib/export.js';
+import { existsSync, writeFileSync, readFileSync } from 'node:fs';
+import { __dirname, absolutePath, getFile } from '../api/filesystem.js';
+import { getPath, watch, uploadMJML, uploadImages } from '../lib/export.js';
+import { buildImage, convertHTML, isSpam, train } from '../api/spamassassin.js';
+import { cleanTemp, createFolders, pathAndFile, saveFile } from '../api/filesystem.js';
 import { enquire, EnquireMessages, EnquireNames, EnquireTypes } from '../api/enquire.js';
-import { existsSync, mkdirSync, writeFileSync, readdirSync, unlinkSync, readFileSync } from 'node:fs';
 
-program.version('0.10.0');
+program.version('0.11.0');
 
 program
-.command('login')
+.command('save-credentials')
 .description('Valitades and stores sender email address credentials')
 .argument('<id>', 'User ID e.g. email@address.com')
 .argument('<password>', 'If you use 2FA, your regular password will not work')
-.action(async (id, password) => {
+.action(async (id: string, password: string) => {
+  password = password.replace(/\\/g, '');
+
   try {
     const check = await isLoggedIn();
 
     if (check) {
-      console.log(`${chalk.yellow('\nYou are already logged in... do you want to change accounts?')}`);
+      console.log(`${chalk.yellow('\nYou already have saved credentials... do you want to switch accounts?')}`);
+
       const { confirm } = await enquire([
         {
           type: EnquireTypes.confirm,
@@ -55,38 +59,37 @@ program
 
       if (confirm) {
         process.stdout.write('\n');
-        const spinner = ora('Logging in...').start();
-        const success = await login(id, password);
-        if (!success) {
+        const spinner = ora('Validating credentials...').start();
+
+        if (!(await login(id, password))) {
           spinner.fail();
           throw new Error('Failed to login!');
         }
-        spinner.succeed();
-        console.log(`${chalk.blueBright('Success! Saving your credentials')}`);
+
+        spinner.succeed(`${chalk.green('Success! Your credentials were saved.')}`);
       }
 
       else {
-        console.log(`${chalk.red('\nAborting...')}`);
+        console.log(`${chalk.blueBright('Ok, exiting...')}`);
         process.exit();
       }
     }
 
     else {
       process.stdout.write('\n');
-      const spinner = ora('Logging in...').start();
-      const success = await login(id, password);
-      if (!success) {
+      const spinner = ora('Validating credentials...').start();
+
+      if (await login(id, password)) {
         spinner.fail();
-        throw new Error('Failed to login!');
+        throw new Error('Something went wrong... try again!');
       }
-      spinner.succeed();
-      console.log(`${chalk.blueBright('Success! Saving your credentials')}`);
+
+      spinner.succeed(`${chalk.blueBright('Success! Your credentials were saved.')}`);
     }
   }
 
   catch (error) {
     console.error(`${chalk.red(error)}`);
-    process.exit(1);
   }
 });
 
@@ -95,97 +98,72 @@ program
 .description('Exports MJML template into host server')
 .argument('<name>', 'Name of the bucket you want to export to')
 .argument('[path]', '(Optional) Path to the folder where the files are located')
-.option('-w, --watch', 'Watches template\'s folder for changes and updates bucket accordingly')
-.option('-n, --new-path', 'Ignore and overwrite current saved path')
-.option('-m, --marketo', 'Exports marketo MJML')
-.option('-c, --clean', 'Clean the bucket before export')
-.option('-i, --images', 'Doesn\'t export images')
-.action(async (name: string, path: string, options) => {
-  const marketo = options.marketo ? true : false;
-
+.option('-w, --watch', 'Watches template\'s folder for changes and updates bucket accordingly', false)
+.option('-n, --new-path', 'Ignore and overwrite current saved path', false)
+.option('-m, --marketo', 'Exports marketo MJML', false)
+.option('-c, --clean', 'Clean the bucket before export', false)
+.option('-i, --images', 'Doesn\'t export images', false)
+.action(async (name: string, path: string, options: { watch: boolean, newPath: boolean, marketo: boolean, clean: boolean, images: boolean}) => {
   try {
-    const files = get();
+    const files = getConfigAndPath();
 
-    for (const entry of files.paths) {
-      if (entry[0] === name && !options.newPath) {
-        path = entry[1];
+    // Checks if there is a path saved for the bucket and if there is, it will use it (if not, it will use the path provided by the user)
+    // Skips if the user provided a path and the --new-path option
+    // If the user provided a path and the --new-path option, it will overwrite the saved path
+    // Refactor soon, because it will take too much CPU time once the number of buckets increases
+    if (!path || options.newPath) {
+      for (const entry of files.paths) {
+        if (entry[0] === name) {
+          path = absolutePath(entry[1]);
+        }
       }
     }
 
+    else {
+      path = absolutePath(path);
+    }
+
     if (options.clean) {
-      console.log(`${chalk.yellow('\nCleaning bucket before upload...')}`);
-      console.log(`${chalk.blue((await supabaseAPI.cleanFolder(name)).data?.message)}`);
+      process.stdout.write('\n');
+      const spinner = ora(`${chalk.yellow('Cleaning bucket...')}`).start();
+      const result = await supabaseAPI.cleanBucket(name);
+
+      if (result.error) {
+        spinner.fail('Failed to clean bucket!');
+        process.exit(1);
+      }
+
+      spinner.succeed(`${chalk.green(result.data.message + ' bucket!')}`);
     }
 
     if (path) {
       const check = existsSync(path);
       if (!check) {
-        throw new Error('The path provided is broken')
+        throw new Error('The path provided is broken... try again!');
       }
+
       save('paths', name, path);
 
-      const bucket: supabaseAPI.SupabaseStorageResult = await supabaseAPI.folderExists(name);
-
+      const bucket: supabaseAPI.SupabaseStorageResult = await supabaseAPI.bucketExists(name);
       if (bucket.error) {
         throw new Error('BUCKET ERROR: bucket doesn\'t exist! Use \'mailer bucket -c [name]\' to create one before trying to export a template.');
       }
 
       if (options.watch) {
-        await watch(path, name, marketo);
+        await watch(path, name, options.marketo);
       }
 
       else {
-
         if (!options.marketo) {
-          try {
-            process.stdout.write('\n');
-            const spinner = ora(`${chalk.green('Uploading mjml file...')}`).start();
-            const mjml = await getMJML(path);
-            const upload = await supabaseAPI.uploadFile(mjml, 'index.mjml', name, 'text/plain');
-            if (upload.error) {
-              spinner.fail();
-              throw new Error('Failed to upload mjml file!');
-            }
-            spinner.succeed();
-          }
-
-          catch (error) {
-            console.warn(`${chalk.red(error)}`);
-          }
+          await uploadMJML(name, path);
         }
 
-        if (options.marketo) {
-          try {
-            process.stdout.write('\n');
-            const spinner = ora(`${chalk.green('Uploading marketo mjml file...')}`).start();
-            const marketoMJML = await getMJML(path, true);
-            const upload = await supabaseAPI.uploadFile(marketoMJML, 'marketo.mjml', name, 'text/plain');
-            if (upload.error) {
-              spinner.fail();
-              throw new Error('Failed to upload marketo mjml file!');
-            }
-            spinner.succeed();
-          }
-
-          catch (error) {
-            console.warn(`${chalk.red(error)}`);
-          }
+        else {
+          await uploadMJML(name, path, true);
         }
-
-        const images = await getImages(path);
 
         if (!options.images) {
-          process.stdout.write('\n');
-          const spinner = ora(`${chalk.green('Uploading images...')}`).start();
-          Object.keys(images).forEach(async (imageName) => {
-            const upload = await supabaseAPI.uploadFile(images[imageName], `img/${imageName}`, name, 'image/png');
-            if (upload.error) {
-              spinner.text = `${spinner.text}\n${chalk.red(`Failed to upload ${imageName}! ${upload.error.message}`)}`;
-            }
-            spinner.text = `${spinner.text}\n${chalk.blue('Succesfully uploaded', imageName)}`;
-          });
-          await delay(3000);
-          spinner.succeed();
+          await uploadImages(name, path);
         }
       }
     }
@@ -193,81 +171,38 @@ program
     else {
       let bucket: supabaseAPI.SupabaseStorageResult;
 
-      bucket = await supabaseAPI.folderExists(name);
+      bucket = await supabaseAPI.bucketExists(name);
       if (bucket.error) {
-        throw new Error('BUCKET ERROR: bucket doesn\'t exist! Use \'mailer bucket -c [name]\' to create one before trying to export a template.');
+        throw new BucketError(`Bucket ${name} doesn\'t exist! Use \'mailer bucket -c <name>\' to create one before trying to export a template.`);
       }
 
       path = await getPath();
-
       if (path === 'cancelled') {
         throw new Error('Operation cancelled by the user');
       }
 
       const check = existsSync(path);
-
       if (!check) {
-        throw new Error('The path provided is broken');
+        throw new Error('The path provided is invalid... try again!');
       }
 
       save('paths', name, path);
 
       if (options.watch) {
-        await watch(path, name, marketo);
+        await watch(path, name, options.marketo);
       }
 
       else {
-
         if (!options.marketo) {
-          try {
-            process.stdout.write('\n');
-            const spinner = ora(`${chalk.green('Uploading mjml file...')}`).start();
-            const mjml = await getMJML(path);
-            const upload = await supabaseAPI.uploadFile(mjml, 'index.mjml', name, 'text/plain');
-            if (upload.error) {
-              spinner.fail();
-              throw new Error('Failed to upload mjml file!');
-            }
-            spinner.succeed();
-          }
-
-          catch (error) {
-            console.error(`${chalk.red(error)}`);
-          }
+          await uploadMJML(name, path);
         }
 
-        if (options.marketo) {
-          try {
-            process.stdout.write('\n');
-            const spinner = ora(`${chalk.green('Uploading marketo mjml file...')}`).start();
-            const marketoMJML = await getMJML(path, true);
-            const upload = await supabaseAPI.uploadFile(marketoMJML, 'marketo.mjml', name , 'text/plain');
-            if (upload.error) {
-              spinner.fail();
-              throw new Error('Failed to upload marketo mjml file!');
-            }
-            spinner.succeed();
-          }
-
-          catch (error) {
-            console.warn(`${chalk.red(error)}`);
-          }
+        else {
+          await uploadMJML(name, path, true);
         }
-
-        const images = await getImages(path);
 
         if (!options.images) {
-          process.stdout.write('\n');
-          const spinner = ora(`${chalk.green('Uploading images...')}`).start();
-          Object.keys(images).forEach(async (imageName) => {
-            const upload = await supabaseAPI.uploadFile(images[imageName], `img/${imageName}`, name, 'image/png');
-            if (upload.error) {
-              spinner.text = `${spinner.text}\n${chalk.red(`Failed to upload ${imageName}! ${upload.error.message}`)}`;
-            }
-            spinner.text = `${spinner.text}\n${chalk.blue('Succesfully uploaded', imageName)}`;
-          });
-          await delay(3000);
-          spinner.succeed();
+          await uploadImages(name, path);
         }
       }
     }
@@ -275,7 +210,6 @@ program
 
   catch (error) {
     console.error(`${chalk.red(error)}`);
-    process.exit(1);
   }
 });
 
@@ -287,17 +221,17 @@ program
 .command('bucket')
 .description('Lists, creates or deletes a remote bucket')
 .argument('[name]', 'Name of the bucket as it exists in the server')
-.option('-d, --delete', 'deletes a bucket')
-.option('-c, --create', 'creates a bucket')
-.action(async (name, options) => {
+.option('-d, --delete', 'deletes a bucket', false)
+.option('-c, --create', 'creates a bucket', false)
+.action(async (name: string, options: {delete: boolean, create: boolean}) => {
   try {
     if (options.create) {
       process.stdout.write('\n');
       const spinner = ora(`${chalk.yellow(`Creating bucket named ${name}`)}`).start();
-      const { data, error } = await supabaseAPI.createFolder(name);
+      const { error } = await supabaseAPI.createBucket(name);
       if (error) {
         spinner.fail();
-        throw new Error(`${error.stack?.slice(17)}`);
+        throw new BucketError(`Failed to create bucket named ${name}! ${error.stack?.slice(17)}`);
       }
       spinner.succeed();
       return;
@@ -306,39 +240,39 @@ program
     if (options.delete) {
       process.stdout.write('\n');
       const spinner = ora(`${chalk.yellow(`Deleting bucket named ${name}`)}`).start();
-      const { data, error } = await supabaseAPI.deleteFolder(name);
+      const { error } = await supabaseAPI.deleteBucket(name);
       if (error) {
         spinner.fail();
-        throw new Error(`${error.stack?.slice(17)}`);
+        throw new BucketError(`Failed to delete bucket named ${name}! ${error.stack?.slice(17)}`);
       }
       spinner.succeed();
       return;
     }
 
+    process.stdout.write('\n');
+    const spinner = ora(`${chalk.yellow('Fetching buckets...')}`).start();
     const { data, error } = await supabaseAPI.listBuckets();
 
     if (error) {
-      throw new Error(`${error.stack?.slice(17)}`);
+      spinner.fail();
+      throw new BucketError(`Failed to fetch buckets! ${error.stack?.slice(17)}`);
     }
 
     if (data.length === 0) {
-      console.log(`${chalk.yellow('\nThere are no buckets')}`);
+      spinner.fail(`${chalk.red('There are no buckets in the server. Use \'mailer bucket -c [name]\' to create one.')}`);
       return;
     }
 
-    if (data) {
-      console.log(`${chalk.yellow('\nBuckets:')}`);
-      let count = 1;
-      for (let index in data) {
-        console.log(`${chalk.yellow(`${count}.`)} ${chalk.blue(data[index].name)}`);
-        count++
-      }
+    spinner.succeed(`${chalk.yellow('Buckets:')}`);
+    let count = 1;
+    for (let index in data) {
+      console.log(`  ${chalk.yellow(`${count}.`)} ${chalk.blue(data[index].name)}`);
+      count++
     }
   }
 
-  catch (error) {
+  catch (error: any) {
     console.log(`${chalk.red(error)}`);
-    process.exit(1);
   }
 });
 
@@ -347,29 +281,18 @@ program
 .description('Parses MJML file into HTML according to provided parameters')
 .argument('<name>', 'Name of the bucket where the MJML you want to parse is located')
 .option('-m, --marketo', 'parses MJML for Marketo', false)
-.action(async (name, options) => {
+.action(async (name: string, options: {marketo: boolean}) => {
   try {
-    // check is bucket exists
-    const bucket = await supabaseAPI.folderExists(name);
-    if (bucket.error) {
-      throw new Error('BUCKET ERROR: bucket doesn\'t exist! Use \'mailer bucket -c [name]\' to create one before trying to export a template.')
-    }
+    // Check if bucket exists
+    await supabaseAPI.bucketExists(name);
 
-    // check if temp folder exists
-    if (!existsSync(__dirname + 'temp')) {
-      mkdirSync(__dirname + 'temp');
-    }
-
-    else {
-      const files = readdirSync(__dirname + 'temp');
-      for (let file of files) {
-        unlinkSync(__dirname + 'temp\\' + file);
-      }
-    }
+    // Prepare temp folder
+    await createFolders(name);
+    await cleanTemp();
 
     // fetches mjml file
     process.stdout.write('\n');
-    const spinner = ora(`${chalk.yellow('Fetching MJML file from the', name, 'bucket...')}`).start();
+    const spinner = ora(`${chalk.yellow('Fetching and parsing MJML file from the', name, 'bucket...')}`).start();
     const mjmlBlob = await downloadMJML(name, options.marketo);
 
     if (mjmlBlob) {
@@ -382,7 +305,7 @@ program
 
       if (firstFetch.error) {
         spinner.fail();
-        throw new Error('Failed to fetch list of image names!');
+        throw new Error(`Failed to fetch list of image names! ${firstFetch.error.stack?.slice(17)}`);
       }
 
       firstFetch.data.forEach(fileObject => imgList.push(fileObject.name));
@@ -392,11 +315,12 @@ program
 
       if (secondFetch.error) {
         spinner.fail();
-        throw new Error('Failed to get signed URLs!');
+        throw new Error(`Failed to get signed URLs! ${secondFetch.error.stack?.slice(17)}`);
       }
 
       secondFetch.data.forEach(object => signedUrlList.push(object.signedUrl));
 
+      // MOVE THIS FUNCTION TO A SEPARATE FILE
       // replace local paths for remote paths
       for (let index in imgList) {
         const localPath = `(?<=src=")(.*)(${imgList[index]})(?=")`;
@@ -405,38 +329,40 @@ program
       };
 
       // save mjml with new paths
-      writeFileSync(__dirname + 'temp\\source.mjml', mjmlString);
+      await saveFile(__dirname + 'temp\\', 'source.mjml', mjmlString);
 
       const parsedHTML = parseMJML(readFileSync(__dirname + 'temp\\source.mjml', { encoding: 'utf8' }), options.marketo);
-      writeFileSync(__dirname + `temp\\parsed.html`, parsedHTML);
+      await saveFile(__dirname + 'temp\\', 'parsed.html', parsedHTML);
 
       const list = await supabaseAPI.listFiles(name);
-      const exists = await supabaseAPI.fileExists(`${options.marketo? 'marketo.html' : 'index.html'}`, list.data);
+      const exists = await supabaseAPI.fileExists(`${options.marketo? 'marketo.mjml' : 'index.mjml'}`, list.data);
 
       if (exists) {
-        const result = await supabaseAPI.deleteFile(`${options.marketo? 'marketo.html' : 'index.html'}`, name);
+        const result = await supabaseAPI.deleteFile(`${options.marketo? 'marketo.mjml' : 'index.mjml'}`, name);
 
         if (result.error) {
           spinner.fail();
-          console.error(`${chalk.red(result.error.stack)}`);
-          process.exit(1);
+          throw new Error(`Failed to delete ${options.marketo? 'marketo.mjml' : 'index.mjml'} file! ${result.error.stack?.slice(17)}`);
         }
+      }
+
+      else {
+        throw new Error(`File ${options.marketo? 'marketo.mjml' : 'index.mjml'} does not exist!`);
       }
 
       const results = await supabaseAPI.uploadFile(readFileSync(__dirname + 'temp\\parsed.html', { encoding: 'utf8' }), `${options.marketo? 'marketo.html' : 'index.html'}`, name);
 
       if (results.error) {
         spinner.fail();
-        throw new Error('Failed to upload HTML file!');
+        throw new Error(`Failed to upload HTML file! ${results.error.stack?.slice(17)}`);
       }
-      spinner.succeed();
-      console.log(`${chalk.blue('Successfully parsed MJML and uploaded HTML to server')}`);
+
+      spinner.succeed(`${chalk.green('Successfully parsed MJML and uploaded HTML to server')}`);
     }
   }
 
   catch (error) {
     console.error(`${chalk.red(error)}`);
-    process.exit(1);
   }
 });
 
@@ -445,27 +371,27 @@ program
 .description('Mails a HTML file to a recipient list')
 .argument('<name>', 'Name of the bucket where the template is located')
 .argument('<recipients>', 'Recipient list (e.g. "davidsobral@me.com, davidcsobral@gmail.com"')
-.option('-m, --marketo', 'sends the Marketo compatible HTML')
-.action(async (name: string, recipientsString: string, options) => {
+.option('-m, --marketo', 'sends the Marketo compatible HTML', false)
+.action(async (name: string, recipientsString: string, options: { marketo: boolean }) => {
   try {
-    const check = await isLoggedIn();
-
+    const check: boolean = await isLoggedIn();
     if (!check) {
-      console.error(`${chalk.red('\nPlease log in with "mailer login" before trying to send an email')}`);
-      process.exit(1);
+      process.stdout.write('\n');
+      throw new AuthError(`${chalk.red('Please enter valid email credentials with \'mailer save-credentials\' before trying to send an email')}`);
     }
 
-    const bucket = await supabaseAPI.folderExists(name);
+    const bucket = await supabaseAPI.bucketExists(name);
     if (bucket.error) {
-      throw new Error('\nBUCKET ERROR: bucket doesn\'t exist! Use \'mailer bucket -c [name]\' to create one before trying to export a template.')
+      process.stdout.write('\n');
+      throw new BucketError('Bucket doesn\'t exist! Use \'mailer bucket -c <name>\' to create one before trying to export a template.');
     }
 
-    const recipientsList: string[] = recipientsString.split(', ');
+    const recipientsList = recipientsString.split(/ *, */);
 
     process.stdout.write('\n');
     const spinner = ora(`${chalk.yellow('Fetching HTML file from the bucket')}`).start();
-    const { data, error } = await downloadHTML(name, options.marketo);
 
+    const { data, error } = await downloadHTML(name, options.marketo);
     if (error) {
       spinner.fail();
       throw new Error('Failed to download HTML file!');
@@ -482,21 +408,19 @@ program
         spinner.succeed();
       }
 
-      catch (error) {
+      catch (error: any) {
         spinner.fail();
-        process.exit(1);
+        console.error(error);
       }
     }
   }
 
   catch (error) {
     console.error(`${chalk.red(error)}`);
-    process.exit(1);
   }
 });
 
 enum Config {
-  key = 'SUPA_KEY',
   secret = 'SUPA_SECRET',
   url = 'SUPA_URL',
   secretKey = 'SECRET_KEY',
@@ -506,28 +430,23 @@ enum Config {
 program
 .command('config')
 .description('Change the app\'s configurations')
-.argument('<config>', 'The new config value')
-.option('-k, --key', 'Change the supabase key')
-.option('-s, --secret', 'Change the supabase secret')
-.option('-u, --url', 'Change the supabase URL')
-.option('-sk, --secret-key', 'Change the secret key')
-.option('-a, --author', 'Change the content of the author meta tag')
-.action(async (config, options) => {
-  if (options) {
-    const key: string = Object.keys(options)[0]
+.option('-s, --secret <config>', 'Change the supabase secret', false)
+.option('-u, --url <config>', 'Change the supabase URL', false)
+.option('-sk, --secret-key <config>', 'Change the secret key', false)
+.option('-a, --author <config>', 'Change the content of the author meta tag', false)
+.action(async (options) => {
+  const key = Object.keys(options).find(key => options[key] !== false);
 
-    try {
-      process.stdout.write('\n');
-      const spinner = ora(`${chalk.yellow('Saving config...')}`).start();
-      save('config', (key as keyof typeof Config).toUpperCase(), config);
-      await delay(1000);
-      spinner.succeed();
-    }
+  try {
+    process.stdout.write('\n');
+    const spinner = ora(`${chalk.yellow('Saving config...')}`).start();
+    save('config', (key as keyof typeof Config).toUpperCase(), options[key as keyof typeof Config]);
+    await delay(1000);
+    spinner.succeed(`Saved ${chalk.green(key)} as ${chalk.green(options[key as keyof typeof Config])}`);
+  }
 
-    catch (error) {
-      console.error(`${chalk.red(error)}`);
-      process.exit(1);
-    }
+  catch (error) {
+    console.error(`${chalk.red(error)}`);
   }
 });
 
@@ -535,11 +454,10 @@ program
 .command('import')
 .description('Fetch all files from a template bucket (including the .html file')
 .argument('<name>', 'The bucket\'s name')
-.option('-m, --marketo', 'Includes the marketo HTML')
-.action(async (name, options) => {
+.action(async (name: string) => {
   // check if bucket exists
   try {
-    const bucket = await supabaseAPI.folderExists(name);
+    const bucket = await supabaseAPI.bucketExists(name);
     if (bucket.error) {
       throw new Error('\nBUCKET ERROR: bucket doesn\'t exist! Use \'mailer bucket -c [name]\' to create one before trying to export a template.');
     }
@@ -550,20 +468,8 @@ program
     process.exit(1);
   }
 
-  // check if downloads folder exists
-  if (!existsSync(__dirname + 'downloads')) {
-    mkdirSync(__dirname + 'downloads');
-  }
-
-  // check if template folder exists
-  if (!existsSync(__dirname + `downloads\\${name}`)) {
-    mkdirSync(__dirname + `downloads\\${name}`);
-  }
-
-  // check if downloads folder exists
-  if (!existsSync(__dirname + `downloads\\${name}\\img`)) {
-    mkdirSync(__dirname + `downloads\\${name}\\img`);
-  }
+  // Create template folders
+  await createFolders(name);
 
   process.stdout.write('\n');
   const spinner = ora(`${chalk.yellow(`Importing files...`)}`).start();
@@ -603,7 +509,8 @@ program
         writeFileSync(__dirname + `downloads\\${name}\\marketo.html`, files[key]);
       }
     });
-    spinner.succeed();
+
+    spinner.succeed(`Imported files from ${chalk.green(name)} bucket to ${chalk.green(__dirname + `downloads\\\\${name}`)}`);
   }
 
   catch (error) {
@@ -617,31 +524,17 @@ program
 .command('spam')
 .description('Runs commands related to Mailer\'s SpamAssassin functionalities')
 .option('-b, --build', 'Builds the SpamAssassin image', false)
-.option('-t, --test [path]', 'Runs a prepared email through SpamAssassin\'s tests')
-.option('-l, --learn', 'Runs sa-learn on the Spam Assassin Public Corpus')
+.option('-t, --test [path]', 'Runs a prepared email through SpamAssassin\'s tests', false)
+.option('-l, --learn', 'Runs sa-learn on the Spam Assassin Public Corpus', false)
 .action(async options => {
   if (options.build) {
-    const dockerBuild = spawn('docker', ['build', '-t', 'spamassassin:latest', 'sa']);
-    dockerBuild.stdout.on('data', (data) => {
-      console.log(data.toString());
-    });
-
-    dockerBuild.stderr.on('data', (data) => {
-      console.error(data.toString());
-    });
-
-    dockerBuild.on('exit', (code) => {
-      if (code !== 0) {
-        console.error(`${chalk.red(`Docker build process exited with code ${code}`)}`);
-      } else {
-        console.log(`${chalk.green('Docker build process completed successfully!')}`);
-      }
-    });
+    await buildImage();
   }
 
   if (options.test) {
-    const htmlPath = options.test === true ? __dirname + 'temp\\parsed.html' : options.test;
-    const html = await getHTML(htmlPath);
+    const pathToFile = options.test === true ? __dirname + 'temp\\parsed.html' : absolutePath(options.test);
+    const [path, filename] = pathAndFile(pathToFile);
+    const html = await getFile('html', path, false, filename);
     const RFC822 = await convertHTML(html);
     const rfcPath = __dirname + 'temp\\rfc822.txt'
     writeFileSync(rfcPath, RFC822);

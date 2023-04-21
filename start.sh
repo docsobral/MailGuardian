@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if docker ps -a --format "{{.Names}}" | grep -q "spamassassin-app"; then
-  echo "Starting spamassassin-app..."
+  echo "Starting SpamAssassin..."
   docker start spamassassin-app
 else
   echo "Container spamassassin-app does not exist, starting with docker-compose..."
