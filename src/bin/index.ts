@@ -33,7 +33,7 @@ import { buildImage, convertHTML, isSpam, train } from '../api/spamassassin.js';
 import { cleanTemp, createFolders, pathAndFile, saveFile } from '../api/filesystem.js';
 import { enquire, EnquireMessages, EnquireNames, EnquireTypes } from '../api/enquire.js';
 
-program.version('0.10.0');
+program.version('0.11.0');
 
 program
 .command('save-credentials')
