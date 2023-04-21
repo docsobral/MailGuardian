@@ -19,6 +19,7 @@ import chalk from 'chalk';
 import { program } from 'commander';
 import { BucketError } from '../lib/error.js';
 import { importBucket } from '../lib/import.js';
+import { AuthError } from '@supabase/supabase-js';
 import * as supabaseAPI from '../api/supabase.js';
 import { isLoggedIn, login } from '../lib/login.js';
 import { isStorageError } from '@supabase/storage-js';
@@ -173,7 +174,7 @@ program
 
       bucket = await supabaseAPI.bucketExists(name);
       if (bucket.error) {
-        throw new BucketError(`Bucket ${name} doesn\'t exist! Use \'mailer bucket -c [name]\' to create one before trying to export a template.`);
+        throw new BucketError(`Bucket ${name} doesn\'t exist! Use \'mailer bucket -c <name>\' to create one before trying to export a template.`);
       }
 
       path = await getPath();
@@ -371,27 +372,27 @@ program
 .description('Mails a HTML file to a recipient list')
 .argument('<name>', 'Name of the bucket where the template is located')
 .argument('<recipients>', 'Recipient list (e.g. "davidsobral@me.com, davidcsobral@gmail.com"')
-.option('-m, --marketo', 'sends the Marketo compatible HTML')
-.action(async (name: string, recipientsString: string, options) => {
+.option('-m, --marketo', 'sends the Marketo compatible HTML', false)
+.action(async (name: string, recipientsString: string, options: { marketo: boolean }) => {
   try {
-    const check = await isLoggedIn();
-
+    const check: boolean = await isLoggedIn();
     if (!check) {
-      console.error(`${chalk.red('\nPlease log in with "mailer login" before trying to send an email')}`);
-      process.exit(1);
+      process.stdout.write('\n');
+      throw new AuthError(`${chalk.red('Please enter valid email credentials with \'mailer save-credentials\' before trying to send an email')}`);
     }
 
     const bucket = await supabaseAPI.bucketExists(name);
     if (bucket.error) {
-      throw new Error('\nBUCKET ERROR: bucket doesn\'t exist! Use \'mailer bucket -c [name]\' to create one before trying to export a template.')
+      process.stdout.write('\n');
+      throw new BucketError('Bucket doesn\'t exist! Use \'mailer bucket -c <name>\' to create one before trying to export a template.');
     }
 
-    const recipientsList: string[] = recipientsString.split(', ');
+    const recipientsList = recipientsString.split(/ *, */);
 
     process.stdout.write('\n');
     const spinner = ora(`${chalk.yellow('Fetching HTML file from the bucket')}`).start();
-    const { data, error } = await downloadHTML(name, options.marketo);
 
+    const { data, error } = await downloadHTML(name, options.marketo);
     if (error) {
       spinner.fail();
       throw new Error('Failed to download HTML file!');
@@ -408,16 +409,15 @@ program
         spinner.succeed();
       }
 
-      catch (error) {
+      catch (error: any) {
         spinner.fail();
-        process.exit(1);
+        console.error(error);
       }
     }
   }
 
   catch (error) {
     console.error(`${chalk.red(error)}`);
-    process.exit(1);
   }
 });
 
