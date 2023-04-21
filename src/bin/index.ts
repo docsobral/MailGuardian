@@ -432,28 +432,23 @@ enum Config {
 program
 .command('config')
 .description('Change the app\'s configurations')
-.argument('<config>', 'The new config value')
-.option('-k, --key', 'Change the supabase key')
-.option('-s, --secret', 'Change the supabase secret')
-.option('-u, --url', 'Change the supabase URL')
-.option('-sk, --secret-key', 'Change the secret key')
-.option('-a, --author', 'Change the content of the author meta tag')
-.action(async (config, options) => {
-  if (options) {
-    const key: string = Object.keys(options)[0]
+.option('-s, --secret <config>', 'Change the supabase secret', false)
+.option('-u, --url <config>', 'Change the supabase URL', false)
+.option('-sk, --secret-key <config>', 'Change the secret key', false)
+.option('-a, --author <config>', 'Change the content of the author meta tag', false)
+.action(async (options) => {
+  const key = Object.keys(options).find(key => options[key] !== false);
 
-    try {
-      process.stdout.write('\n');
-      const spinner = ora(`${chalk.yellow('Saving config...')}`).start();
-      save('config', (key as keyof typeof Config).toUpperCase(), config);
-      await delay(1000);
-      spinner.succeed();
-    }
+  try {
+    process.stdout.write('\n');
+    const spinner = ora(`${chalk.yellow('Saving config...')}`).start();
+    save('config', (key as keyof typeof Config).toUpperCase(), options[key as keyof typeof Config]);
+    await delay(1000);
+    spinner.succeed(`Saved ${chalk.green(key)} as ${chalk.green(options[key as keyof typeof Config])}`);
+  }
 
-    catch (error) {
-      console.error(`${chalk.red(error)}`);
-      process.exit(1);
-    }
+  catch (error) {
+    console.error(`${chalk.red(error)}`);
   }
 });
 
