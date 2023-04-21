@@ -1,3 +1,6 @@
+v0.11.0:
+  1. Major refactoring of index.ts as well as some other modules
+
 v0.10.0:
   1. implemented bayesian training
   2. all scripts run silently
