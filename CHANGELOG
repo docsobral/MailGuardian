@@ -1,5 +1,6 @@
 v0.11.0:
-  1. Major refactoring of index.ts as well as some other modules
+  1. MAJOR: refactoring of index.ts as well as some other modules
+  2. MAJOR: added a new module to handle the training of SpamAssassin
 
 v0.10.0:
   1. implemented bayesian training
