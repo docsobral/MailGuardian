@@ -33,7 +33,7 @@ import { buildImage, convertHTML, isSpam, train } from '../api/spamassassin.js';
 import { cleanTemp, createFolders, pathAndFile, saveFile } from '../api/filesystem.js';
 import { enquire, EnquireMessages, EnquireNames, EnquireTypes } from '../api/enquire.js';
 
-program.version('0.11.0');
+program.version('0.11.1');
 
 program
 .command('save-credentials')
@@ -335,19 +335,15 @@ program
       await saveFile(__dirname + 'temp\\', 'parsed.html', parsedHTML);
 
       const list = await supabaseAPI.listFiles(name);
-      const exists = await supabaseAPI.fileExists(`${options.marketo? 'marketo.mjml' : 'index.mjml'}`, list.data);
+      const exists = await supabaseAPI.fileExists(`${options.marketo? 'marketo.html' : 'index.html'}`, list.data);
 
       if (exists) {
-        const result = await supabaseAPI.deleteFile(`${options.marketo? 'marketo.mjml' : 'index.mjml'}`, name);
+        const result = await supabaseAPI.deleteFile(`${options.marketo? 'marketo.html' : 'index.html'}`, name);
 
         if (result.error) {
           spinner.fail();
-          throw new Error(`Failed to delete ${options.marketo? 'marketo.mjml' : 'index.mjml'} file! ${result.error.stack?.slice(17)}`);
+          throw new Error(`Failed to delete ${options.marketo? 'marketo.html' : 'index.html'} file! ${result.error.stack?.slice(17)}`);
         }
-      }
-
-      else {
-        throw new Error(`File ${options.marketo? 'marketo.mjml' : 'index.mjml'} does not exist!`);
       }
 
       const results = await supabaseAPI.uploadFile(readFileSync(__dirname + 'temp\\parsed.html', { encoding: 'utf8' }), `${options.marketo? 'marketo.html' : 'index.html'}`, name);
