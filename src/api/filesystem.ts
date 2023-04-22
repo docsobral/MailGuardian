@@ -75,12 +75,6 @@ export async function checkFirstUse(): Promise<void> {
     writeFile(__dirname + 'config\\state.json', JSON.stringify(initialState, null, 2));
 
     const answers = await enquire([
-      // {
-      //   type: EnquireTypes.input,
-      //   name: EnquireNames.supabaseKey,
-      //   message: EnquireMessages.supabaseKey
-      // },
-
       {
         type: EnquireTypes.input,
         name: EnquireNames.supabaseSecret,
@@ -101,7 +95,6 @@ export async function checkFirstUse(): Promise<void> {
     ]);
 
     const appConfigs = {
-      // 'SUPA_KEY': answers.supabaseKey,
       'SUPA_SECRET': answers.supabaseSecret,
       'SUPA_URL': answers.supabaseURL,
       'SECRET_KEY': answers.secretKey,

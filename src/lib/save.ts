@@ -1,5 +1,5 @@
-import { __dirname, checkFirstUse } from '../api/filesystem.js';
 import { readFileSync, writeFileSync } from 'node:fs';
+import { __dirname} from '../api/filesystem.js';
 import Cryptr from 'cryptr';
 
 export type AppState = {
@@ -13,8 +13,6 @@ export type AppConfig = {
 export type AppPaths = [string, string][];
 
 export async function getState(): Promise<AppState> {
-  await checkFirstUse();
-
   const config = JSON.parse(readFileSync(__dirname + 'config\\config.json', { encoding: 'utf8' }));
   const cryptr = new Cryptr(config['SECRET_KEY']);
 

@@ -2,7 +2,6 @@ import chalk from 'chalk';
 import { readFileSync } from 'node:fs';
 import { __dirname } from './filesystem.js';
 import { BucketError } from '../lib/error.js';
-import { checkFirstUse } from './filesystem.js';
 import { createClient } from '@supabase/supabase-js';
 import { Bucket, FileObject, StorageError } from '@supabase/storage-js';
 
@@ -10,20 +9,10 @@ type Config = {
   [config: string]: string;
 }
 
-try {
-  readFileSync(__dirname + 'config\\config.json', { encoding: 'utf8' });
-  readFileSync(__dirname + 'config\\paths.json', { encoding: 'utf8' })
-}
-
-catch (error) {
-  await checkFirstUse();
-}
-
 const config: Config = JSON.parse(readFileSync(__dirname + 'config\\config.json', { encoding: 'utf8' }));
 
 if (typeof config['SUPA_URL'] === 'undefined' || typeof config['SUPA_SECRET'] === 'undefined') {
-  console.log(`${chalk.red('Missing API url, key or secret key! Please run \'mailer config\' to set them.')}`);
-  process.exit(1);
+  throw new Error(`${chalk.red('Missing API url, key or secret key! Please run \'mailer config\' to set them.')}`);
 }
 
 export type SupabaseStorageResult = {

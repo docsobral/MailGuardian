@@ -27,13 +27,23 @@ import { downloadHTML, mailHTML } from '../lib/mail.js';
 import { save, getConfigAndPath } from '../lib/save.js';
 import { downloadMJML, parseMJML } from '../lib/prepare.js';
 import { existsSync, writeFileSync, readFileSync } from 'node:fs';
-import { __dirname, absolutePath, getFile } from '../api/filesystem.js';
 import { getPath, watch, uploadMJML, uploadImages } from '../lib/export.js';
 import { buildImage, convertHTML, isSpam, train } from '../api/spamassassin.js';
-import { cleanTemp, createFolders, pathAndFile, saveFile } from '../api/filesystem.js';
 import { enquire, EnquireMessages, EnquireNames, EnquireTypes } from '../api/enquire.js';
+import {
+  cleanTemp,
+  createFolders,
+  pathAndFile,
+  saveFile,
+  __dirname,
+  absolutePath,
+  checkFirstUse,
+  getFile
+} from '../api/filesystem.js';
 
-program.version('0.11.1');
+await checkFirstUse();
+
+program.version('0.11.2');
 
 program
 .command('save-credentials')
