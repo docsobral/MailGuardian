@@ -1,6 +1,8 @@
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, createWriteStream } from 'node:fs';
 import { __dirname} from '../api/filesystem.js';
 import Cryptr from 'cryptr';
+import PDFDocument from 'pdfkit';
+import blobStream from 'blob-stream';
 
 export type AppState = {
   [key: string]: [(string | boolean), boolean] | string;
@@ -165,4 +167,43 @@ export function parseSpamAnalysis(emailText: string): SpamResult | null {
     totalPoints,
     analysis,
   };
+}
+
+// This function will take a SpamResult object and generate a PDF file using PDFKit (DON'T USE PASSTHROUGH())
+/**
+ * Generates a PDF file from a SpamResult object
+ *
+ * @remarks
+ * This function takes a SpamResult object and generates a PDF file using PDFKit.
+ * It then saves the PDF file to the user's desktop.
+ *
+ * @example
+ * // Generates and saves a PDF file
+ * generatePDF(spamResult);
+ *
+ * @param {SpamResult} spamResult - The result of the spam analysis
+ *
+ * @throws {Error} - If the PDF file could not be generated
+ * @throws {Error} - If the PDF file could not be saved
+ */
+export function generatePDF(spamResult: SpamResult): void {
+  const doc = new PDFDocument();
+  const filePath = __dirname + 'temp\\report.pdf';
+
+  doc.fontSize(25).text('Spam Analysis', {
+    underline: true,
+  });
+
+  doc.fontSize(15).text(`Total Points: ${spamResult.totalPoints}`);
+
+  doc.fontSize(15).text('Analysis:', {
+    underline: true,
+  });
+
+  Object.keys(spamResult.analysis).forEach((key) => {
+    doc.fontSize(15).text(`${key}: ${spamResult.analysis[key]}`);
+  });
+
+  doc.pipe(createWriteStream(filePath));
+  doc.end();
 }
