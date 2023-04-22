@@ -130,6 +130,8 @@ interface SpamResult {
  * This function takes the output that SpamAssassin generates and parses it into a
  * SpamResult object. The SpamResult object contains the total points and a
  * SpamAnalysis object that contains the rule and description for each rule.
+ * The SpamAnalysis object is a dictionary where the key is the rule and the
+ * value is the description.
  *
  * @example
  * // Returns { totalPoints: 5.1, analysis: { 'BAYES_50': 'BODY: Bayes spam probability is 50 to 60%'... } }
@@ -140,9 +142,6 @@ interface SpamResult {
  */
 export function parseSpamAnalysis(emailText: string): SpamResult | null {
   const startIndex: number = emailText.indexOf('Content analysis details:');
-  if (startIndex === -1) {
-    return null;
-  }
 
   const analysisText: string = emailText.substring(startIndex);
   const analysisLines: string[] = analysisText.split('\n').map(line => line.trim());
