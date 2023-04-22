@@ -43,7 +43,7 @@ import {
 
 await checkFirstUse();
 
-program.version('0.11.2');
+program.version('0.11.3');
 
 program
 .command('save-credentials')
@@ -533,23 +533,37 @@ program
 .option('-t, --test [path]', 'Runs a prepared email through SpamAssassin\'s tests', false)
 .option('-l, --learn', 'Runs sa-learn on the Spam Assassin Public Corpus', false)
 .action(async options => {
-  if (options.build) {
-    await buildImage();
+  try {
+    if (options.build) {
+      await buildImage();
+    }
+
+    if (options.test) {
+      const pathToFile = options.test === true ? __dirname + 'temp\\parsed.html' : absolutePath(options.test);
+      const [path, filename] = pathAndFile(pathToFile);
+      const html = await getFile('html', path, false, filename);
+      const RFC822 = await convertHTML(html);
+      const rfcPath = __dirname + 'temp\\rfc822.txt'
+      writeFileSync(rfcPath, RFC822);
+
+      await isSpam(rfcPath);
+    }
+
+    if (options.learn) {
+      await train();
+    }
   }
 
-  if (options.test) {
-    const pathToFile = options.test === true ? __dirname + 'temp\\parsed.html' : absolutePath(options.test);
-    const [path, filename] = pathAndFile(pathToFile);
-    const html = await getFile('html', path, false, filename);
-    const RFC822 = await convertHTML(html);
-    const rfcPath = __dirname + 'temp\\rfc822.txt'
-    writeFileSync(rfcPath, RFC822);
+  catch (error) {
+    if (error instanceof Error) {
+      if (error.message.startsWith('ENOENT')) {
+        console.error(`${chalk.red('ERROR: File not found! Try running \'mailer prepare\' first.')}`);
+      }
 
-    await isSpam(rfcPath);
-  }
-
-  if (options.learn) {
-    await train();
+      else {
+        console.error(`${chalk.red(error.message)}`);
+      }
+    }
   }
 });
 
