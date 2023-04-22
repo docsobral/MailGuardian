@@ -7,6 +7,7 @@
   "dependencies": {
     "@stdlib/datasets-spam-assassin": "^0.0.8",
     "@supabase/supabase-js": "^2.12.0",
+    "blob-stream": "^0.1.3",
     "chalk": "^5.2.0",
     "commander": "^10.0.0",
     "cryptr": "^6.2.0",
@@ -21,9 +22,11 @@
     "win-select-folder": "^1.0.1"
   },
   "devDependencies": {
+    "@types/blob-stream": "^0.1.30",
     "@types/js-beautify": "^1.13.3",
     "@types/mjml": "^4.7.0",
     "@types/nodemailer": "^6.4.7",
+    "@types/pdfkit": "^0.12.9",
     "typescript": "^5.0.2"
   },
   "bin": {
