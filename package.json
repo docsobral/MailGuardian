@@ -14,7 +14,6 @@
     "js-beautify": "^1.14.7",
     "mailcomposer": "^4.0.2",
     "mjml": "^4.13.0",
-    "muhammara": "^3.8.0",
     "node-watch": "^0.7.3",
     "nodemailer": "^6.9.1",
     "ora": "^6.3.0",
