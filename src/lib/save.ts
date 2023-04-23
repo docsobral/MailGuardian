@@ -3,13 +3,15 @@ import { __dirname} from '../api/filesystem.js';
 import PDFDocument from 'pdfkit';
 import Cryptr from 'cryptr';
 
-export type AppState = {
+export interface AppState {
   [key: string]: [(string | boolean), boolean] | string;
 }
 
-export type AppConfig = {
+export interface AppConfig {
   [key: string]: string;
 }
+
+type AppInfo = AppState | AppConfig;
 
 export type AppPaths = [string, string][];
 
@@ -27,7 +29,7 @@ export type AppPaths = [string, string][];
  * @returns {Promise<AppState>} - The state of the app
  */
 export async function getState(): Promise<AppState> {
-  const config = JSON.parse(readFileSync(__dirname + 'config\\config.json', { encoding: 'utf8' }));
+  const config: AppConfig = JSON.parse(readFileSync(__dirname + 'config\\config.json', { encoding: 'utf8' }));
   const cryptr = new Cryptr(config['SECRET_KEY']);
 
   let state: AppState = JSON.parse(readFileSync(__dirname + 'config\\state.json', { encoding: 'utf8' }));
@@ -57,12 +59,12 @@ export async function getState(): Promise<AppState> {
  * await saveState('id', '123456789', true);
  *
  *
- * @param {string} key - The key of the state
- * @param {string} value - The value of the state
- * @param {boolean} encrypt - Whether or not to encrypt the value
+ * @param key - The key of the state
+ * @param value - The value of the state
+ * @param encrypt - Whether or not to encrypt the value
  */
 export function saveState(key: string, value: string | boolean, encrypt = false): void {
-  const config = JSON.parse(readFileSync(__dirname + 'config\\config.json', { encoding: 'utf8' }));
+  const config: AppConfig = JSON.parse(readFileSync(__dirname + 'config\\config.json', { encoding: 'utf8' }));
   const cryptr = new Cryptr(config['SECRET_KEY']);
 
   let finalValue: string;
@@ -106,12 +108,12 @@ export function getConfigAndPath(): {config: AppConfig, paths: AppPaths} {
  * @param {string} value - The value of the config
  */
 export function save(type: 'paths' | 'config', key: string, value: string): void {
-  let info = JSON.parse(readFileSync(__dirname + `config\\${type}.json`, { encoding: 'utf8' }));
+  let info: AppInfo = JSON.parse(readFileSync(__dirname + `config\\${type}.json`, { encoding: 'utf8' }));
 
-  info[key] = value;
+  info[key as keyof AppInfo] = value;
 
-  const string = JSON.stringify(info, null, 2);
-  writeFileSync(__dirname + `config\\${type}.json`, string);
+  const infoString: string = JSON.stringify(info, null, 2);
+  writeFileSync(__dirname + `config\\${type}.json`, infoString);
 }
 
 interface SpamAnalysis {
