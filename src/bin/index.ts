@@ -17,6 +17,7 @@ process.emitWarning = (warning, ...args) => {
 import ora from 'ora';
 import chalk from 'chalk';
 import { program } from 'commander';
+import { resolve } from 'node:path';
 import { BucketError } from '../lib/error.js';
 import { importBucket } from '../lib/import.js';
 import { AuthError } from '@supabase/supabase-js';
@@ -28,8 +29,8 @@ import { save, getConfigAndPath } from '../lib/save.js';
 import { downloadMJML, parseMJML } from '../lib/prepare.js';
 import { existsSync, writeFileSync, readFileSync } from 'node:fs';
 import { getPath, watch, uploadMJML, uploadImages } from '../lib/export.js';
-import { buildImage, convertHTML, isSpam, train } from '../api/spamassassin.js';
 import { enquire, EnquireMessages, EnquireNames, EnquireTypes } from '../api/enquire.js';
+import { buildImage, convertHTML, isSpam, train, parseSpamAnalysis, generatePDF } from '../api/spamassassin.js';
 import {
   cleanTemp,
   createFolders,
@@ -532,6 +533,7 @@ program
 .option('-b, --build', 'Builds the SpamAssassin image', false)
 .option('-t, --test [path]', 'Runs a prepared email through SpamAssassin\'s tests', false)
 .option('-l, --learn', 'Runs sa-learn on the Spam Assassin Public Corpus', false)
+.option('-p, --pdf', 'Generates a PDF file from the results of the SpamAssassin tests', false)
 .action(async options => {
   try {
     if (options.build) {
@@ -551,6 +553,23 @@ program
 
     if (options.learn) {
       await train();
+    }
+
+    if (options.pdf) {
+      process.stdout.write('\n');
+      const spinner = ora(`${chalk.yellow('Generating PDF...')}`).start();
+
+      try {
+        const log = readFileSync(__dirname + 'temp\\log.txt', 'utf-8');
+        const analysis = parseSpamAnalysis(log);
+        generatePDF(analysis);
+        spinner.succeed(`Generated PDF file at ${chalk.green(resolve(__dirname + 'temp\\spam-analysis.pdf'))}`);
+      }
+
+      catch (error) {
+        spinner.fail();
+        console.error(`${chalk.red(error)}`);
+      }
     }
   }
 
