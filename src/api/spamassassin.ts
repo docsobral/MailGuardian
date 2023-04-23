@@ -1,8 +1,11 @@
 import ora from 'ora';
 import chalk from 'chalk';
+import PDFDocument from 'pdfkit';
+import { resolve } from 'node:path';
 import { spawn } from 'child_process';
 // @ts-ignore
 import mailcomposer from 'mailcomposer';
+import { createWriteStream } from 'node:fs';
 import { __dirname, saveFile } from './filesystem.js';
 
 async function copyEmail(path: string): Promise<void> {
@@ -198,4 +201,125 @@ export async function buildImage(): Promise<void> {
       console.log(`${chalk.green('Docker build process completed successfully!')}`);
     }
   });
+}
+
+interface SpamAnalysis {
+  [rule: string]: string;
+}
+
+interface SpamResult {
+  totalPoints: number;
+  analysis: SpamAnalysis;
+}
+
+/**
+ * @description Parses the spam analysis from the log.txt file that SpamAssassin generates
+ *
+ * @remarks
+ * This function takes the output that SpamAssassin generates and parses it into a
+ * SpamResult object. The SpamResult object contains the total points and a
+ * SpamAnalysis object that contains the rule and description for each rule.
+ * The SpamAnalysis object is a dictionary where the key is the rule and the
+ * value is the description.
+ *
+ * @example
+ *
+ * // Returns { totalPoints: 5.1, analysis: { 'BAYES_50': 'BODY: Bayes spam probability is 50 to 60%'... } }
+ * const spamResult = parseSpamAnalysis(emailText);
+ *
+ * @param {string} emailText - The log.txt file that SpamAssassin generates
+ * @returns {SpamResult | null} - The result of the spam analysis
+ */
+export function parseSpamAnalysis(emailText: string): SpamResult {
+  const startIndex: number = emailText.indexOf('Content analysis details:');
+
+  const analysisText: string = emailText.substring(startIndex);
+  const analysisLines: string[] = analysisText.split('\n').map(line => line.trim());
+
+  const analysis: SpamAnalysis = {};
+  let totalPoints: number = 0;
+
+  for (const line of analysisLines) {
+    const match: RegExpMatchArray | null = line.match(/^([\d.-]+)\s+(\w+)\s+(.*)/);
+    if (match) {
+      const [, pointsString, rule, description] = match;
+      const points = parseFloat(pointsString);
+      analysis[rule] = description;
+      totalPoints += points;
+    }
+  }
+
+  totalPoints = Number(totalPoints.toFixed(1));
+
+  return {
+    totalPoints,
+    analysis,
+  };
+}
+
+/**
+ * @description Generates a PDF file from a SpamResult object
+ *
+ * @remarks
+ * This function takes a SpamResult object and generates a PDF file using PDFKit.
+ * It then saves the PDF file to the user's desktop.
+ *
+ * @example
+ *
+ * // Generates and saves a PDF file
+ * generatePDF(spamResult);
+ *
+ * @param {SpamResult} spamResult - The result of the spam analysis
+ */
+export function generatePDF(spamResult: SpamResult): void {
+  const path: string = resolve(__dirname, 'temp\\spam-analysis.pdf')
+
+  const doc = new PDFDocument({
+    margins: {
+      top: 50,
+      bottom: 50,
+      left: 50,
+      right: 50,
+    },
+  });
+
+  doc.pipe(createWriteStream(path));
+
+  // Add title page
+  doc.fontSize(25).text('Spam Analysis', {
+    align: 'center',
+    underline: true,
+  });
+  doc.moveDown();
+  doc.fontSize(15).text(`Author: Mailer Daemon`);
+  doc.moveDown();
+  doc.fontSize(15).text(`Date: ${new Date().toLocaleDateString()}`);
+  doc.moveDown();
+  doc.fontSize(15).text(`Total Points: ${spamResult.totalPoints}`);
+
+  // Add analysis section
+  doc.addPage();
+  doc.fontSize(20).text('Analysis', {
+    align: 'center',
+    underline: true,
+  });
+  doc.moveDown();
+  Object.keys(spamResult.analysis).forEach((key) => {
+    doc.fontSize(15).text(`${key}: ${spamResult.analysis[key]}`);
+    doc.moveDown();
+  });
+
+  // Add footer with page numbers
+  const totalPages = doc.bufferedPageRange().count - 1;
+  for (let i = 0; i < totalPages; i++) {
+    if (doc.switchToPage(i)) {
+      // @ts-ignore
+      doc.fontSize(10).text(`Page ${i + 1} of ${totalPages}`, {
+        align: 'right',
+        opacity: 0.5,
+      });
+    }
+  }
+
+  doc.end();
 }
