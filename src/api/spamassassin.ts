@@ -291,7 +291,7 @@ export function generatePDF(spamResult: SpamResult): void {
     underline: true,
   });
   doc.moveDown();
-  doc.fontSize(15).text(`Author: Mailer Daemon`);
+  doc.fontSize(15).text(`Author: Mailer`);
   doc.moveDown();
   doc.fontSize(15).text(`Date: ${new Date().toLocaleDateString()}`);
   doc.moveDown();
