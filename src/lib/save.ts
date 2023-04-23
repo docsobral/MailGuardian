@@ -16,17 +16,14 @@ type AppInfo = AppState | AppConfig;
 export type AppPaths = [string, string][];
 
 /**
- * Takes the state of the app and returns it
- *
- * @remarks
- * This function takes the state of the app and returns it. It also decrypts any
- * encrypted values.
+ * @description Takes the state of the app and returns it. It also decrypts any values that need to be decrypted.
  *
  * @example
- * // Returns { 'logged' : [true, false], 'host': ['smtp.gmail.com', false], id: ['123456789', true], 'password': ['password', true]}
- * const state = await getState();
  *
- * @returns {Promise<AppState>} - The state of the app
+ * const state = await getState();
+ * // Returns { 'logged' : [true, false], 'host': ['smtp.gmail.com', false], id: ['123456789', true], 'password': ['password', true]}
+ *
+ * @returns {Promise<AppState>} The state of the app
  */
 export async function getState(): Promise<AppState> {
   const config: AppConfig = JSON.parse(readFileSync(__dirname + 'config\\config.json', { encoding: 'utf8' }));
@@ -45,23 +42,25 @@ export async function getState(): Promise<AppState> {
 }
 
 /**
- * Saves the state of the app
+ * @description Saves the state of the app
+ *
  * @remarks
  * This function takes the state of the app and saves it. It also encrypts any
  * values that need to be encrypted.
  *
  * @example
- * // Saves { 'logged' : [true, false]}
- * await saveState('logged', true);
+ * // Saves { 'logged' : [true, false], 'host': ['smtp.gmail.com', false], id: ['encrypted', true], 'password': ['encrypted', true]}
+ * await saveState('logged': [true, false], 'host': ['smtp.gmail.com', false], id: ['123456789', true], 'password': ['password', true]])
  *
  * @example
  * // Saves { id: ['123456789', true]}
  * await saveState('id', '123456789', true);
  *
+ * @param key The key of the state
+ * @param value The value of the state
+ * @param encrypt Whether or not to encrypt the value
  *
- * @param key - The key of the state
- * @param value - The value of the state
- * @param encrypt - Whether or not to encrypt the value
+ * @returns {Promise<void>} - A promise that resolves when the state is saved
  */
 export function saveState(key: string, value: string | boolean, encrypt = false): void {
   const config: AppConfig = JSON.parse(readFileSync(__dirname + 'config\\config.json', { encoding: 'utf8' }));
@@ -82,11 +81,10 @@ export function saveState(key: string, value: string | boolean, encrypt = false)
 }
 
 /**
- * Takes the config and paths of the app and returns them
- * @remarks
- * This function takes the config and paths of the app and returns them.
+ * @description Takes the config and paths of the app and returns them
  *
  * @returns {Promise<{config: AppConfig, paths: AppPaths}>} - The config and paths of the app
+ *
  */
 export function getConfigAndPath(): {config: AppConfig, paths: AppPaths} {
   const config: AppConfig = JSON.parse(readFileSync(__dirname + `config\\config.json`, { encoding: 'utf8' }));
@@ -96,16 +94,16 @@ export function getConfigAndPath(): {config: AppConfig, paths: AppPaths} {
 }
 
 /**
- * Saves the config and paths of the app
- * @remarks
- * This function takes the config and paths of the app and saves them.
+ * @description Saves the config and paths of the app
+ *
  * @example
+ *
  * // Saves { 'paths': { 'inbox': 'C:\\Users\\user\\Desktop\\inbox' } }
  * save('paths', 'inbox', 'C:\\Users\\user\\Desktop\\inbox');
  *
- * @param {string} type - The type of config to save ('paths' or 'config')
- * @param {string} key - The key of the config
- * @param {string} value - The value of the config
+ * @param type - The type of config to save ('paths' or 'config')
+ * @param key - The key of the config
+ * @param value - The value of the config
  */
 export function save(type: 'paths' | 'config', key: string, value: string): void {
   let info: AppInfo = JSON.parse(readFileSync(__dirname + `config\\${type}.json`, { encoding: 'utf8' }));
@@ -126,7 +124,7 @@ interface SpamResult {
 }
 
 /**
- * Parses the spam analysis from the log.txt file that SpamAssassin generates
+ * @description Parses the spam analysis from the log.txt file that SpamAssassin generates
  *
  * @remarks
  * This function takes the output that SpamAssassin generates and parses it into a
@@ -136,6 +134,7 @@ interface SpamResult {
  * value is the description.
  *
  * @example
+ *
  * // Returns { totalPoints: 5.1, analysis: { 'BAYES_50': 'BODY: Bayes spam probability is 50 to 60%'... } }
  * const spamResult = parseSpamAnalysis(emailText);
  *
@@ -169,22 +168,19 @@ export function parseSpamAnalysis(emailText: string): SpamResult | null {
   };
 }
 
-// This function will take a SpamResult object and generate a PDF file using PDFKit (DON'T USE PASSTHROUGH())
 /**
- * Generates a PDF file from a SpamResult object
+ * @description Generates a PDF file from a SpamResult object
  *
  * @remarks
  * This function takes a SpamResult object and generates a PDF file using PDFKit.
  * It then saves the PDF file to the user's desktop.
  *
  * @example
+ *
  * // Generates and saves a PDF file
  * generatePDF(spamResult);
  *
  * @param {SpamResult} spamResult - The result of the spam analysis
- *
- * @throws {Error} - If the PDF file could not be generated
- * @throws {Error} - If the PDF file could not be saved
  */
 export function generatePDF(spamResult: SpamResult): void {
   const doc = new PDFDocument();
