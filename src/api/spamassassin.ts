@@ -227,8 +227,9 @@ interface SpamResult {
  * // Returns { totalPoints: 5.1, analysis: { 'BAYES_50': 'BODY: Bayes spam probability is 50 to 60%'... } }
  * const spamResult = parseSpamAnalysis(emailText);
  *
- * @param {string} emailText - The log.txt file that SpamAssassin generates
- * @returns {SpamResult | null} - The result of the spam analysis
+ * @param {string} emailText The log.txt file that SpamAssassin generates
+ *
+ * @returns {SpamResult | null} The result of the spam analysis
  */
 export function parseSpamAnalysis(emailText: string): SpamResult {
   const startIndex: number = emailText.indexOf('Content analysis details:');
@@ -269,7 +270,7 @@ export function parseSpamAnalysis(emailText: string): SpamResult {
  * // Generates and saves a PDF file
  * generatePDF(spamResult);
  *
- * @param {SpamResult} spamResult - The result of the spam analysis
+ * @param {SpamResult} spamResult The result of the spam analysis
  */
 export function generatePDF(spamResult: SpamResult): void {
   const path: string = resolve(__dirname, 'temp\\spam-analysis.pdf')
@@ -295,7 +296,7 @@ export function generatePDF(spamResult: SpamResult): void {
   doc.moveDown();
   doc.fontSize(15).text(`Date: ${new Date().toLocaleDateString()}`);
   doc.moveDown();
-  doc.fontSize(15).text(`Total Points: ${spamResult.totalPoints}`);
+  doc.fontSize(15).text(scoreString(spamResult.totalPoints));
 
   // Add analysis section
   doc.addPage();
@@ -309,17 +310,37 @@ export function generatePDF(spamResult: SpamResult): void {
     doc.moveDown();
   });
 
-  // Add footer with page numbers
-  const totalPages = doc.bufferedPageRange().count - 1;
-  for (let i = 0; i < totalPages; i++) {
-    if (doc.switchToPage(i)) {
-      // @ts-ignore
-      doc.fontSize(10).text(`Page ${i + 1} of ${totalPages}`, {
-        align: 'right',
-        opacity: 0.5,
-      });
+  doc.end();
+}
+
+/**
+ * @description Generates a string based on the score
+ *
+ * @remarks
+ * This function takes the score and generates a string based on the score.
+ * The string is used to display the score to the user.
+ *
+ * @example
+ *
+ * // Returns 'Score: 5.1\n\nThis email will most likely be marked as spam.'
+ * const scoreString = scoreString(5.1);
+ *
+ * @param {number} score - The score of the email
+ *
+ * @returns {string} The string based on the score
+ */
+function scoreString(score: number): string {
+  if (score < 5) {
+    if (score > 3.5) {
+      return `Score: ${score}\n\nThis email might be marked as spam.`;
     }
+
+    return `Score: ${score}\n\nThis email will most likely NOT be marked as spam.`;
   }
 
-  doc.end();
+  else if (score < 6.5) {
+    return `Score: ${score}\n\nThis email will most likely be marked as spam.`;
+  }
+
+  return `Score: ${score}\n\nThis email will DEFINITELY be marked as spam.`;
 }
