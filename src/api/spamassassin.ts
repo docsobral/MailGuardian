@@ -91,8 +91,8 @@ async function startContainer() {
         spinner.succeed(`${chalk.yellow('Started container...')}`);
         resolve();
       } else {
-        console.error(`Script exited with code ${code}`);
-        reject();
+        spinner.fail(`${chalk.red(`Script exited with code ${code}`)}`);
+        reject(`Script exited with code ${code}`);
       }
     });
   });
@@ -115,7 +115,7 @@ async function stopContainer() {
         spinner.succeed(`${chalk.yellow('Stopped container...')}`);
         resolve();
       } else {
-        spinner.fail(`Script exited with code ${code}`);
+        spinner.fail(`${chalk.red(`Script exited with code ${code}`)}`);
         reject(`Script exited with code ${code}`);
       }
     });
