@@ -309,7 +309,7 @@ export function generatePDF(spamResult: SpamResult): void {
         return `Very strict spam filters may flag this email as spam`;
       }
 
-      return `This email will most likely not be flagged as spam`;
+      return `This email is unlikely to be flagged as spam`;
     }
 
     else if (score < 6) {
@@ -341,7 +341,7 @@ export function generatePDF(spamResult: SpamResult): void {
   doc.pipe(createWriteStream(path));
 
   // Draw logo
-  doc.image(resolve(__dirname, 'logo.png'), 145, 50, {
+  doc.image(resolve(__dirname, 'logo.jpg'), 150, 50, {
     width: 300,
     height: 83.67,
   });
