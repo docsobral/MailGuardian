@@ -122,7 +122,7 @@ program
     // Skips if the user provided a path and the --new-path option
     // If the user provided a path and the --new-path option, it will overwrite the saved path
     // Refactor soon, because it will take too much CPU time once the number of buckets increases
-    if (!path || options.newPath) {
+    if (!path && !options.newPath) {
       for (const entry of files.paths) {
         if (entry[0] === name) {
           path = absolutePath(entry[1]);
@@ -130,7 +130,7 @@ program
       }
     }
 
-    else {
+    else if (path) {
       path = absolutePath(path);
     }
 
