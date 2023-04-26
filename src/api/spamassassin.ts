@@ -5,8 +5,8 @@ import { resolve } from 'node:path';
 import { spawn } from 'child_process';
 // @ts-ignore
 import mailcomposer from 'mailcomposer';
+import { createWriteStream } from 'node:fs';
 import { __dirname, saveFile } from './filesystem.js';
-import { createWriteStream, readFileSync } from 'node:fs';
 
 async function copyEmail(path: string): Promise<void> {
   return new Promise<void>((resolve, reject) => {
@@ -240,7 +240,7 @@ export function parseSpamAnalysis(emailText: string): SpamResult {
   const analysis: SpamAnalysis = {};
   let totalPoints: number = 0;
 
-  enum ignoredRules {
+  enum IgnoredRules {
     'NO_RELAYS',
     'NO_RECEIVED',
     'FREEMAIL_FROM',
@@ -251,8 +251,8 @@ export function parseSpamAnalysis(emailText: string): SpamResult {
     if (match) {
       const [, pointsString, rule, description] = match;
       const points = parseFloat(pointsString);
-      if (!(rule in ignoredRules) && pointsString !== '0.0') {
-        analysis[`${pointsString}`] = [rule, description];
+      if (!(rule in IgnoredRules) && pointsString !== '0.0') {
+        analysis[`${rule}`] = [pointsString, description];
         totalPoints += points;
       }
     }
@@ -283,22 +283,6 @@ export function parseSpamAnalysis(emailText: string): SpamResult {
 export function generatePDF(spamResult: SpamResult): void {
   const path: string = resolve(__dirname, 'temp\\spam-analysis.pdf');
 
-  /**
-   * @description Generates a string based on the score
-   *
-   * @remarks
-   * This function takes the score and generates a string based on the score.
-   * The string is used to display the score to the user.
-   *
-   * @example
-   *
-   * // Returns 'Score: 5.1\n\nThis email will most likely be flagged as spam.'
-   * const scoreString = scoreString(5.1);
-   *
-   * @param {number} score - The score of the email
-   *
-   * @returns {string} The string based on the score
-   */
   function scoreString(score: number): [string, string, string] {
     if (score < 4.5) {
       if (score > 3.5) {
@@ -359,6 +343,22 @@ export function generatePDF(spamResult: SpamResult): void {
     return ' '.repeat(21);
   }
 
+  function dayEnd(day: number): string {
+    if (day === 1) {
+      return 'st';
+    }
+
+    else if (day === 2) {
+      return 'nd';
+    }
+
+    return 'th';
+  }
+
+  function removeStart(text: string): string {
+    return text.replace(/^(HEADER: |BODY: |URI: )+/, '');
+  }
+
   const diagnosis: [string, string, string] = scoreString(spamResult.totalPoints);
 
   const doc = new PDFDocument({
@@ -380,27 +380,15 @@ export function generatePDF(spamResult: SpamResult): void {
 
   doc.pipe(createWriteStream(path));
 
-  doc.image(resolve(__dirname, 'logo.jpg'), 155, 50, {
+  doc.image(resolve(__dirname, 'logo.jpg'), 152, 50, {
     align: 'right',
     width: 300,
     height: 83.67,
   });
 
-  function dayEnd(day: number): string {
-    if (day === 1) {
-      return 'st';
-    }
-
-    else if (day === 2) {
-      return 'nd';
-    }
-
-    return 'th';
-  }
-
   doc.fontSize(12).text('Delivery Performance', {align: 'center'});
   doc.moveDown(3);
-  doc.fontSize(15).text(`Spam Analysis | ${new Date().toLocaleDateString('en-uk', { day: 'numeric' })}${dayEnd(new Date().getDate())} of ${new Date().toLocaleDateString('en-uk', { month: 'long' })}, ${new Date(). toLocaleDateString('en-uk', { year: 'numeric' })}`, {align: 'center'});
+  doc.fontSize(15).text(`Spam Analysis | ${new Date().toLocaleDateString('en-uk', { day: 'numeric' })}${dayEnd(new Date().getDate())} of ${new Date().toLocaleDateString('en-uk', { month: 'long' })}, ${new Date().toLocaleDateString('en-uk', { year: 'numeric' })}`, {align: 'center'});
   doc.moveDown();
   doc.fontSize(15)
   .text(`${scoreSpace(spamResult.totalPoints)}${diagnosis[0]}`, {continued: true})
@@ -412,12 +400,11 @@ export function generatePDF(spamResult: SpamResult): void {
   doc.moveDown(2);
 
   doc.fillColor('black').fontSize(12).text(
-    `This email was scanned by Mailer using SpamAssassin to determine if it is likely to be flagged spam by email clients. By scoring (0 to 10) emails with fixed rules and a model trained with up-to-date data, we can get a reliable diagnosis of our email's quality, allowing us to make data oriented decisions on the design of our email templates. The score of the email is the sum of the points given by each rule, which is then compared to a threshold to determine the likelihood of the email being flagged as spam by email clients. The score of this email is `, {
+    `This email was scanned by Mailer using SpamAssassin to determine if it is likely to be flagged spam by email clients. By scoring emails with fixed rules and a trained Bayesian model, we can get a reliable diagnosis of our email's quality, allowing us to make data oriented decisions on the design of our email templates. The score of the email is the sum of the points given by each rule, which is then compared to a threshold to determine the likelihood of the email being flagged as spam by email clients. The score of this email is `, {
       continued: true,
       align: 'justify',
     }
   ).text(`${spamResult.totalPoints}`, {
-      underline: true,
       continued: true,
     }
   ).text(', which means that ', {
@@ -437,7 +424,12 @@ export function generatePDF(spamResult: SpamResult): void {
   doc.fontSize(15).text('Rules used:');
   doc.moveDown();
   Object.keys(spamResult.analysis).forEach((key) => {
-    doc.fontSize(12).text(`${key} - ${spamResult.analysis[key][0]}:`, {lineGap: 5, continued: true}).text(`${spamResult.analysis[key][1]}`, {align: 'right', continued: false});
+    const rule = key.includes('BAYES') ? 'BAYES' : key;
+    const description = key.includes('BAYES') ? 'Score given by Bayesian probabilistic model' : removeStart(spamResult.analysis[key][1]);
+    doc.fontSize(12).text(`${spamResult.analysis[key][0]} - ${rule}:`, {lineGap: 5, continued: true}).text(`${description}`, {align: 'right', continued: false});
+    if (rule === 'BAYES') {
+      doc.moveDown();
+    }
   });
   doc.moveDown();
   doc.fontSize(12).text(`Total score: ${spamResult.totalPoints}`);
