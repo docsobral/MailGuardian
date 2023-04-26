@@ -204,7 +204,7 @@ export async function buildImage(): Promise<void> {
 }
 
 interface SpamAnalysis {
-  [rule: string]: string;
+  [rule: string]: [string, string];
 }
 
 interface SpamResult {
@@ -252,7 +252,7 @@ export function parseSpamAnalysis(emailText: string): SpamResult {
       const [, pointsString, rule, description] = match;
       const points = parseFloat(pointsString);
       if (!(rule in ignoredRules) && pointsString !== '0.0') {
-        analysis[`${pointsString} - ${rule}`] = description;
+        analysis[`${pointsString}`] = [rule, description];
         totalPoints += points;
       }
     }
@@ -299,27 +299,67 @@ export function generatePDF(spamResult: SpamResult): void {
    *
    * @returns {string} The string based on the score
    */
-  function scoreString(score: number): string {
+  function scoreString(score: number): [string, string, string] {
     if (score < 4.5) {
       if (score > 3.5) {
-        return `This email might be flagged as spam`;
+        return ['This email ', 'MIGHT', ' be flagged as spam'];
       }
 
       else if (score > 2.5) {
-        return `Very strict spam filters may flag this email as spam`;
+        return ['Very strict spam filters ', 'MAY', ' flag this email as spam'];
       }
 
-      return `This email is unlikely to be flagged as spam`;
+      return ['This email is ', 'UNLIKELY', ' to be flagged as spam'];
     }
 
     else if (score < 6) {
-      return `This email will most likely be flagged as spam`;
+      return ['This email will ', 'MOST LIKELY', ' be flagged as spam'];
     }
 
-    return `This email will DEFINITELY be flagged as spam`;
+    return ['This email will ', 'DEFINITELY', ' be flagged as spam'];
   }
 
-  const diagnosis: string = scoreString(spamResult.totalPoints);
+  function scoreColor(score: number): [number, number, number] {
+    if (score < 4.5) {
+      if (score > 3.5) {
+        return [255, 240, 17];
+      }
+
+      else if (score > 2.5) {
+        return [255, 240, 17];
+      }
+
+      return [0, 189, 250];
+    }
+
+    else if (score < 6) {
+      return [255, 27, 120];
+    }
+
+    return [255, 27, 120];
+  }
+
+  function scoreSpace(score: number): string {
+    if (score < 4.5) {
+      if (score > 3.5) {
+        return ' '.repeat(28);
+      }
+
+      else if (score > 2.5) {
+        return ' '.repeat(14);
+      }
+
+      return ' '.repeat(22);
+    }
+
+    else if (score < 6) {
+      return ' '.repeat(20);
+    }
+
+    return ' '.repeat(21);
+  }
+
+  const diagnosis: [string, string, string] = scoreString(spamResult.totalPoints);
 
   const doc = new PDFDocument({
     size: 'A4',
@@ -340,42 +380,67 @@ export function generatePDF(spamResult: SpamResult): void {
 
   doc.pipe(createWriteStream(path));
 
-  // Draw logo
-  doc.image(resolve(__dirname, 'logo.jpg'), 150, 50, {
+  doc.image(resolve(__dirname, 'logo.jpg'), 155, 50, {
+    align: 'right',
     width: 300,
     height: 83.67,
   });
 
-  // Add title page
-  doc.moveDown(2);
-  doc.fontSize(25).text('Spam Analysis', {
-    align: 'center',
-  });
-  doc.fontSize(10).text(`${new Date().toLocaleDateString()}`, {align: 'center'});
-  doc.moveDown();
-  doc.fontSize(15).text(`${diagnosis}.`, {align: 'center'});
-
-  doc.moveDown(2);
-
-  doc.fontSize(12).text(
-    `This email was scanned by Mailer using SpamAssassin 4.0.0 to determine if it is likely to be flagged spam by email clients.\n\nVersion 4.0.0 is the most recent version of the most popular open source spam filter, which uses a very large number of different tests to determine if an email is spam. It has been around for over two decades, and has been consistently updated to stay ahead of spammers. SpamAssassin is used by many companies and organizations to filter spam.\n\nThe instance of SpamAssassin run by Mailer was trained using a large collection of spam emails (over 100 thousand samples). This allows SpamAssassin to learn what spam looks like. The training data is provided by datasets gathered over years of spam filtering, and includes very recent spam samples gathered up to March of 2023. The training data is also updated regularly to stay up to date with the latest spam trends.\n\nThis means that Mailer uses a set of fixed rules along with bayesian inference to determine if an email is spam. By scoring (0-10) emails with fixed rules and a model trained with up-to-date data, we can get a reliable diagnosis of our email's quality, allowing us to make data oriented decisions on the design of our email templates.\n\nThe score of the email is the sum of the points given by each rule, which is then compared to a threshold to determine the likelihood of the email being flagged as spam by email clients. The score of this email is ${spamResult.totalPoints}, which means that ${diagnosis.toLowerCase()}.`, {
-      align: 'justify',
-      columns: 2,
-      columnGap: 10,
-      height: 280,
+  function dayEnd(day: number): string {
+    if (day === 1) {
+      return 'st';
     }
-  );
 
-  // Add analysis section
-  // doc.addPage();
+    else if (day === 2) {
+      return 'nd';
+    }
+
+    return 'th';
+  }
+
+  doc.fontSize(12).text('Delivery Performance', {align: 'center'});
+  doc.moveDown(3);
+  doc.fontSize(15).text(`Spam Analysis | ${new Date().toLocaleDateString('en-uk', { day: 'numeric' })}${dayEnd(new Date().getDate())} of ${new Date().toLocaleDateString('en-uk', { month: 'long' })}, ${new Date(). toLocaleDateString('en-uk', { year: 'numeric' })}`, {align: 'center'});
+  doc.moveDown();
+  doc.fontSize(15)
+  .text(`${scoreSpace(spamResult.totalPoints)}${diagnosis[0]}`, {continued: true})
+  .fillColor(scoreColor(spamResult.totalPoints))
+  .text(`${diagnosis[1]}`, {continued: true})
+  .fillColor('black')
+  .text(`${diagnosis[2]}`, {continued: false})
+
   doc.moveDown(2);
-  doc.fontSize(20).text('Rules used:');
+
+  doc.fillColor('black').fontSize(12).text(
+    `This email was scanned by Mailer using SpamAssassin to determine if it is likely to be flagged spam by email clients. By scoring (0 to 10) emails with fixed rules and a model trained with up-to-date data, we can get a reliable diagnosis of our email's quality, allowing us to make data oriented decisions on the design of our email templates. The score of the email is the sum of the points given by each rule, which is then compared to a threshold to determine the likelihood of the email being flagged as spam by email clients. The score of this email is `, {
+      continued: true,
+      align: 'justify',
+    }
+  ).text(`${spamResult.totalPoints}`, {
+      underline: true,
+      continued: true,
+    }
+  ).text(', which means that ', {
+      continued: true,
+      underline: false,
+  }
+  ).text(`${diagnosis[0].toLowerCase()}${diagnosis[1].toLowerCase()}${diagnosis[2].toLowerCase()}`, {
+      continued: true,
+      underline: true
+  }
+  ).text('.', {
+    continued: false,
+    underline: false,
+  });
+
+  doc.moveDown(2);
+  doc.fontSize(15).text('Rules used:');
   doc.moveDown();
   Object.keys(spamResult.analysis).forEach((key) => {
-    doc.fontSize(15).text(`${key}: ${spamResult.analysis[key]}`, {lineGap: 5});
+    doc.fontSize(12).text(`${key} - ${spamResult.analysis[key][0]}:`, {lineGap: 5, continued: true}).text(`${spamResult.analysis[key][1]}`, {align: 'right', continued: false});
   });
   doc.moveDown();
-  doc.fontSize(15).text(`Total score: ${spamResult.totalPoints}`);
+  doc.fontSize(12).text(`Total score: ${spamResult.totalPoints}`);
 
   doc.end();
 }
