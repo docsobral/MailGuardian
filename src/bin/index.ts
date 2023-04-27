@@ -441,8 +441,8 @@ program
 .option('-u, --url <config>', 'Change the supabase URL', false)
 .option('-sk, --secret-key <config>', 'Change the secret key', false)
 .option('-a, --author <config>', 'Change the content of the author meta tag', false)
-.action(async (options) => {
-  const key = Object.keys(options).find(key => options[key] !== false);
+.action(async (options: { secret: string, url: string, secretKey: string, author: string}) => {
+  const key = Object.keys(options).find(key => !!options[key as keyof typeof options]);
 
   try {
     process.stdout.write('\n');
@@ -534,7 +534,7 @@ program
 .option('-t, --test [path]', 'Runs a prepared email through SpamAssassin\'s tests', false)
 .option('-l, --learn', 'Runs sa-learn on the Spam Assassin Public Corpus', false)
 .option('-p, --pdf', 'Generates a PDF file from the results of the SpamAssassin tests', false)
-.action(async options => {
+.action(async (options: { build: boolean, test: boolean | string, learn: boolean, pdf: boolean}) => {
   try {
     if (options.build) {
       await buildImage();
