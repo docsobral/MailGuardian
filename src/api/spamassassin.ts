@@ -397,7 +397,7 @@ export function generatePDF(spamResult: SpamResult): void {
   doc.moveDown(2);
 
   doc.fillColor('black').fontSize(12).text(
-    `This email was scanned by Mailer using SpamAssassin to determine if it is likely to be flagged spam by email clients. By scoring emails with fixed rules and a trained Bayesian model, we can get a reliable qualitative diagnosis, allowing us to make data oriented decisions on the design of our email templates. The score of the email is the sum of the points given by each rule, which is then compared to a threshold to determine the likelihood of the email being flagged as spam by email clients. The score of this email is `, {
+    `This email was scanned by Mailer using SpamAssassin to determine if it is likely to be flagged spam by email clients. By scoring emails with fixed rules and a trained Bayesian model, we can get a reliable qualitative diagnosis, allowing us to make data oriented decisions on the design of our email templates. The score of the email is the sum of the points given by each rule, which is then compared to a threshold to determine the likelihood of the email being flagged as spam by email clients. The total score of this email is `, {
       continued: true,
       align: 'justify',
     }
@@ -424,9 +424,6 @@ export function generatePDF(spamResult: SpamResult): void {
     const rule: string = key.includes('BAYES') ? 'BAYES' : key;
     const description: string = key.includes('BAYES') ? 'Score given by Bayesian probabilistic model' : removeStart(spamResult.analysis[key][1]);
     doc.fontSize(12).text(`${spamResult.analysis[key][0]} - ${rule}:`, {lineGap: 5, continued: true}).text(`${description}`, {align: 'right', continued: false});
-    if (rule === 'BAYES') {
-      doc.moveDown();
-    }
   });
   doc.moveDown();
   doc.fontSize(12).text(`Total score: ${spamResult.totalPoints}`);
