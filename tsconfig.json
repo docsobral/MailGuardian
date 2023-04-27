@@ -5,14 +5,14 @@
     "strict": true,
     "strictNullChecks": true,
     "noImplicitAny": true,
-    "removeComments": false,
+    "removeComments": true,
     "preserveConstEnums": true,
     "sourceMap": false,
     "noEmitOnError": true,
     "esModuleInterop": true,
     "rootDir": "src",
     "outDir": "build",
-    "noUnusedLocals": false,
+    "noUnusedLocals": true,
     "forceConsistentCasingInFileNames": true
   }
 }
