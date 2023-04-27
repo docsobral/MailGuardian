@@ -12,9 +12,14 @@ echo '  Done!'
 echo ''
 echo '  Training ham...'
 docker exec spamassassin-app sa-learn --ham data/easy-ham-1 data/easy-ham-2 data/hard-ham-1
+echo 'Done!'
 echo ''
 echo '  Training spam...'
 docker exec spamassassin-app sa-learn --spam data/spam-1 data/spam-2
+echo 'Done!'s
 
 # Delete training files
+echo ''
+echo '  Deleting training files...'
 docker exec --user root spamassassin-app rm -rf data/easy-ham-1 data/easy-ham-2 data/hard-ham-1 data/spam-1 data/spam-2
+echo '  Done!'
