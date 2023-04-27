@@ -303,7 +303,7 @@ export function generatePDF(spamResult: SpamResult): void {
     return ['This email will ', 'DEFINITELY', ' be flagged as spam'];
   }
 
-  function scoreColor(score: number): [number, number, number] {
+  function stringColor(score: number): [number, number, number] {
     if (score < 5) {
       if (score > 4) {
         return [255, 240, 17];
@@ -323,7 +323,7 @@ export function generatePDF(spamResult: SpamResult): void {
     return [255, 27, 120];
   }
 
-  function scoreSpace(score: number): string {
+  function centerString(score: number): string {
     if (score < 5) {
       if (score > 4) {
         return ' '.repeat(28);
@@ -343,8 +343,10 @@ export function generatePDF(spamResult: SpamResult): void {
     return ' '.repeat(21);
   }
 
-  function dayEnd(day: number): string {
-    switch (day) {
+  function daySuffix(day: number): string {
+    const lastDigit = day % 10;
+
+    switch (lastDigit) {
       case 1: return 'st';
       case 2: return 'nd';
       case 3: return 'rd';
@@ -352,7 +354,7 @@ export function generatePDF(spamResult: SpamResult): void {
     }
   }
 
-  function removeStart(text: string): string {
+  function removePrefix(text: string): string {
     return text.replace(/^(HEADER: |BODY: |URI: )+/, '');
   }
 
@@ -385,11 +387,11 @@ export function generatePDF(spamResult: SpamResult): void {
 
   doc.fontSize(12).text('Delivery Performance', {align: 'center'});
   doc.moveDown(3);
-  doc.fontSize(15).text(`Spam Analysis | ${new Date().toLocaleDateString('en-uk', { day: 'numeric' })}${dayEnd(new Date().getDate())} of ${new Date().toLocaleDateString('en-uk', { month: 'long' })}, ${new Date().toLocaleDateString('en-uk', { year: 'numeric' })}`, {align: 'center'});
+  doc.fontSize(15).text(`Spam Analysis | ${new Date().toLocaleDateString('en-uk', { day: 'numeric' })}${daySuffix(new Date().getDate())} of ${new Date().toLocaleDateString('en-uk', { month: 'long' })}, ${new Date().toLocaleDateString('en-uk', { year: 'numeric' })}`, {align: 'center'});
   doc.moveDown();
   doc.fontSize(15)
-  .text(`${scoreSpace(spamResult.totalPoints)}${diagnosis[0]}`, {continued: true})
-  .fillColor(scoreColor(spamResult.totalPoints))
+  .text(`${centerString(spamResult.totalPoints)}${diagnosis[0]}`, {continued: true})
+  .fillColor(stringColor(spamResult.totalPoints))
   .text(`${diagnosis[1]}`, {continued: true})
   .fillColor('black')
   .text(`${diagnosis[2]}`, {continued: false})
@@ -422,7 +424,7 @@ export function generatePDF(spamResult: SpamResult): void {
   doc.moveDown();
   Object.keys(spamResult.analysis).forEach((key) => {
     const rule: string = key.includes('BAYES') ? 'BAYES' : key;
-    const description: string = key.includes('BAYES') ? 'Score given by Bayesian probabilistic model' : removeStart(spamResult.analysis[key][1]);
+    const description: string = key.includes('BAYES') ? 'Score given by Bayesian probabilistic model' : removePrefix(spamResult.analysis[key][1]);
     doc.fontSize(12).text(`${spamResult.analysis[key][0]} - ${rule}:`, {lineGap: 5, continued: true}).text(`${description}`, {align: 'right', continued: false});
   });
   doc.moveDown();
