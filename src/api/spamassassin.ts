@@ -284,12 +284,12 @@ export function generatePDF(spamResult: SpamResult): void {
   const path: string = resolve(__dirname, 'temp\\spam-analysis.pdf');
 
   function scoreString(score: number): [string, string, string] {
-    if (score < 4.5) {
-      if (score > 3.5) {
+    if (score < 5) {
+      if (score > 4) {
         return ['This email ', 'MIGHT', ' be flagged as spam'];
       }
 
-      else if (score > 2.5) {
+      else if (score > 3) {
         return ['Very strict spam filters ', 'MAY', ' flag this email as spam'];
       }
 
@@ -304,12 +304,12 @@ export function generatePDF(spamResult: SpamResult): void {
   }
 
   function scoreColor(score: number): [number, number, number] {
-    if (score < 4.5) {
-      if (score > 3.5) {
+    if (score < 5) {
+      if (score > 4) {
         return [255, 240, 17];
       }
 
-      else if (score > 2.5) {
+      else if (score > 3) {
         return [255, 240, 17];
       }
 
@@ -324,12 +324,12 @@ export function generatePDF(spamResult: SpamResult): void {
   }
 
   function scoreSpace(score: number): string {
-    if (score < 4.5) {
-      if (score > 3.5) {
+    if (score < 5) {
+      if (score > 4) {
         return ' '.repeat(28);
       }
 
-      else if (score > 2.5) {
+      else if (score > 3) {
         return ' '.repeat(14);
       }
 
@@ -344,15 +344,12 @@ export function generatePDF(spamResult: SpamResult): void {
   }
 
   function dayEnd(day: number): string {
-    if (day === 1) {
-      return 'st';
+    switch (day) {
+      case 1: return 'st';
+      case 2: return 'nd';
+      case 3: return 'rd';
+      default: return 'th';
     }
-
-    else if (day === 2) {
-      return 'nd';
-    }
-
-    return 'th';
   }
 
   function removeStart(text: string): string {
@@ -424,8 +421,8 @@ export function generatePDF(spamResult: SpamResult): void {
   doc.fontSize(15).text('Rules used:');
   doc.moveDown();
   Object.keys(spamResult.analysis).forEach((key) => {
-    const rule = key.includes('BAYES') ? 'BAYES' : key;
-    const description = key.includes('BAYES') ? 'Score given by Bayesian probabilistic model' : removeStart(spamResult.analysis[key][1]);
+    const rule: string = key.includes('BAYES') ? 'BAYES' : key;
+    const description: string = key.includes('BAYES') ? 'Score given by Bayesian probabilistic model' : removeStart(spamResult.analysis[key][1]);
     doc.fontSize(12).text(`${spamResult.analysis[key][0]} - ${rule}:`, {lineGap: 5, continued: true}).text(`${description}`, {align: 'right', continued: false});
     if (rule === 'BAYES') {
       doc.moveDown();
