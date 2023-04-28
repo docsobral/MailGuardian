@@ -70,7 +70,7 @@ Remember to follow the template correctly.
 
 ## Commands
 
-### login \<id\> \<password\>
+### save-credentials \<id\> \<password\>
 
 The package uses Nodemailer to send mails. To that end, it needs valid credentials to work. For now, it only works with Gmail. If your gmail account uses 2FA, you will need to generate a app password on your security settings.
 
@@ -124,7 +124,7 @@ This command runs the functions required to set up and run SpamAssassin.
 
 ## Usage
 
-First, run `mailer`. You will be prompted for the supabase key and URL. Then run `mailer login <your@email.adress> <yourpassword>` to connect to the email from which samples will be sent.
+First, run `mailer`. You will be prompted for the supabase key and URL. Then run `mailer save-credentials <your@email.adress> <yourpassword>` to connect to the email from which samples will be sent.
 
 Each template should have its own folder, implemented on supabase as buckets. Create a bucket with `mailer bucket -c <bucketname>`. Use a name that makes sense and that you will remember.
 

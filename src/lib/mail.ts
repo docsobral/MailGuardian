@@ -1,4 +1,3 @@
-import chalk from 'chalk';
 import nodemailer from 'nodemailer';
 import { getState } from './save.js';
 import { downloadFile } from '../api/supabase.js';

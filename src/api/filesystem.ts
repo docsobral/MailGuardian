@@ -64,13 +64,9 @@ export async function checkFirstUse(): Promise<void> {
   if (!existsSync(__dirname + 'config')) {
     console.log(`${chalk.blue('Creating save files...\n')}`);
     await mkdir(__dirname + 'config');
-  };
 
-  if (!existsSync(__dirname + 'config\\paths.json')) {
     writeFile(__dirname + 'config\\paths.json', JSON.stringify({}, null, 2));
-  }
 
-  if (!existsSync(__dirname + 'config\\state.json') || !existsSync(__dirname + 'config\\config.json')) {
     const initialState: AppState = {logged: [false, false]};
     writeFile(__dirname + 'config\\state.json', JSON.stringify(initialState, null, 2));
 
@@ -103,7 +99,7 @@ export async function checkFirstUse(): Promise<void> {
     await writeFile(__dirname + 'config\\config.json', JSON.stringify(appConfigs, null, 2));
     console.log(`${chalk.yellow('Finished creating config files and terminating process. Now run \'mailer login <email> <passoword>\'.')}`);
     process.exit(1);
-  }
+  };
 }
 
 export async function createFolders(templateName: string): Promise<void> {

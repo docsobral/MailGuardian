@@ -17,6 +17,7 @@ process.emitWarning = (warning, ...args) => {
 import ora from 'ora';
 import chalk from 'chalk';
 import { program } from 'commander';
+import { resolve } from 'node:path';
 import { BucketError } from '../lib/error.js';
 import { importBucket } from '../lib/import.js';
 import { AuthError } from '@supabase/supabase-js';
@@ -28,8 +29,8 @@ import { save, getConfigAndPath } from '../lib/save.js';
 import { downloadMJML, parseMJML } from '../lib/prepare.js';
 import { existsSync, writeFileSync, readFileSync } from 'node:fs';
 import { getPath, watch, uploadMJML, uploadImages } from '../lib/export.js';
-import { buildImage, convertHTML, isSpam, train } from '../api/spamassassin.js';
 import { enquire, EnquireMessages, EnquireNames, EnquireTypes } from '../api/enquire.js';
+import { buildImage, convertHTML, isSpam, train, parseSpamAnalysis, generatePDF } from '../api/spamassassin.js';
 import {
   cleanTemp,
   createFolders,
@@ -43,7 +44,7 @@ import {
 
 await checkFirstUse();
 
-program.version('0.11.3');
+program.version('0.12.0');
 
 program
 .command('save-credentials')
@@ -121,7 +122,7 @@ program
     // Skips if the user provided a path and the --new-path option
     // If the user provided a path and the --new-path option, it will overwrite the saved path
     // Refactor soon, because it will take too much CPU time once the number of buckets increases
-    if (!path || options.newPath) {
+    if (!path && !options.newPath) {
       for (const entry of files.paths) {
         if (entry[0] === name) {
           path = absolutePath(entry[1]);
@@ -129,7 +130,7 @@ program
       }
     }
 
-    else {
+    else if (path) {
       path = absolutePath(path);
     }
 
@@ -440,8 +441,8 @@ program
 .option('-u, --url <config>', 'Change the supabase URL', false)
 .option('-sk, --secret-key <config>', 'Change the secret key', false)
 .option('-a, --author <config>', 'Change the content of the author meta tag', false)
-.action(async (options) => {
-  const key = Object.keys(options).find(key => options[key] !== false);
+.action(async (options: { secret: string, url: string, secretKey: string, author: string}) => {
+  const key = Object.keys(options).find(key => !!options[key as keyof typeof options]);
 
   try {
     process.stdout.write('\n');
@@ -532,7 +533,8 @@ program
 .option('-b, --build', 'Builds the SpamAssassin image', false)
 .option('-t, --test [path]', 'Runs a prepared email through SpamAssassin\'s tests', false)
 .option('-l, --learn', 'Runs sa-learn on the Spam Assassin Public Corpus', false)
-.action(async options => {
+.option('-p, --pdf', 'Generates a PDF file from the results of the SpamAssassin tests', false)
+.action(async (options: { build: boolean, test: boolean | string, learn: boolean, pdf: boolean}) => {
   try {
     if (options.build) {
       await buildImage();
@@ -551,6 +553,23 @@ program
 
     if (options.learn) {
       await train();
+    }
+
+    if (options.pdf) {
+      process.stdout.write('\n');
+      const spinner = ora(`${chalk.yellow('Generating PDF...')}`).start();
+
+      try {
+        const log = readFileSync(__dirname + 'temp\\log.txt', 'utf-8');
+        const analysis = parseSpamAnalysis(log);
+        generatePDF(analysis);
+        spinner.succeed(`Generated PDF file at ${chalk.green(resolve(__dirname + 'temp\\spam-analysis.pdf'))}`);
+      }
+
+      catch (error) {
+        spinner.fail();
+        console.error(`${chalk.red(error)}`);
+      }
     }
   }
 
