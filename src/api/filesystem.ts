@@ -7,6 +7,9 @@ import { fileURLToPath } from 'url';
 import Cryptr from 'cryptr';
 import chalk from 'chalk';
 
+/**
+ * @description Escapes the backslashes from a path. Used at the start of the program to get the __dirname.
+ */
 function escapeBackslashes(path: string) {
   const pathArray = path.split('');
   let newArray: string[] = [];
@@ -22,6 +25,9 @@ const __filename: string = dirname(fileURLToPath(import.meta.url));
 
 export const __dirname: string = escapeBackslashes(__filename.split('build')[0]);
 
+/**
+ * @description Takes a path and returns the absolute path of it.
+ */
 export function absolutePath(path: string): string {
   if (path.startsWith('C:\\')) {
     return path;
@@ -30,10 +36,18 @@ export function absolutePath(path: string): string {
   }
 }
 
+/**
+ * @description Takes a path to a file and returns the path and the file name.
+ */
 export function pathAndFile(path: string): [string, string] {
   return [dirname(path), basename(path)];
 }
 
+/**
+ * @description Gets a local file (either HTML or MJML) and returns it as a string. Used to get template files for processing and HTML files for parsing with SpamAssassin.
+ * @param marketo Wether the file is a marketo file or not.
+ * @param fileName The name of the file. Defaults to 'index'.
+ */
 export async function getFile(fileType: 'html' | 'mjml', pathToFile: string, marketo: boolean = false, fileName: string = 'index'): Promise<string> {
   let string: string;
 
@@ -46,10 +60,10 @@ export async function getFile(fileType: 'html' | 'mjml', pathToFile: string, mar
   return string;
 }
 
-export async function getHTML(path: string): Promise<string> {
-  return (await readFile(path)).toString();
-}
-
+/**
+ * @description Gets local image files and returns them as a buffer. Used to get images for processing templates.
+ * @param imageName The name of the image with the extension.
+ */
 export async function getImage(path: string, imageName: string): Promise<Buffer> {
   let image: Buffer;
 
@@ -57,10 +71,16 @@ export async function getImage(path: string, imageName: string): Promise<Buffer>
   return image;
 }
 
+/**
+ * @description Saves a file locally.
+ */
 export async function saveFile(path: string, name: string, file: string | Buffer): Promise<void> {
   await writeFile(`${path}\\${name}`, file);
 }
 
+/**
+ * @description Checks if the user has used the app before. If not, it creates the necessary files and terminates the process.
+ */
 export async function checkFirstUse(): Promise<void> {
   if (!existsSync(__dirname + 'config')) {
     console.log(`${chalk.blue('Creating save files...\n')}`);
@@ -99,10 +119,13 @@ export async function checkFirstUse(): Promise<void> {
 
     await writeFile(__dirname + 'config\\config.json', JSON.stringify(appConfigs, null, 2));
     console.log(`${chalk.yellow('Finished creating config files and terminating process. Now run \'mailer login <email> <passoword>\'.')}`);
-    process.exit(1);
+    process.exit(0);
   };
 }
 
+/**
+ * @description Creates the necessary folders for the app to work.
+ */
 export async function createFolders(templateName: string): Promise<void> {
   // check if downloads folder exists
   if (!existsSync(__dirname + 'downloads')) {
@@ -125,20 +148,14 @@ export async function createFolders(templateName: string): Promise<void> {
   }
 }
 
+/**
+ * @description Cleans the temp folder. Used to prepare the app for a new run.
+ */
 export async function cleanTemp(): Promise<void> {
   const files = await readdir(__dirname + 'temp');
 
   for (let file of files) {
     await unlink(__dirname + `temp\\${file}`);
-  }
-}
-
-// IMPLEMENT THIS
-export async function cleanDownloads(): Promise<void> {
-  const files = await readdir(__dirname + 'downloads');
-
-  for (let file of files) {
-    await unlink(__dirname + `downloads\\${file}`);
   }
 }
 
@@ -161,14 +178,12 @@ export type AppPaths = [string, string][];
  *
  * const state = await getState();
  * // Returns { 'logged' : [true, false], 'host': ['smtp.gmail.com', false], id: ['123456789', true], 'password': ['password', true]}
- *
- * @returns {Promise<AppState>} The state of the app
  */
 export async function getState(): Promise<AppState> {
-  const config: AppConfig = JSON.parse(readFileSync(__dirname + 'config\\config.json', { encoding: 'utf8' }));
+  const config: AppConfig = JSON.parse((await readFile(__dirname + 'config\\config.json')).toString('utf8'));
   const cryptr = new Cryptr(config['SECRET_KEY']);
 
-  let state: AppState = JSON.parse(readFileSync(__dirname + 'config\\state.json', { encoding: 'utf8' }));
+  let state: AppState = JSON.parse((await readFile(__dirname + 'config\\state.json')).toString('utf8'));
 
   // decrypts encrypted values (state[key][0] is encrypted if state[key][1] is true)
   Object.keys(state).forEach(key => {
@@ -189,17 +204,7 @@ export async function getState(): Promise<AppState> {
  *
  * @example
  * // Saves { 'logged' : [true, false], 'host': ['smtp.gmail.com', false], id: ['encrypted', true], 'password': ['encrypted', true]}
- * await saveState('logged': [true, false], 'host': ['smtp.gmail.com', false], id: ['123456789', true], 'password': ['password', true]])
- *
- * @example
- * // Saves { id: ['123456789', true]}
- * await saveState('id', '123456789', true);
- *
- * @param key The key of the state
- * @param value The value of the state
- * @param encrypt Whether or not to encrypt the value
- *
- * @returns {Promise<void>} - A promise that resolves when the state is saved
+ * await saveState('logged': [true, false], 'host': ['smtp.gmail.com', false], id: ['123456789', true], 'password': ['password', true]]);
  */
 export function saveState(key: string, value: string | boolean, encrypt = false): void {
   const config: AppConfig = JSON.parse(readFileSync(__dirname + 'config\\config.json', { encoding: 'utf8' }));
@@ -220,10 +225,7 @@ export function saveState(key: string, value: string | boolean, encrypt = false)
 }
 
 /**
- * @description Takes the config and paths of the app and returns them
- *
- * @returns {Promise<{config: AppConfig, paths: AppPaths}>} - The config and paths of the app
- *
+ * @description Returns the config and paths of the app
  */
 export function getConfigAndPath(): {config: AppConfig, paths: AppPaths} {
   const config: AppConfig = JSON.parse(readFileSync(__dirname + `config\\config.json`, { encoding: 'utf8' }));
@@ -239,10 +241,6 @@ export function getConfigAndPath(): {config: AppConfig, paths: AppPaths} {
  *
  * // Saves { 'paths': { 'inbox': 'C:\\Users\\user\\Desktop\\inbox' } }
  * save('paths', 'inbox', 'C:\\Users\\user\\Desktop\\inbox');
- *
- * @param type - The type of config to save ('paths' or 'config')
- * @param key - The key of the config
- * @param value - The value of the config
  */
 export function save(type: 'paths' | 'config', key: string, value: string): void {
   let info: AppInfo = JSON.parse(readFileSync(__dirname + `config\\${type}.json`, { encoding: 'utf8' }));

@@ -1,3 +1,9 @@
+v0.12.2:
+  1. MINOR: commented filesystem.ts
+
+v0.12.1:
+  1. MINOR: merged save.ts into filesystem.ts
+
 v0.12.0:
   1. MAJOR: added PDF generation of spam report
   2. MINOR: minor refactor of checkFirstUse function
