@@ -44,7 +44,7 @@ import {
 
 await checkFirstUse();
 
-program.version('0.12.2');
+program.version('0.12.3');
 
 program
 .command('save-credentials')

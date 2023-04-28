@@ -1,3 +1,6 @@
+v0.12.3:
+  1. MINOR: refactored generator function in prepare.ts
+
 v0.12.2:
   1. MINOR: commented filesystem.ts
 
