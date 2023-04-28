@@ -88,7 +88,7 @@ async function startContainer() {
 
     child.on('close', (code) => {
       if (code === 0) {
-        spinner.succeed(`${chalk.yellow('Started container...')}`);
+        spinner.succeed(`${chalk.yellow('Started container')}`);
         resolve();
       } else {
         spinner.fail(`${chalk.red(`Script exited with code ${code}`)}`);
@@ -112,7 +112,7 @@ async function stopContainer() {
 
     child.on('close', (code) => {
       if (code === 0) {
-        spinner.succeed(`${chalk.yellow('Stopped container...')}`);
+        spinner.succeed(`${chalk.yellow('Stopped container')}`);
         resolve();
       } else {
         spinner.fail(`${chalk.red(`Script exited with code ${code}`)}`);
@@ -129,22 +129,22 @@ async function trainSpamAssassin() {
     const spinner = ora(`${chalk.yellow('Training...\n')}`).start();
     const child = spawn('sh', ['train.sh']);
 
-    child.on('error', (error) => {
+    child.on('error', (error: Error) => {
       spinner.fail(error.message);
       reject(error.message);
     });
 
-    child.stderr.on('data', (data) => {
-      spinner.text = `${spinner.text}${data.toString()}`;
+    child.stderr.on('data', (data: string) => {
+      spinner.text = `${spinner.text}${data}`;
     });
 
-    child.stdout.on('data', data => {
+    child.stdout.on('data', (data: string) => {
       spinner.text = `${spinner.text}${data}`;
     })
 
     child.on('close', (code) => {
       if (code === 0) {
-        spinner.succeed();
+        spinner.succeed(`${chalk.yellow('Done training')}\n${spinner.text.slice(32)}`);
         resolve();
       } else {
         spinner.fail(`Script exited with code ${code}`);
