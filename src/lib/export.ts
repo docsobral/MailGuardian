@@ -54,11 +54,11 @@ export async function getImages(path: string): Promise<Images> {
   return images;
 }
 
-function capitalizeFirstLetter(string: string) {
+function capitalizeFirstLetter(string: string): string {
   return string.charAt(0).toUpperCase() + string.slice(1);
 }
 
-export async function watch(folderPath: string, projectName: string, marketo: boolean = false) {
+export async function watch(folderPath: string, projectName: string, marketo: boolean = false): Promise<void> {
   const mjml = await getFile('mjml', folderPath, marketo);
   const filesInBucket = await listFiles(projectName);
   const fileName = marketo ? 'marketo.mjml' : 'index.mjml';
@@ -154,6 +154,6 @@ export async function uploadImages(bucketName: string, path: string): Promise<vo
   spinner.succeed();
 }
 
-async function delay(ms: number) {
+async function delay(ms: number): Promise<unknown> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }

@@ -10,8 +10,8 @@ import chalk from 'chalk';
 /**
  * @description Escapes the backslashes from a path. Used at the start of the program to get the __dirname.
  */
-function escapeBackslashes(path: string) {
-  const pathArray = path.split('');
+function escapeBackslashes(path: string): string {
+  const pathArray: string[] = path.split('');
   let newArray: string[] = [];
 
   for (let char of pathArray) {

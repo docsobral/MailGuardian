@@ -7,11 +7,11 @@ export async function isLoggedIn() {
   else return false;
 }
 
-function delay(time: number) {
+function delay(time: number): Promise<unknown> {
   return new Promise(resolve => setTimeout(resolve, time));
 };
 
-export async function login(id: string, password: string) {
+export async function login(id: string, password: string): Promise<boolean> {
   if (id.includes('gmail')) {
     const options: TransporterOptions = {
       host: 'smtp.gmail.com',
@@ -38,7 +38,7 @@ export async function login(id: string, password: string) {
   return await isLoggedIn();
 }
 
-export async function saveCredentials(options: any) {
+export async function saveCredentials(options: any): Promise<void> {
   Object.keys(options).forEach(key => {
     (key === 'id' || key === 'password') ? saveState(key, options[key], true) : saveState(key, options[key]);
   });

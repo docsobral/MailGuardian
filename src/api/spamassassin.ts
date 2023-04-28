@@ -74,7 +74,7 @@ async function testEmail(): Promise<void> {
   });
 }
 
-async function startContainer() {
+async function startContainer(): Promise<void> {
   // Make the shell script executable
   return new Promise<void>((resolve, reject) => {
     process.stdout.write('\n');
@@ -98,7 +98,7 @@ async function startContainer() {
   });
 }
 
-async function stopContainer() {
+async function stopContainer(): Promise<void> {
   // Make the shell script executable
   return new Promise<void>((resolve, reject) => {
     process.stdout.write('\n');
@@ -122,7 +122,7 @@ async function stopContainer() {
   });
 }
 
-async function trainSpamAssassin() {
+async function trainSpamAssassin(): Promise<void> {
   // Make the shell script executable
   return new Promise<void>((resolve, reject) => {
     process.stdout.write('\n');

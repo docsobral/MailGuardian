@@ -42,7 +42,7 @@ enum InsertExpression {
   meta = '(?<=<meta name="viewport" content="width=device-width, initial-scale=1">)(\n)',
 }
 
-export async function downloadMJML(projectName: string, marketo: boolean = false) {
+export async function downloadMJML(projectName: string, marketo: boolean = false): Promise<Blob | null> {
   try {
     const { data, error } = await downloadFile(projectName, 'mjml', marketo);
     if (error) {
@@ -57,7 +57,7 @@ export async function downloadMJML(projectName: string, marketo: boolean = false
   }
 }
 
-export function parseMJML(mjml: string, marketo?: boolean) {
+export function parseMJML(mjml: string, marketo?: boolean): string {
   const string = mjml;
   const htmlObject = mjml2html(string, { validationLevel: 'soft' });
   const html = beautifyHTML(htmlObject.html);
@@ -70,7 +70,7 @@ export function parseMJML(mjml: string, marketo?: boolean) {
   return html;
 }
 
-export function marketoParse(html: string) {
+export function marketoParse(html: string): string {
   let string = html;
 
   // get classes from sections
@@ -121,7 +121,7 @@ export function marketoParse(html: string) {
   return string;
 }
 
-function beautifyHTML(html: string) {
+function beautifyHTML(html: string): string {
   let beautifiedHTML = html_beautify(html, beautifyOptions);
   return beautifiedHTML;
 }
@@ -129,7 +129,7 @@ function beautifyHTML(html: string) {
 /**
  * @returns a random string of two letters and a number to name IDs
  */
-function generator() {
+function generator(): () => string {
   let count = 0;
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
   const char = chars.charAt(Math.floor(Math.random() * chars.length));

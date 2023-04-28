@@ -17,7 +17,7 @@ export type TransporterOptions = {
 
 export type TransporterType = nodemailer.Transporter<SMTPTransport.SentMessageInfo>
 
-export async function createTransporter(options: TransporterOptions) {
+export async function createTransporter(options: TransporterOptions): Promise<TransporterType> {
   return nodemailer.createTransport({
     host: options.host,
     port: 587,
@@ -30,7 +30,7 @@ export async function createTransporter(options: TransporterOptions) {
 }
 
 // send mail with defined transport object
-export async function mail(transporter: TransporterType, options: EmailOptions) {
+export async function mail(transporter: TransporterType, options: EmailOptions): Promise<void> {
   const info = await transporter.sendMail({
     from: options.from,
     to: options.to,
