@@ -26,7 +26,7 @@ import { isLoggedIn, login } from '../lib/login.js';
 import { isStorageError } from '@supabase/storage-js';
 import { downloadHTML, mailHTML } from '../lib/mail.js';
 import { downloadMJML, parseMJML } from '../lib/prepare.js';
-import { save, getConfigAndPath } from '../api/filesystem.js';
+import { save, getConfigAndPath, getVersion } from '../api/filesystem.js';
 import { existsSync, writeFileSync, readFileSync } from 'node:fs';
 import { getPath, watch, uploadMJML, uploadImages } from '../lib/export.js';
 import { enquire, EnquireMessages, EnquireNames, EnquireTypes } from '../api/enquire.js';
@@ -44,7 +44,7 @@ import {
 
 await checkFirstUse();
 
-program.version('0.12.3');
+program.version(getVersion());
 
 program
 .command('save-credentials')

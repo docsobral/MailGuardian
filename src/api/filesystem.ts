@@ -250,3 +250,7 @@ export function save(type: 'paths' | 'config', key: string, value: string): void
   const infoString: string = JSON.stringify(info, null, 2);
   writeFileSync(__dirname + `config\\${type}.json`, infoString);
 }
+
+export function getVersion(): string {
+  return `Current version is v${JSON.parse(readFileSync(__dirname + 'package.json', { encoding: 'utf8' })).version}`;
+}
