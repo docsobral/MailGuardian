@@ -120,7 +120,7 @@ export async function uploadMJML(bucketName: string, path: string, marketo: bool
   try {
     process.stdout.write('\n');
     const spinner = ora(`${chalk.green(`Uploading ${marketo ? 'Marketo MJML' : 'MJML'} file...`)}`).start();
-    const mjml = await getMJML(path);
+    const mjml = await getMJML(path, marketo);
 
     const upload = await supabaseAPI.uploadFile(mjml, `${marketo ? 'marketo' : 'index'}.mjml`, bucketName, 'text/plain');
     if (upload.error) {

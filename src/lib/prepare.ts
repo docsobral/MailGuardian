@@ -126,10 +126,20 @@ function beautifyHTML(html: string) {
   return beautifiedHTML;
 }
 
-let count = 0;
+/**
+ * @returns a random string of two letters and a number to name IDs
+ */
 function generator() {
-  count++
-  return `a${count}`
+  let count = 0;
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const char = chars.charAt(Math.floor(Math.random() * chars.length));
+
+  function increment() {
+    count++;
+    return `${char}${count}`
+  }
+
+  return increment;
 }
 
 function getMatches(html: string, regex: ReplacerRegex, flag?: 'g' | 'gm'): string[] {
@@ -147,6 +157,7 @@ function getMatches(html: string, regex: ReplacerRegex, flag?: 'g' | 'gm'): stri
 function replaceString(html: string, regex: ReplacerRegex, expression?: InsertExpression | '', flags?: 'g' | 'gm', sectionArray?: string[], imgArray?: string[], textArray?: string[]): string {
   let result = html;
   const replacer = new RegExp(regex, flags);
+  const counter = generator();
 
   if (sectionArray) {
     while (sectionArray.length > 0) {
@@ -167,7 +178,7 @@ function replaceString(html: string, regex: ReplacerRegex, expression?: InsertEx
         string += ' mktoaddbydefault="false"'
       }
 
-      string += ` id="${generator()}"`
+      string += ` id="${counter()}"`
 
       result = result.replace(replacer, string);
     }
@@ -177,14 +188,14 @@ function replaceString(html: string, regex: ReplacerRegex, expression?: InsertEx
   if (imgArray) {
     while (imgArray.length > 0) {
       const img = imgArray.shift();
-      result = result.replace(replacer, `<div class="mktoImg" mktoname="${generator()}" id="${generator()}">\n${img}</div>`);
+      result = result.replace(replacer, `<div class="mktoImg" mktoname="${counter()}" id="${counter()}">\n${img}</div>`);
     }
     return result;
   }
 
   if (textArray) {
     while (textArray.length > 0) {
-      result = result.replace(replacer, `<div class="mktoText" mktoname="${generator()}" id="${generator()}" style="font-family`);
+      result = result.replace(replacer, `<div class="mktoText" mktoname="${counter()}" id="${counter()}" style="font-family`);
       textArray.pop();
     }
     return result;

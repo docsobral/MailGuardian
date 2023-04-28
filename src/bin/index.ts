@@ -116,6 +116,12 @@ program
 .option('-i, --images', 'Doesn\'t export images', false)
 .action(async (name: string, path: string, options: { watch: boolean, newPath: boolean, marketo: boolean, clean: boolean, images: boolean}) => {
   try {
+    let bucket: supabaseAPI.SupabaseStorageResult;
+
+    bucket = await supabaseAPI.bucketExists(name);
+    if (bucket.error) {
+      throw new BucketError(`Bucket ${name} doesn\'t exist! Use \'mailer bucket -c <name>\' to create one before trying to export a template.`);
+    }
     const files = getConfigAndPath();
 
     // Checks if there is a path saved for the bucket and if there is, it will use it (if not, it will use the path provided by the user)
@@ -134,87 +140,49 @@ program
       path = absolutePath(path);
     }
 
+    else {
+      path = await getPath();
+
+      if (path === 'cancelled') {
+        throw new Error('Operation cancelled by the user');
+      }
+    }
+
     if (options.clean) {
       process.stdout.write('\n');
       const spinner = ora(`${chalk.yellow('Cleaning bucket...')}`).start();
       const result = await supabaseAPI.cleanBucket(name);
 
       if (result.error) {
-        spinner.fail('Failed to clean bucket!');
-        process.exit(1);
+        spinner.fail('Failed to clean bucket!\n');
+        throw new Error(result.error.stack);
       }
 
       spinner.succeed(`${chalk.green(result.data.message + ' bucket!')}`);
     }
 
-    if (path) {
-      const check = existsSync(path);
-      if (!check) {
-        throw new Error('The path provided is broken... try again!');
-      }
+    const check = existsSync(path);
+    if (!check) {
+      throw new Error('The path provided is broken... try again!');
+    }
 
-      save('paths', name, path);
+    save('paths', name, path);
 
-      const bucket: supabaseAPI.SupabaseStorageResult = await supabaseAPI.bucketExists(name);
-      if (bucket.error) {
-        throw new Error('BUCKET ERROR: bucket doesn\'t exist! Use \'mailer bucket -c [name]\' to create one before trying to export a template.');
-      }
-
-      if (options.watch) {
-        await watch(path, name, options.marketo);
-      }
-
-      else {
-        if (!options.marketo) {
-          await uploadMJML(name, path);
-        }
-
-        else {
-          await uploadMJML(name, path, true);
-        }
-
-        if (!options.images) {
-          await uploadImages(name, path);
-        }
-      }
+    if (options.watch) {
+      await watch(path, name, options.marketo);
     }
 
     else {
-      let bucket: supabaseAPI.SupabaseStorageResult;
-
-      bucket = await supabaseAPI.bucketExists(name);
-      if (bucket.error) {
-        throw new BucketError(`Bucket ${name} doesn\'t exist! Use \'mailer bucket -c <name>\' to create one before trying to export a template.`);
-      }
-
-      path = await getPath();
-      if (path === 'cancelled') {
-        throw new Error('Operation cancelled by the user');
-      }
-
-      const check = existsSync(path);
-      if (!check) {
-        throw new Error('The path provided is invalid... try again!');
-      }
-
-      save('paths', name, path);
-
-      if (options.watch) {
-        await watch(path, name, options.marketo);
+      if (!options.marketo) {
+        await uploadMJML(name, path);
       }
 
       else {
-        if (!options.marketo) {
-          await uploadMJML(name, path);
-        }
+        await uploadMJML(name, path, true);
+      }
 
-        else {
-          await uploadMJML(name, path, true);
-        }
-
-        if (!options.images) {
-          await uploadImages(name, path);
-        }
+      if (!options.images) {
+        await uploadImages(name, path);
       }
     }
   }
