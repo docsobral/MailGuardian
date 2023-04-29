@@ -252,5 +252,5 @@ export function save(type: 'paths' | 'config', key: string, value: string): void
 }
 
 export function getVersion(): string {
-  return `Current version is v${JSON.parse(readFileSync(__dirname + 'package.json', { encoding: 'utf8' })).version}`;
+  return `Current version is v${JSON.parse(readFileSync(resolve(__dirname, 'package.json'), { encoding: 'utf8' })).version}`;
 }

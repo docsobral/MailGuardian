@@ -5,9 +5,8 @@ import { readdir } from 'node:fs/promises';
 // @ts-ignore
 import selectFolder from 'win-select-folder';
 import { __dirname } from '../api/filesystem.js';
-import * as supabaseAPI from '../api/supabase.js';
 import { getFile, getImage } from '../api/filesystem.js';
-import { fileExists, listFiles, updateFile, uploadFile } from '../api/supabase.js';
+import { listFiles, fileExists, uploadFile, updateFile } from '../api/supabase.js';
 
 type Images = {
   [name: string]: Buffer
@@ -118,17 +117,19 @@ export async function watch(folderPath: string, projectName: string, marketo: bo
 
 export async function uploadMJML(bucketName: string, path: string, marketo: boolean = false): Promise<void> {
   try {
+    const fileName = marketo ? 'marketo.mjml' : 'index.mjml';
+
     process.stdout.write('\n');
-    const spinner = ora(`${chalk.green(`Uploading ${marketo ? 'Marketo MJML' : 'MJML'} file...`)}`).start();
+    const spinner = ora(`${chalk.yellow(`Uploading ${fileName} file...`)}`).start();
     const mjml = await getMJML(path, marketo);
 
-    const upload = await supabaseAPI.uploadFile(mjml, `${marketo ? 'marketo' : 'index'}.mjml`, bucketName, 'text/plain');
+    const upload = await uploadFile(mjml, `${fileName}`, bucketName, 'text/plain');
     if (upload.error) {
-      spinner.fail();
-      throw new Error(`Failed to upload ${marketo ? 'Marketo MJML' : 'MJML'} file!`);
+      spinner.fail(`${chalk.red(`Failed to upload ${fileName} file!\n`)}`);
+      throw new Error(upload.error.stack);
     }
 
-    spinner.succeed();
+    spinner.succeed(`${chalk.yellow(`Successfully uploaded ${fileName} file!`)}`);
   }
 
   catch (error) {
@@ -140,10 +141,10 @@ export async function uploadImages(bucketName: string, path: string): Promise<vo
   const images = await getImages(path);
 
   process.stdout.write('\n');
-  const spinner = ora(`${chalk.green('Uploading images...')}`).start();
+  const spinner = ora(`${chalk.yellow('Uploading images...')}`).start();
 
   Object.keys(images).forEach(async (imageName) => {
-    const upload = await supabaseAPI.uploadFile(images[imageName], `img/${imageName}`, bucketName, 'image/png');
+    const upload = await uploadFile(images[imageName], `img/${imageName}`, bucketName, 'image/png');
     if (upload.error) {
       spinner.text = `${spinner.text}\n${chalk.red(`  Failed to upload ${imageName}! ${upload.error.message}`)}`;
     }

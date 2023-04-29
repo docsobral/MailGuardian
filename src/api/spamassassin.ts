@@ -410,7 +410,7 @@ export function generatePDF(spamResult: SpamResult): void {
       continued: true,
       underline: false,
   }
-  ).text(`${diagnosis[0].toLowerCase()}${diagnosis[1].toLowerCase()}${diagnosis[2].toLowerCase()}`, {
+  ).text(`${(diagnosis[0] + diagnosis[1] + diagnosis[2]).toLowerCase()}`, {
       continued: true,
       underline: true
   }
@@ -419,13 +419,16 @@ export function generatePDF(spamResult: SpamResult): void {
     underline: false,
   });
 
+  const SCORE_INDEX: number = 0;
+  const DESCRIPTION_INDEX: number = 1;
+
   doc.moveDown(2);
   doc.fontSize(15).text('Rules used:');
   doc.moveDown();
   Object.keys(spamResult.analysis).forEach((key) => {
     const rule: string = key.includes('BAYES') ? 'BAYES' : key;
-    const description: string = key.includes('BAYES') ? 'Score given by Bayesian probabilistic model' : removePrefix(spamResult.analysis[key][1]);
-    doc.fontSize(12).text(`${spamResult.analysis[key][0]} - ${rule}:`, {lineGap: 5, continued: true}).text(`${description}`, {align: 'right', continued: false});
+    const description: string = key.includes('BAYES') ? 'Score given by Bayesian probabilistic model' : removePrefix(spamResult.analysis[key][DESCRIPTION_INDEX]);
+    doc.fontSize(12).text(`${spamResult.analysis[key][SCORE_INDEX]} - ${rule}:`, {lineGap: 5, continued: true}).text(`${description}`, {align: 'right', continued: false});
   });
   doc.moveDown();
   doc.fontSize(12).text(`Total score: ${spamResult.totalPoints}`);

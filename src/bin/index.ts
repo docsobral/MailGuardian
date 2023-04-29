@@ -154,16 +154,16 @@ program
       const result = await supabaseAPI.cleanBucket(name);
 
       if (result.error) {
-        spinner.fail('Failed to clean bucket!\n');
+        spinner.fail(`${chalk.red('Failed to clean bucket!\n')}`);
         throw new Error(result.error.stack);
       }
 
-      spinner.succeed(`${chalk.green(result.data.message + ' bucket!')}`);
+      spinner.succeed(`${chalk.yellow(result.data.message + ' bucket!')}`);
     }
 
     const check = existsSync(path);
     if (!check) {
-      throw new Error('The path provided is broken... try again!');
+      throw new Error('The path provided is invalid... try again!');
     }
 
     save('paths', name, path);
@@ -173,13 +173,7 @@ program
     }
 
     else {
-      if (!options.marketo) {
-        await uploadMJML(name, path);
-      }
-
-      else {
-        await uploadMJML(name, path, true);
-      }
+      await uploadMJML(name, path, options.marketo);
 
       if (!options.images) {
         await uploadImages(name, path);
@@ -210,7 +204,7 @@ program
       const { error } = await supabaseAPI.createBucket(name);
       if (error) {
         spinner.fail();
-        throw new BucketError(`Failed to create bucket named ${name}! ${error.stack?.slice(17)}`);
+        throw new BucketError(`\nFailed to create bucket named ${name}!\n\n${error.stack?.slice(17)}`);
       }
       spinner.succeed();
       return;
@@ -222,7 +216,7 @@ program
       const { error } = await supabaseAPI.deleteBucket(name);
       if (error) {
         spinner.fail();
-        throw new BucketError(`Failed to delete bucket named ${name}! ${error.stack?.slice(17)}`);
+        throw new BucketError(`\nFailed to delete bucket named ${name}!\n\n${error.stack?.slice(17)}`);
       }
       spinner.succeed();
       return;
@@ -234,7 +228,7 @@ program
 
     if (error) {
       spinner.fail();
-      throw new BucketError(`Failed to fetch buckets! ${error.stack?.slice(17)}`);
+      throw new BucketError(`\nFailed to fetch buckets!\n\n${error.stack?.slice(17)}`);
     }
 
     if (data.length === 0) {
