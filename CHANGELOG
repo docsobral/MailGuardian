@@ -1,3 +1,19 @@
+v0.12.8:
+  1. MINOR: minor code refactoring to improve readability and maintainability
+
+v0.12.7:
+  1. MINOR: improvement to typing
+
+v0.12.6:
+  1. FIX: fixed bug where prepare command would fetch the wrong MJML file
+  2. MINOR: refactored generator function at prepare.ts
+
+v0.12.5:
+  1. MINOR: refactored Bash scripts and associated functions
+
+v0.12.4:
+  1. MINOR: CLI fetches version from package.json
+
 v0.12.3:
   1. MINOR: refactored generator function in prepare.ts
 
@@ -18,7 +34,7 @@ v0.11.2:
   1. MINOR: check that creates necessary directories moved to index.ts
 
 v.0.11.1:
-  1. BUGFIX: fixed bug where prepare command would delete the MJML files
+  1. FIX: fixed bug where prepare command would delete the MJML files
 
 v0.11.0:
   1. MAJOR: refactoring of index.ts as well as some other modules
