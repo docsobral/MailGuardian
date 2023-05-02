@@ -1,3 +1,6 @@
+v0.12.9:
+  1. MINOR: refactored functions and removed unnecessary code at spamassassin.ts
+
 v0.12.8:
   1. MINOR: minor code refactoring to improve readability and maintainability
 

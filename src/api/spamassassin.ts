@@ -12,22 +12,13 @@ async function copyEmail(path: string): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     const copy = spawn('docker', ['cp', `${path}`, 'spamassassin-app:email.txt']);
 
-    copy.stdout.on('data', data => {
-      // console.log(`${data}`);
-    });
-
-    copy.stderr.on('data', data => {
-      // console.error(`${data}`);
-    });
-
     copy.on('close', code => {
       if (code !== 0) {
-        console.log(`\nchild process exited with code ${code}`);
+        console.log(`\nChild process exited with code ${code}`);
         reject();
       }
 
       else {
-        // console.log(`${chalk.green('\nSucessfully copied email to be tested to the container!')}`);
         resolve();
       }
     });
@@ -38,17 +29,15 @@ async function testEmail(): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     const sa = spawn('docker', ['exec', 'spamassassin-app', 'spamassassin', '-x', '-t', 'email.txt']);
     let score: number;
-    let spam: string;
     let logBuffer: Buffer = Buffer.from('');
 
     process.stdout.write('\n');
     const spinner = ora(`${chalk.yellow(`Testing email...`)}`).start();
 
     sa.stdout.on('data', data => {
-      const match = /X-Spam-Status: (.*), score=([-0-9.]+)\s/.exec(data.toString());
+      const match = /X-Spam-Status:\s[\w]{2,3},\sscore=([-\d.]+)/.exec(data.toString());
       if (match !== null) {
-        spam = match[1];
-        score = parseFloat(match[2]);
+        score = parseFloat(match[1]);
       }
 
       logBuffer = Buffer.concat([logBuffer, data]);
@@ -64,7 +53,7 @@ async function testEmail(): Promise<void> {
       } else if (score === null) {
         reject(spinner.fail('Could not determine spam score'));
       } else {
-        spinner.succeed(`${chalk.yellow('Results:')}\n${chalk.green(`Spam: ${spam}`)}\n${chalk.green(`Score: ${score}`)}`);
+        spinner.succeed(`${chalk.yellow('Score:')}${chalk.green(` ${score}`)}`);
       }
 
       saveFile(__dirname + 'temp', 'log.txt', logBuffer)
@@ -75,7 +64,6 @@ async function testEmail(): Promise<void> {
 }
 
 async function startContainer(): Promise<void> {
-  // Make the shell script executable
   return new Promise<void>((resolve, reject) => {
     process.stdout.write('\n');
     const spinner = ora(`${chalk.yellow('Starting container...')}`).start();
@@ -99,7 +87,6 @@ async function startContainer(): Promise<void> {
 }
 
 async function stopContainer(): Promise<void> {
-  // Make the shell script executable
   return new Promise<void>((resolve, reject) => {
     process.stdout.write('\n');
     const spinner = ora(`${chalk.yellow('Stopping container...')}`).start();
@@ -123,7 +110,6 @@ async function stopContainer(): Promise<void> {
 }
 
 async function trainSpamAssassin(): Promise<void> {
-  // Make the shell script executable
   return new Promise<void>((resolve, reject) => {
     process.stdout.write('\n');
     const spinner = ora(`${chalk.yellow('Training...\n')}`).start();
@@ -163,13 +149,12 @@ export async function convertHTML(html: string): Promise<string> {
   const message = await mailcomposer({
     from: 'sender@email.com',
     to: 'receiver@email.com',
-    subject: 'Test for SA',
+    subject: 'SpamAssassin Test',
     html: html,
   });
 
   return new Promise((resolve, reject) => {
-    // @ts-ignore
-    message.build((err, message) => {
+    message.build((err: string, message: string) => {
       if (err) {
         reject(err);
       } else {
@@ -284,78 +269,29 @@ export function generatePDF(spamResult: SpamResult): void {
   const path: string = resolve(__dirname, 'temp\\spam-analysis.pdf');
 
   function scoreString(score: number): [string, string, string] {
-    if (score < 5) {
-      if (score > 4) {
-        return ['This email ', 'MIGHT', ' be flagged as spam'];
-      }
-
-      else if (score > 3) {
-        return ['Very strict spam filters ', 'MAY', ' flag this email as spam'];
-      }
-
-      return ['This email is ', 'UNLIKELY', ' to be flagged as spam'];
+    switch (true) {
+      case score >= 6: return ['This email will ', 'DEFINITELY', ' be flagged as spam'];
+      case score >= 5: return ['This email will ', 'MOST LIKELY', ' be flagged as spam'];
+      case score >= 4: return ['Very strict spam filters ', 'MAY', ' flag this email as spam'];
+      default: return ['This email is ', 'UNLIKELY', ' to be flagged as spam'];
     }
-
-    else if (score < 6) {
-      return ['This email will ', 'MOST LIKELY', ' be flagged as spam'];
-    }
-
-    return ['This email will ', 'DEFINITELY', ' be flagged as spam'];
   }
 
   function stringColor(score: number): [number, number, number] {
-    if (score < 5) {
-      if (score > 4) {
-        return [255, 240, 17];
-      }
-
-      else if (score > 3) {
-        return [255, 240, 17];
-      }
-
-      return [0, 189, 250];
+    switch (true) {
+      case score >= 5: return [255, 27, 120];
+      case score >= 4: return [255, 240, 17];
+      default: return [0, 189, 250];
     }
-
-    else if (score < 6) {
-      return [255, 27, 120];
-    }
-
-    return [255, 27, 120];
   }
 
   function centerString(score: number): string {
-    if (score < 5) {
-      if (score > 4) {
-        return ' '.repeat(28);
-      }
-
-      else if (score > 3) {
-        return ' '.repeat(14);
-      }
-
-      return ' '.repeat(22);
+    switch (true) {
+      case score >= 6: return ' '.repeat(21);
+      case score >= 5: return ' '.repeat(20);
+      case score >= 4: return ' '.repeat(14);
+      default: return ' '.repeat(22);
     }
-
-    else if (score < 6) {
-      return ' '.repeat(20);
-    }
-
-    return ' '.repeat(21);
-  }
-
-  function daySuffix(day: number): string {
-    const lastDigit = day % 10;
-
-    switch (lastDigit) {
-      case 1: return 'st';
-      case 2: return 'nd';
-      case 3: return 'rd';
-      default: return 'th';
-    }
-  }
-
-  function removePrefix(text: string): string {
-    return text.replace(/^(HEADER: |BODY: |URI: )+/, '');
   }
 
   const diagnosis: [string, string, string] = scoreString(spamResult.totalPoints);
@@ -385,9 +321,25 @@ export function generatePDF(spamResult: SpamResult): void {
     height: 83.67,
   });
 
+  function daySuffix(day: number): string {
+    const lastDigit = day % 10;
+
+    switch (lastDigit) {
+      case 1: return 'st';
+      case 2: return 'nd';
+      case 3: return 'rd';
+      default: return 'th';
+    }
+  }
+
+  const currentDate = new Date();
+  const day = currentDate.getDate();
+  const month = currentDate.toLocaleDateString('en-uk', { month: 'long' });
+  const year = currentDate.getFullYear();
+
   doc.fontSize(12).text('Delivery Performance', {align: 'center'});
   doc.moveDown(3);
-  doc.fontSize(15).text(`Spam Analysis | ${new Date().toLocaleDateString('en-uk', { day: 'numeric' })}${daySuffix(new Date().getDate())} of ${new Date().toLocaleDateString('en-uk', { month: 'long' })}, ${new Date().toLocaleDateString('en-uk', { year: 'numeric' })}`, {align: 'center'});
+  doc.fontSize(15).text(`Spam Analysis | ${day}${daySuffix(day)} of ${month}, ${year}`, {align: 'center'});
   doc.moveDown();
   doc.fontSize(15)
   .text(`${centerString(spamResult.totalPoints)}${diagnosis[0]}`, {continued: true})
@@ -421,6 +373,10 @@ export function generatePDF(spamResult: SpamResult): void {
 
   const SCORE_INDEX: number = 0;
   const DESCRIPTION_INDEX: number = 1;
+
+  function removePrefix(text: string): string {
+    return text.replace(/^(HEADER: |BODY: |URI: )+/, '');
+  }
 
   doc.moveDown(2);
   doc.fontSize(15).text('Rules used:');
