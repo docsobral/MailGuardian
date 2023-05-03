@@ -149,7 +149,7 @@ export async function convertHTML(html: string): Promise<string> {
   const message = await mailcomposer({
     from: 'sender@email.com',
     to: 'receiver@email.com',
-    subject: 'SpamAssassin Test',
+    subject: 'SA Analysis',
     html: html,
   });
 

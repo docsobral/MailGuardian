@@ -1,3 +1,6 @@
+v0.12.11:
+  1. MINOR: fixed SpamAssassin not scoring emails correctly
+
 v0.12.10:
   1. MINOR: wrapped buildImage()'s body in a promise
   2. MINOR: improved terminal logging at train.sh
