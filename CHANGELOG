@@ -1,3 +1,7 @@
+v0.12.10:
+  1. MINOR: wrapped buildImage()'s body in a promise
+  2. MINOR: improved terminal logging at train.sh
+
 v0.12.9:
   1. MINOR: refactored functions and removed unnecessary code at spamassassin.ts
 

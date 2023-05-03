@@ -9,13 +9,13 @@ docker cp node_modules/@stdlib/datasets-spam-assassin/data/spam-2 spamassassin-a
 printf '\n%s' '  Done!'
 
 # # Run training
-printf '\n\n%s' '  Training ham...'
+printf '\n\n%s\n  ' '  Training ham...'
 docker exec spamassassin-app sa-learn --ham data/easy-ham-1 data/easy-ham-2 data/hard-ham-1
-printf '\n%s' '  Done!'
+printf '%s' '  Done!'
 
-printf '\n\n%s' '  Training spam...'
+printf '\n\n%s\n  ' '  Training spam...'
 docker exec spamassassin-app sa-learn --spam data/spam-1 data/spam-2
-printf '\n%s' '  Done!'
+printf '%s' '  Done!'
 
 # # Delete training files
 printf '\n\n%s' '  Deleting training files...'
