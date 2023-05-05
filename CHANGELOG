@@ -1,3 +1,7 @@
+v0.12.12:
+  1. MAJOR: added eslint
+  2. MINOR: minor changes at train.sh
+
 v0.12.11:
   1. MINOR: fixed SpamAssassin not scoring emails correctly
 
