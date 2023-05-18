@@ -52,7 +52,7 @@ export async function getFile(fileType: 'html' | 'mjml', pathToFile: string, mar
   let string: string;
 
   if (fileType === 'html') {
-    string = (await readFile(pathToFile + `\\${fileName}`)).toString();
+    string = (await readFile(pathToFile + `\\${fileName}.html`)).toString();
     return string;
   }
 

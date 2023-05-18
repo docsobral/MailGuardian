@@ -389,6 +389,23 @@ program
   }
 });
 
+program
+.command('mail-html')
+.argument('<recipients>', 'Recipient list')
+.argument('<filename>', 'Name of the HTML file to be sent')
+.action(async (recipients: string, filename: string) => {
+  try {
+    const path: string = await getPath();
+    const list: string[] = recipients.split(/ *, */);
+    const html: string = await getFile('html', path, false, filename);
+    await mailHTML(list, html);
+  }
+
+  catch (error) {
+    console.error(`${chalk.red(error)}`);
+  }
+});
+
 enum Config {
   secret = 'SUPA_SECRET',
   url = 'SUPA_URL',

@@ -1,51 +1,55 @@
+v0.12.14:
+  1. added mail-html command
+  2. FIX: getFile only requires file name, no extension
+
 v0.12.12:
-  1. MAJOR: added eslint
-  2. MINOR: minor changes at train.sh
+  1. added eslint
+  2. minor changes at train.sh
 
 v0.12.11:
-  1. MINOR: fixed SpamAssassin not scoring emails correctly
+  1. fixed SpamAssassin not scoring emails correctly
 
 v0.12.10:
-  1. MINOR: wrapped buildImage()'s body in a promise
-  2. MINOR: improved terminal logging at train.sh
+  1. wrapped buildImage()'s body in a promise
+  2. improved terminal logging at train.sh
 
 v0.12.9:
-  1. MINOR: refactored functions and removed unnecessary code at spamassassin.ts
+  1. refactored functions and removed unnecessary code at spamassassin.ts
 
 v0.12.8:
-  1. MINOR: minor code refactoring to improve readability and maintainability
+  1. minor code refactoring to improve readability and maintainability
 
 v0.12.7:
-  1. MINOR: improvement to typing
+  1. improvement to typing
 
 v0.12.6:
   1. FIX: fixed bug where prepare command would fetch the wrong MJML file
-  2. MINOR: refactored generator function at prepare.ts
+  2. refactored generator function at prepare.ts
 
 v0.12.5:
-  1. MINOR: refactored Bash scripts and associated functions
+  1. refactored Bash scripts and associated functions
 
 v0.12.4:
-  1. MINOR: CLI fetches version from package.json
+  1. CLI fetches version from package.json
 
 v0.12.3:
-  1. MINOR: refactored generator function in prepare.ts
+  1. refactored generator function in prepare.ts
 
 v0.12.2:
-  1. MINOR: commented filesystem.ts
+  1. commented filesystem.ts
 
 v0.12.1:
-  1. MINOR: merged save.ts into filesystem.ts
+  1. merged save.ts into filesystem.ts
 
 v0.12.0:
   1. MAJOR: added PDF generation of spam report
-  2. MINOR: minor refactor of checkFirstUse function
+  2. minor refactor of checkFirstUse function
 
 v0.11.3:
-  1. MINOR: improved error handling of spam command
+  1. improved error handling of spam command
 
 v0.11.2:
-  1. MINOR: check that creates necessary directories moved to index.ts
+  1. check that creates necessary directories moved to index.ts
 
 v.0.11.1:
   1. FIX: fixed bug where prepare command would delete the MJML files
@@ -56,11 +60,11 @@ v0.11.0:
 
 v0.10.0:
   1. MAJOR: implemented bayesian training
-  2. MINOR: all scripts run silently
+  2. all scripts run silently
   3. MAJOR: improved build of SpamAssassin
 
 v0.9.0:
   1. MAJOR: Running SpamAssassin 4.0.0
-  2. MINOR: Running SA on user
-  3. MINOR: Slimmer build of Ubuntu running SA
-  4. MINOR: Log now prints descriptions of tests
+  2. Running SA on user
+  3. Slimmer build of Ubuntu running SA
+  4. Log now prints descriptions of tests
