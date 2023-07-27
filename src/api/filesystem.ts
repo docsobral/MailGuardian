@@ -1,5 +1,5 @@
 import { enquire, EnquireMessages, EnquireNames, EnquireTypes } from './enquire.js';
-import { readFile, mkdir, writeFile, readdir, unlink } from 'node:fs/promises';
+import { readFile, mkdir, writeFile, readdir, unlink, rm } from 'node:fs/promises';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve, basename } from 'path';
 import { existsSync } from 'node:fs';
@@ -110,7 +110,6 @@ export async function createFolders(templateName: string): Promise<void> {
     await mkdir(__dirname + `downloads\\${templateName}`);
   }
 
-  // check if downloads folder exists
   if (!existsSync(__dirname + `downloads\\${templateName}\\img`)) {
     await mkdir(__dirname + `downloads\\${templateName}\\img`);
   }
@@ -118,6 +117,25 @@ export async function createFolders(templateName: string): Promise<void> {
   // check if temp folder exists
   if (!existsSync(__dirname + 'temp')) {
     await mkdir(__dirname + 'temp');
+  }
+
+  // check if template folder exists
+  if (!existsSync(__dirname + 'templates')) {
+    await mkdir(__dirname + 'templates');
+  }
+
+  if (!existsSync(__dirname + `templates\\${templateName}`)) {
+    await mkdir(__dirname + `templates\\${templateName}`);
+  }
+}
+
+export async function deleteFolders(templateName: string): Promise<void> {
+  if (existsSync(__dirname + `downloads\\${templateName}`)) {
+    await rm(__dirname + `downloads\\${templateName}`, { recursive: true, force: true });
+  }
+
+  if (existsSync(__dirname + `templates\\${templateName}`)) {
+    await rm(__dirname + `templates\\${templateName}`, { recursive: true, force: true });
   }
 }
 
