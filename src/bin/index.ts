@@ -34,6 +34,7 @@ import { buildImage, convertHTML, isSpam, train, parseSpamAnalysis, generatePDF 
 import {
   cleanTemp,
   createFolders,
+  deleteFolders,
   pathAndFile,
   saveFile,
   __dirname,
@@ -191,14 +192,16 @@ async function delay(ms: number) {
 }
 
 program
-.command('bucket')
-.description('Lists, creates or deletes a remote bucket')
-.argument('[name]', 'Name of the bucket as it exists in the server')
-.option('-d, --delete', 'deletes a bucket', false)
-.option('-c, --create', 'creates a bucket', false)
+.command('template')
+.description('Lists, creates or deletes a template')
+.argument('[name]', 'Name of your template')
+.option('-d, --delete', 'deletes a template', false)
+.option('-c, --create', 'creates a template', false)
 .action(async (name: string, options: {delete: boolean, create: boolean}) => {
   try {
     if (options.create) {
+      await createFolders(name);
+
       process.stdout.write('\n');
       const spinner = ora(`${chalk.yellow(`Creating bucket named ${name}`)}`).start();
       const { error } = await supabaseAPI.createBucket(name);
@@ -211,6 +214,8 @@ program
     }
 
     if (options.delete) {
+      await deleteFolders(name);
+
       process.stdout.write('\n');
       const spinner = ora(`${chalk.yellow(`Deleting bucket named ${name}`)}`).start();
       const { error } = await supabaseAPI.deleteBucket(name);
