@@ -18,6 +18,7 @@ import ora from 'ora';
 import chalk from 'chalk';
 import { program } from 'commander';
 import { resolve } from 'node:path';
+import { exec } from 'child_process';
 import { BucketError } from '../lib/error.js';
 import { importBucket } from '../lib/import.js';
 import { AuthError } from '@supabase/supabase-js';
@@ -200,16 +201,39 @@ program
 .action(async (name: string, options: {delete: boolean, create: boolean}) => {
   try {
     if (options.create) {
-      await manageTemplate(name, false);
+      const vscodeCommand = process.platform === 'win32' ? 'code.cmd' : 'code';
+
+      if (existsSync(__dirname + `templates\\${name}`)) {
+        exec(`${vscodeCommand} "${__dirname}\\templates\\${name}"`, (error, stdout, stderr) => {
+          if (error) {
+            console.error(`Error executing the command: ${error.message}`);
+          } else {
+            console.log('\nFolder opened in VSCode.');
+          }
+        });
+
+        return;
+      }
 
       process.stdout.write('\n');
-      const spinner = ora(`${chalk.yellow(`Creating bucket named ${name}`)}`).start();
+      const spinner = ora(`${chalk.yellow(`Creating template named ${name}`)}`).start();
       const { error } = await supabaseAPI.createBucket(name);
       if (error) {
         spinner.fail();
-        throw new BucketError(`\nFailed to create bucket named ${name}!\n\n${error.stack?.slice(17)}`);
+        throw new BucketError(`\nFailed to create template named ${name}!\n\n${error.stack?.slice(17)}`);
       }
       spinner.succeed();
+
+      await manageTemplate(name, false);
+
+      exec(`${vscodeCommand} "${__dirname}\\templates\\${name}"`, (error, stdout, stderr) => {
+        if (error) {
+          console.error(`Error executing the command: ${error.message}`);
+        } else {
+          console.log('\nFolder opened in VSCode.');
+        }
+      });
+
       return;
     }
 
@@ -217,31 +241,44 @@ program
       await manageTemplate(name, true);
 
       process.stdout.write('\n');
-      const spinner = ora(`${chalk.yellow(`Deleting bucket named ${name}`)}`).start();
+      const spinner = ora(`${chalk.yellow(`Deleting template named ${name}`)}`).start();
       const { error } = await supabaseAPI.deleteBucket(name);
       if (error) {
         spinner.fail();
-        throw new BucketError(`\nFailed to delete bucket named ${name}!\n\n${error.stack?.slice(17)}`);
+        throw new BucketError(`\nFailed to delete template named ${name}!\n\n${error.stack?.slice(17)}`);
       }
       spinner.succeed();
       return;
     }
 
+    const vscodeCommand = process.platform === 'win32' ? 'code.cmd' : 'code';
+
+    if (existsSync(__dirname + `templates\\${name}`)) {
+      exec(`${vscodeCommand} "${__dirname}\\templates\\${name}"`, (error, stdout, stderr) => {
+        if (error) {
+          console.error(`Error executing the command: ${error.message}`);
+        } else {
+          console.log('Folder opened in VSCode.');
+        }
+      });
+      return;
+    }
+
     process.stdout.write('\n');
-    const spinner = ora(`${chalk.yellow('Fetching buckets...')}`).start();
+    const spinner = ora(`${chalk.yellow('Fetching templates...')}`).start();
     const { data, error } = await supabaseAPI.listBuckets();
 
     if (error) {
       spinner.fail();
-      throw new BucketError(`\nFailed to fetch buckets!\n\n${error.stack?.slice(17)}`);
+      throw new BucketError(`\nFailed to fetch templates!\n\n${error.stack?.slice(17)}`);
     }
 
     if (data.length === 0) {
-      spinner.fail(`${chalk.red('There are no buckets in the server. Use \'mailer bucket -c [name]\' to create one.')}`);
+      spinner.fail(`${chalk.red('There are no templates in the server. Use \'mailer bucket -c [name]\' to create one.')}`);
       return;
     }
 
-    spinner.succeed(`${chalk.yellow('Buckets:')}`);
+    spinner.succeed(`${chalk.yellow('Templates:')}`);
     let count = 1;
     for (let index in data) {
       console.log(`  ${chalk.yellow(`${count}.`)} ${chalk.blue(data[index].name)}`);
