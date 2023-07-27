@@ -67,7 +67,7 @@ async function startContainer(): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     process.stdout.write('\n');
     const spinner = ora(`${chalk.yellow('Starting container...')}`).start();
-    const child = spawn('sh', ['start.sh']);
+    const child = spawn('sh', ['./sa/start.sh']);
 
     child.on('error', (error) => {
       spinner.fail(error.message);
@@ -90,7 +90,7 @@ async function stopContainer(): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     process.stdout.write('\n');
     const spinner = ora(`${chalk.yellow('Stopping container...')}`).start();
-    const child = spawn('sh', ['stop.sh']);
+    const child = spawn('sh', ['./sa/stop.sh']);
 
     child.on('error', (error) => {
       spinner.fail(error.message);
@@ -113,7 +113,7 @@ async function trainSpamAssassin(): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     process.stdout.write('\n');
     const spinner = ora(`${chalk.yellow('Training...\n')}`).start();
-    const child = spawn('sh', ['train.sh']);
+    const child = spawn('sh', ['./sa/train.sh']);
 
     child.on('error', (error: Error) => {
       spinner.fail(error.message);

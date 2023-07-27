@@ -1,6 +1,6 @@
 {
   "name": "mjml-mailer",
-  "version": "0.12.15",
+  "version": "0.12.16",
   "homepage": "https://github.com/orchidb0y/mailer",
   "license": "AGPL-3.0-only",
   "type": "module",
