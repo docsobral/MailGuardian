@@ -34,7 +34,7 @@ import { buildImage, convertHTML, isSpam, train, parseSpamAnalysis, generatePDF 
 import {
   cleanTemp,
   createFolders,
-  deleteFolders,
+  manageTemplate,
   pathAndFile,
   saveFile,
   __dirname,
@@ -200,7 +200,7 @@ program
 .action(async (name: string, options: {delete: boolean, create: boolean}) => {
   try {
     if (options.create) {
-      await createFolders(name);
+      await manageTemplate(name, false);
 
       process.stdout.write('\n');
       const spinner = ora(`${chalk.yellow(`Creating bucket named ${name}`)}`).start();
@@ -214,7 +214,7 @@ program
     }
 
     if (options.delete) {
-      await deleteFolders(name);
+      await manageTemplate(name, true);
 
       process.stdout.write('\n');
       const spinner = ora(`${chalk.yellow(`Deleting bucket named ${name}`)}`).start();
