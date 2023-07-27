@@ -105,15 +105,6 @@ export async function createFolders(templateName: string): Promise<void> {
     await mkdir(__dirname + 'downloads');
   }
 
-  // check if template folder exists
-  if (!existsSync(__dirname + `downloads\\${templateName}`)) {
-    await mkdir(__dirname + `downloads\\${templateName}`);
-  }
-
-  if (!existsSync(__dirname + `downloads\\${templateName}\\img`)) {
-    await mkdir(__dirname + `downloads\\${templateName}\\img`);
-  }
-
   // check if temp folder exists
   if (!existsSync(__dirname + 'temp')) {
     await mkdir(__dirname + 'temp');
@@ -123,19 +114,24 @@ export async function createFolders(templateName: string): Promise<void> {
   if (!existsSync(__dirname + 'templates')) {
     await mkdir(__dirname + 'templates');
   }
-
-  if (!existsSync(__dirname + `templates\\${templateName}`)) {
-    await mkdir(__dirname + `templates\\${templateName}`);
-  }
 }
 
-export async function deleteFolders(templateName: string): Promise<void> {
-  if (existsSync(__dirname + `downloads\\${templateName}`)) {
-    await rm(__dirname + `downloads\\${templateName}`, { recursive: true, force: true });
+export async function manageTemplate(templateName: string, remove: boolean): Promise<void> {
+  let manage: typeof mkdir | typeof rm;
+  let options = {};
+
+  if (!remove) {
+    manage = mkdir;
+  } else {
+    manage = rm;
+    options = { recursive: true, force: true };
   }
 
-  if (existsSync(__dirname + `templates\\${templateName}`)) {
-    await rm(__dirname + `templates\\${templateName}`, { recursive: true, force: true });
+  await manage(__dirname + `templates\\${templateName}`, options);
+  await manage(__dirname + `templates\\${templateName}\\img`, options);
+
+  if (!remove) {
+    writeFileSync(__dirname + `templates\\${templateName}\\index.mjml`, '');
   }
 }
 
