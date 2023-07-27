@@ -116,6 +116,20 @@ export async function createFolders(templateName: string): Promise<void> {
   }
 }
 
+const newMJML = `<mjml>
+\t<mj-head>
+\t\t<mj-style>
+\t\t\t@media(max-width: 480px) {
+\t\t\t\t
+\t\t\t}
+\t\t</mj-style>
+\t</mj-head>
+
+\t<mj-body background-color="#ffffff">
+
+\t</mj-body>
+</mjml>`
+
 export async function manageTemplate(templateName: string, remove: boolean): Promise<void> {
   let manage: typeof mkdir | typeof rm;
   let options = {};
@@ -131,7 +145,7 @@ export async function manageTemplate(templateName: string, remove: boolean): Pro
   await manage(__dirname + `templates\\${templateName}\\img`, options);
 
   if (!remove) {
-    writeFileSync(__dirname + `templates\\${templateName}\\index.mjml`, '');
+    writeFileSync(__dirname + `templates\\${templateName}\\index.mjml`, newMJML)
   }
 }
 
