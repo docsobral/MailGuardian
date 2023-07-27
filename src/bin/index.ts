@@ -520,7 +520,7 @@ program
     }
 
     if (options.test) {
-      const pathToFile = options.test === true ? __dirname + 'temp\\parsed.html' : absolutePath(options.test);
+      const pathToFile = options.test === true ? __dirname + 'temp\\parsed' : absolutePath(options.test);
       const [path, filename] = pathAndFile(pathToFile);
       const html = await getFile('html', path, false, filename);
       const RFC822 = await convertHTML(html);
