@@ -27,10 +27,11 @@ import { isLoggedIn, login } from '../lib/login.js';
 import { isStorageError } from '@supabase/storage-js';
 import { downloadHTML, mailHTML } from '../lib/mail.js';
 import { downloadMJML, parseMJML } from '../lib/prepare.js';
-import { save, getConfigAndPath, getVersion } from '../api/filesystem.js';
 import { existsSync, writeFileSync, readFileSync } from 'node:fs';
-import { getPath, watch, uploadMJML, uploadImages } from '../lib/export.js';
+import { save, getConfigAndPath, getVersion, openVS } from '../api/filesystem.js';
+import { getPath, watch, uploadMJML, uploadImages, getImages } from '../lib/export.js';
 import { enquire, EnquireMessages, EnquireNames, EnquireTypes } from '../api/enquire.js';
+import { beautifySections, getFullComponent, getSections, indent, insertSections } from '../lib/append.js';
 import { buildImage, convertHTML, isSpam, train, parseSpamAnalysis, generatePDF } from '../api/spamassassin.js';
 import {
   cleanTemp,
@@ -197,20 +198,12 @@ program
 .description('Lists, creates or deletes a template')
 .argument('[name]', 'Name of your template')
 .option('-d, --delete', 'deletes a template', false)
-.option('-c, --create', 'creates a template', false)
+.option('-c, --create [components]', 'creates a template', false)
 .action(async (name: string, options: {delete: boolean, create: boolean}) => {
   try {
     if (options.create) {
-      const vscodeCommand = process.platform === 'win32' ? 'code.cmd' : 'code';
-
       if (existsSync(__dirname + `templates\\${name}`)) {
-        exec(`${vscodeCommand} "${__dirname}\\templates\\${name}"`, (error, stdout, stderr) => {
-          if (error) {
-            console.error(`Error executing the command: ${error.message}`);
-          } else {
-            console.log('\nFolder opened in VSCode.');
-          }
-        });
+        openVS(name, 'template');
 
         return;
       }
@@ -218,35 +211,54 @@ program
       process.stdout.write('\n');
       const spinner = ora(`${chalk.yellow(`Creating template named ${name}`)}`).start();
       const { error } = await supabaseAPI.createBucket(name);
+
       if (error) {
         spinner.fail();
         throw new BucketError(`\nFailed to create template named ${name}!\n\n${error.stack?.slice(17)}`);
       }
+
       spinner.succeed();
+      await manageTemplate(name, false, 'template');
 
-      await manageTemplate(name, false);
+      let mjml = readFileSync(resolve(__dirname, `templates\\${name}\\index.mjml`), { encoding: 'utf8' });
 
-      exec(`${vscodeCommand} "${__dirname}\\templates\\${name}"`, (error, stdout, stderr) => {
-        if (error) {
-          console.error(`Error executing the command: ${error.message}`);
-        } else {
-          console.log('\nFolder opened in VSCode.');
-        }
-      });
+      // @ts-ignore
+      const components: string[] = options.create.split(',');
+      console.log(components);
+
+      for (const component of components) {
+        const parts = await getSections(await getFullComponent(component));
+        // @ts-ignore
+        const beautified = await beautifySections(parts);
+        const indented = indent(beautified);
+        mjml = insertSections(indented[0], mjml, 'styles');
+        mjml = insertSections(indented[1], mjml, 'body');
+        writeFileSync(resolve(__dirname, `templates\\${name}\\index.mjml`), mjml);
+
+        const images = await getImages(resolve(__dirname, `components\\${options.create}`));
+
+        Object.keys(images).forEach(imageName => {
+          writeFileSync(resolve(__dirname, `templates\\${name}\\img\\${imageName}`), images[imageName]);
+        });
+      }
+
+      openVS(name, 'template');
 
       return;
     }
 
     if (options.delete) {
-      await manageTemplate(name, true);
+      await manageTemplate(name, true, 'template');
 
       process.stdout.write('\n');
       const spinner = ora(`${chalk.yellow(`Deleting template named ${name}`)}`).start();
       const { error } = await supabaseAPI.deleteBucket(name);
+
       if (error) {
         spinner.fail();
         throw new BucketError(`\nFailed to delete template named ${name}!\n\n${error.stack?.slice(17)}`);
       }
+
       spinner.succeed();
       return;
     }
@@ -261,6 +273,7 @@ program
           console.log('Folder opened in VSCode.');
         }
       });
+
       return;
     }
 
@@ -275,6 +288,7 @@ program
 
     if (data.length === 0) {
       spinner.fail(`${chalk.red('There are no templates in the server. Use \'mailer bucket -c [name]\' to create one.')}`);
+
       return;
     }
 
@@ -288,6 +302,42 @@ program
 
   catch (error: any) {
     console.log(`${chalk.red(error)}`);
+  }
+});
+
+program
+.command('component').description('Lists, creates or deletes a component')
+.argument('[name]', 'Name of the component')
+.option('-d, --delete', 'deletes a template', false)
+.option('-c, --create', 'creates a template', false)
+.action(async (name: string, options: {delete: boolean, create: boolean}) => {
+  try {
+    await createFolders(name);
+
+    if (options.create) {
+      if (existsSync(__dirname + `components\\${name}`)) {
+        openVS(name, 'component');
+
+        return;
+      }
+
+      await manageTemplate(name, false, 'component');
+      console.log(`${chalk.yellow(`\nCreated component named ${name} at ${__dirname}\\components\\${name}. Opening in new VSCode window...`)}`);
+      await delay(1000);
+
+      openVS(name, 'component');
+
+      return;
+    }
+
+    if (options. delete) {
+      await manageTemplate(name, true, 'component');
+      console.log(`${chalk.yellow(`\nDeleted component named ${name}.`)}`);
+    }
+  }
+
+  catch (error: any) {
+    console.error(`${chalk.red(error)}`);
   }
 });
 
