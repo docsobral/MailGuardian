@@ -231,11 +231,11 @@ program
         // @ts-ignore
         const beautified = await beautifySections(parts);
         const indented = indent(beautified);
-        mjml = insertSections(indented[0], mjml, 'styles');
-        mjml = insertSections(indented[1], mjml, 'body');
+        mjml = await insertSections(indented[0], mjml, 'styles');
+        mjml = await insertSections(indented[1], mjml, 'body');
         writeFileSync(resolve(__dirname, `templates\\${name}\\index.mjml`), mjml);
 
-        const images = await getImages(resolve(__dirname, `components\\${options.create}`));
+        const images = await getImages(resolve(__dirname, `components\\${component}`));
 
         Object.keys(images).forEach(imageName => {
           writeFileSync(resolve(__dirname, `templates\\${name}\\img\\${imageName}`), images[imageName]);

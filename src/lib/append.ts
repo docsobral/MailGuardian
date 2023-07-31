@@ -34,16 +34,16 @@ export function indent(sections: string[]) {
   return [ styles, body ];
 }
 
-export function insertSections(section: string, mjml: string, type: 'styles' | 'body'): string {
-  let stylesReplacer: RegExp;
+export async function insertSections(section: string, mjml: string, type: 'styles' | 'body'): Promise<string> {
+  let replacer: RegExp;
 
   if (type === 'styles') {
-    stylesReplacer = /(?<=<mj-style>\n)([\s\S]*?)(?=\n.*<\/mj-style>)/g
+    replacer = /(\s*)<\/mj-style>/g
+    mjml = mjml.replace(replacer, '\n' + section + '<\/mj-style>');
   } else {
-    stylesReplacer = /(?<=<mj-body.*?>\n)([\s\S]*?)(?=\n.*<\/mj-body>)/g
+    replacer = /(\s*)<\/mj-body>/g
+    mjml = await format(mjml.replace(replacer, '\n' + section + '<\/mj-body>'), { parser: 'html', singleAttributePerLine: true, bracketSameLine: true });
   }
-
-  mjml = mjml.replace(stylesReplacer, section);
 
   return mjml;
 }
@@ -67,6 +67,7 @@ export function insertSections(section: string, mjml: string, type: 'styles' | '
 // const bparts = await beautifySections(parts);
 // // console.log(bparts[1]);
 // const ibparts = indent(bparts);
-// let finalMJML = insertSections(ibparts[0], mjml, 'styles');
-// finalMJML = insertSections(ibparts[1], finalMJML, 'body');
+// console.log(ibparts[0])
+// let finalMJML = await insertSections(ibparts[0], mjml, 'styles');
+// finalMJML = await insertSections(ibparts[1], finalMJML, 'body');
 // console.log(finalMJML);
