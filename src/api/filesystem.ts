@@ -2,6 +2,7 @@ import { enquire, EnquireMessages, EnquireNames, EnquireTypes } from './enquire.
 import { readFile, mkdir, writeFile, readdir, unlink, rm } from 'node:fs/promises';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve, basename } from 'path';
+import { exec } from 'child_process';
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'url';
 import Cryptr from 'cryptr';
@@ -114,23 +115,28 @@ export async function createFolders(templateName: string): Promise<void> {
   if (!existsSync(__dirname + 'templates')) {
     await mkdir(__dirname + 'templates');
   }
+
+  // check if components folder exists
+  if (!existsSync(__dirname + 'components')) {
+    await mkdir(__dirname + 'components');
+  }
 }
 
 const newMJML = `<mjml>
-\t<mj-head>
-\t\t<mj-style>
-\t\t\t@media(max-width: 480px) {
-\t\t\t\t
-\t\t\t}
-\t\t</mj-style>
-\t</mj-head>
+  <mj-head>
+    <mj-style>
+      @media(max-width: 480px) {
 
-\t<mj-body background-color="#ffffff">
+      }
+    </mj-style>
+  </mj-head>
 
-\t</mj-body>
+  <mj-body background-color="#ffffff">
+
+  </mj-body>
 </mjml>`
 
-export async function manageTemplate(templateName: string, remove: boolean): Promise<void> {
+export async function manageTemplate(name: string, remove: boolean, type: 'template' | 'component'): Promise<void> {
   let manage: typeof mkdir | typeof rm;
   let options = {};
 
@@ -141,12 +147,22 @@ export async function manageTemplate(templateName: string, remove: boolean): Pro
     options = { recursive: true, force: true };
   }
 
-  await manage(__dirname + `templates\\${templateName}`, options);
-  await manage(__dirname + `templates\\${templateName}\\img`, options);
+  await manage(__dirname + `${type}s\\${name}`, options);
+  await manage(__dirname + `${type}s\\${name}\\img`, options);
 
   if (!remove) {
-    writeFileSync(__dirname + `templates\\${templateName}\\index.mjml`, newMJML)
+    writeFileSync(__dirname + `${type}s\\${name}\\index.mjml`, newMJML);
   }
+}
+
+export async function openVS(name: string, type: 'template' | 'component'): Promise<void> {
+  exec(`${process.platform === 'win32' ? 'code.cmd' : 'code'} "${__dirname}\\${type}s\\${name}"`, (error, stdout, stderr) => {
+    if (error) {
+      throw new Error(`Error executing the command: ${error.message}`);
+    } else {
+      console.log('Folder opened in VSCode.');
+    }
+  });
 }
 
 export async function cleanTemp(): Promise<void> {
