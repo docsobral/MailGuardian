@@ -34,15 +34,22 @@ export function indent(sections: string[]) {
   return [ styles, body ];
 }
 
-export async function insertSections(section: string, mjml: string, type: 'styles' | 'body'): Promise<string> {
+export async function insertSections(section: string, mjml: string, type: 'styles' | 'body', name?: string): Promise<string> {
   let replacer: RegExp;
 
   if (type === 'styles') {
-    replacer = /(\s*)<\/mj-style>/g
+    replacer = /(\s*)<\/mj-style>/g;
     mjml = mjml.replace(replacer, '\n' + section + '<\/mj-style>');
+    replacer = /  (?=<\/mj-style>)/;
+    mjml = mjml.replace(replacer, '');
+    replacer = / {6}(?=\n)/g;
+    mjml = mjml.replace(replacer, '');
   } else {
     replacer = /(\s*)<\/mj-body>/g
-    mjml = await format(mjml.replace(replacer, '\n' + section + '<\/mj-body>'), { parser: 'html', singleAttributePerLine: true, bracketSameLine: true });
+    mjml = await format(
+      mjml.replace(replacer, `\n\n<!--START ${name?.toUpperCase()}-->\n\n` + section + `\n<!--END ${name?.toUpperCase()}-->\n\n<\/mj-body>`),
+      { parser: 'html', singleAttributePerLine: true, bracketSameLine: true }
+    );
   }
 
   return mjml;
