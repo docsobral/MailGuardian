@@ -222,7 +222,9 @@ async function importComponents(commandParameter: string | boolean, name: string
     const components: string[] = splitComponents(commandParameter);
     let mjml = readFileSync(resolve(__dirname, `templates\\${name}\\index.mjml`), { encoding: 'utf8' });
 
-    let styles: string = '';
+    let media480: string = '';
+    let media280: string = '';
+    let regularStyles: string = '';
 
     for (const i in components) {
       const parts = await getSections(await getFullComponent(components[i]));
@@ -231,10 +233,12 @@ async function importComponents(commandParameter: string | boolean, name: string
       const indented = indent(beautified);
 
       mjml = await insertSections(indented[1], mjml, 'body', components[i]);
-      styles += indented[0];
+      media480 += indented[0];
+      media280 += indented[2];
+      regularStyles += indented[3];
 
       if (Number(i) < (components.length - 1)) {
-        styles += '\n'
+        media480 += '\n';
       }
 
       const images = await getImages(resolve(__dirname, `components\\${components[i]}`));
@@ -243,8 +247,16 @@ async function importComponents(commandParameter: string | boolean, name: string
       });
     }
 
-    console.log(styles)
-    mjml = await insertSections(styles, mjml, 'media480');
+    mjml = await insertSections(media480, mjml, 'media480');
+
+    if (media280 !== '') {
+      mjml = await insertSections(media280, mjml, 'media280');
+    }
+
+    if (regularStyles !== '') {
+      mjml = await insertSections(regularStyles, mjml, 'regularStyles');
+    }
+
     writeFileSync(resolve(__dirname, `templates\\${name}\\index.mjml`), mjml);
   }
 }

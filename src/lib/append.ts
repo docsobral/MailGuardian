@@ -7,47 +7,96 @@ export async function getFullComponent(name: string): Promise<string> {
   return component;
 }
 
-export async function getSections(fullComponent: string): Promise<[ string | undefined, string | undefined ]> {
+export async function getSections(fullComponent: string): Promise<(string | undefined)[]> {
   const media480 = /(?<=@media *\(max-width: *480px\) *{\n)([\s\S]*?})(?=\n *}[\s\S]*<\/mj-style>)/.exec(fullComponent);
+  const media280 = /(?<=@media *\(max-width: *280px\) *{\n)([\s\S]*?})(?=\n *}[\s\S]*<\/mj-style>)/.exec(fullComponent);
+  const regularStyles = /(?<=<mj-style>\n)([\s\S]*)(?=\n\s*\n\s{6}@media[\w\s]*\(max-width: 4)/.exec(fullComponent);
   const body = /(?<=<mj-body.*?>\n)([\s\S]*?)(?=\n.*<\/mj-body>)/.exec(fullComponent);
 
-  return [ media480 ? media480.shift() : '', body?.shift() ];
+  return [
+    media480 ? media480.shift() : '',
+    body?.shift(),
+    media280 ? media280.shift() : '',
+    regularStyles ? regularStyles.shift() : ''
+  ];
 }
 
-export async function beautifySections(sections: [ string, string ]): Promise<string[]> {
-  let styles = sections[0];
+export async function beautifySections(sections: string[]): Promise<string[]> {
+  let media480 = sections[0];
   let body = sections[1];
+  let media280 = sections[2];
+  let regularStyles = sections[3];
 
-  styles = await format(styles, { parser: 'css' });
+  media480 = await format(media480, { parser: 'css' });
   body = await format(body, { parser: 'html', singleAttributePerLine: true, bracketSameLine: true });
+  media280 = await format(media280, { parser: 'css' });
+  regularStyles = await format(regularStyles, { parser: 'css' });
 
-  return [ styles, body ];
+  return [ media480, body, media280, regularStyles ];
 }
 
 export function indent(sections: string[]) {
   let media480 = sections[0];
   let body = sections[1];
+  let media280 = sections[2];
+  let regularStyles = sections[3];
 
   media480 = media480 === '' ? '' : media480.replace(/^/gm, ' '.repeat(8));
   body = body.replace(/^/gm, ' '.repeat(4));
+  media280 = media280 === '' ? '' : media280.replace(/^/gm, ' '.repeat(8));
+  regularStyles = regularStyles === '' ? '' : regularStyles.replace(/^/gm, ' '.repeat(6));
 
-  return [ media480, body ];
+  return [ media480, body, media280, regularStyles ];
 }
 
-export async function insertSections(section: string, mjml: string, type: 'media480' | 'body', name?: string): Promise<string> {
-  let replacer: RegExp;
+export async function insertSections(
+  section: string,
+  mjml: string,
+  type: 'media480' | 'body' | 'media280' | 'regularStyles',
+  name?: string): Promise<string> {
+
+  let finder: RegExp;
+  let replacer: string;
 
   if (type === 'media480') {
-    replacer = /(\s*)<\/mj-style>/g;
-    mjml = mjml.replace(replacer, '\n' + section + '<\/mj-style>');
-    replacer = /  (?=<\/mj-style>)/;
-    mjml = mjml.replace(replacer, '');
-    replacer = / {6}(?=\n)/g;
-    mjml = mjml.replace(replacer, '');
-  } else {
-    replacer = /(\s*)<\/mj-body>/g
+    finder = /( *)(?=<\/mj-style>)/;
+    replacer = '\n      @media only screen and (max-width: 480px) {' + section + '}\n';
+    mjml = mjml.replace(finder, replacer);
+
+    finder = /  }\n<\/mj-style>/;
+    replacer = '}\n    </mj-style>';
+    mjml = mjml.replace(finder, replacer);
+
+    finder = /^ {8}(?=\n)/gm;
+    mjml = mjml.replace(finder, '');
+  }
+
+  else if (type === 'media280') {
+    finder = /( *)(?=<\/mj-style>)/;
+    replacer = '\n      @media only screen and (max-width: 280px) {\n' + section + '}\n'
+    mjml = mjml.replace(finder, replacer);
+
+    finder = /  }\n<\/mj-style>/;
+    replacer = '}\n    </mj-style>';
+    mjml = mjml.replace(finder, replacer);
+
+    finder = /^ {8}(?=\n)/gm;
+    mjml = mjml.replace(finder, '');
+  }
+
+  else if (type === 'regularStyles') {
+    finder = /(?<=<mj-style>)(\n)/
+    replacer = '\n' + section + '\n'
+    mjml = mjml.replace(finder, replacer);
+
+    finder = /^ {6}(?=\n)/gm;
+    mjml = mjml.replace(finder, '');
+  }
+
+  else {
+    finder = /(\s*)<\/mj-body>/g
     mjml = await format(
-      mjml.replace(replacer, `\n\n<!--START ${name?.toUpperCase()}-->\n\n` + section + `\n<!--END ${name?.toUpperCase()}-->\n\n<\/mj-body>`),
+      mjml.replace(finder, `\n\n<!--START ${name?.toUpperCase()}-->\n\n` + section + `\n<!--END ${name?.toUpperCase()}-->\n\n<\/mj-body>`),
       { parser: 'html', singleAttributePerLine: true, bracketSameLine: true }
     );
   }
@@ -58,9 +107,7 @@ export async function insertSections(section: string, mjml: string, type: 'media
 // const mjml = `<mjml>
 //   <mj-head>
 //     <mj-style>
-//       @media(max-width: 480px) {
-
-//       }
+//       
 //     </mj-style>
 //   </mj-head>
 
