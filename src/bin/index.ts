@@ -244,7 +244,7 @@ async function importComponents(commandParameter: string | boolean, name: string
     }
 
     console.log(styles)
-    mjml = await insertSections(styles, mjml, 'styles');
+    mjml = await insertSections(styles, mjml, 'media480');
     writeFileSync(resolve(__dirname, `templates\\${name}\\index.mjml`), mjml);
   }
 }

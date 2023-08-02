@@ -8,10 +8,10 @@ export async function getFullComponent(name: string): Promise<string> {
 }
 
 export async function getSections(fullComponent: string): Promise<[ string | undefined, string | undefined ]> {
-  const style = /(?<=<mj-style>\n)([\s\S]*?)(?=\n.*<\/mj-style>)/.exec(fullComponent);
+  const media480 = /(?<=@media *\(max-width: *480px\) *{\n)([\s\S]*?})(?=\n *}[\s\S]*<\/mj-style>)/.exec(fullComponent);
   const body = /(?<=<mj-body.*?>\n)([\s\S]*?)(?=\n.*<\/mj-body>)/.exec(fullComponent);
 
-  return [ style?.shift(), body?.shift() ]
+  return [ media480 ? media480.shift() : '', body?.shift() ];
 }
 
 export async function beautifySections(sections: [ string, string ]): Promise<string[]> {
@@ -25,19 +25,19 @@ export async function beautifySections(sections: [ string, string ]): Promise<st
 }
 
 export function indent(sections: string[]) {
-  let styles = sections[0];
+  let media480 = sections[0];
   let body = sections[1];
 
-  styles = styles.replace(/^/gm, '      ');
-  body = body.replace(/^/gm, '    ');
+  media480 = media480 === '' ? '' : media480.replace(/^/gm, ' '.repeat(8));
+  body = body.replace(/^/gm, ' '.repeat(4));
 
-  return [ styles, body ];
+  return [ media480, body ];
 }
 
-export async function insertSections(section: string, mjml: string, type: 'styles' | 'body', name?: string): Promise<string> {
+export async function insertSections(section: string, mjml: string, type: 'media480' | 'body', name?: string): Promise<string> {
   let replacer: RegExp;
 
-  if (type === 'styles') {
+  if (type === 'media480') {
     replacer = /(\s*)<\/mj-style>/g;
     mjml = mjml.replace(replacer, '\n' + section + '<\/mj-style>');
     replacer = /  (?=<\/mj-style>)/;
