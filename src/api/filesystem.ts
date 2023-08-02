@@ -125,9 +125,7 @@ export async function createFolders(templateName: string): Promise<void> {
 const newMJML = `<mjml>
   <mj-head>
     <mj-style>
-      @media(max-width: 480px) {
-
-      }
+       
     </mj-style>
   </mj-head>
 
