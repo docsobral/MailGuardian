@@ -189,8 +189,89 @@ program
   }
 });
 
-async function delay(ms: number) {
+async function delay(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+type Manager = typeof supabaseAPI.createBucket | typeof supabaseAPI.deleteBucket
+
+async function manageBucket(name: string, type: 'create' | 'delete'): Promise<void> {
+  let manager: Manager = type === 'create' ? supabaseAPI.createBucket : supabaseAPI.deleteBucket;
+
+  function capitalizeFirstLetter(string: string): string {
+    return `${string[0].toUpperCase() + string.slice(1)}`
+  }
+
+  process.stdout.write('\n');
+  const spinner = ora(`${chalk.yellow(`Attempting to ${type} template named ${name}`)}`).start();
+  const { error } = await manager(name);
+
+  if (error) {
+    spinner.fail();
+    throw new BucketError(`\nFailed to ${type} template named ${name}!\n\n${error.stack?.slice(17)}`);
+  }
+
+  spinner.succeed(`${chalk.yellow(`${capitalizeFirstLetter(type)}d template named ${name}.`)}`);
+}
+
+function splitComponents(components: string): string[] {
+  return components.split(',').map(component => component.trim());
+}
+
+async function importComponents(commandParameter: string | boolean, name: string): Promise<void> {
+  if (typeof commandParameter === 'string') {
+    const components: string[] = splitComponents(commandParameter);
+    let mjml = readFileSync(resolve(__dirname, `templates\\${name}\\index.mjml`), { encoding: 'utf8' });
+
+    let styles: string = '';
+
+    for (const i in components) {
+      const parts = await getSections(await getFullComponent(components[i]));
+      // @ts-ignore
+      const beautified = await beautifySections(parts);
+      const indented = indent(beautified);
+
+      mjml = await insertSections(indented[1], mjml, 'body', components[i]);
+      styles += indented[0];
+
+      if (Number(i) < (components.length - 1)) {
+        styles += '\n'
+      }
+
+      const images = await getImages(resolve(__dirname, `components\\${components[i]}`));
+      Object.keys(images).forEach(imageName => {
+        writeFileSync(resolve(__dirname, `templates\\${name}\\img\\${imageName}`), images[imageName]);
+      });
+    }
+
+    console.log(styles)
+    mjml = await insertSections(styles, mjml, 'styles');
+    writeFileSync(resolve(__dirname, `templates\\${name}\\index.mjml`), mjml);
+  }
+}
+
+async function listComponents(): Promise<void> {
+  process.stdout.write('\n');
+  const spinner = ora(`${chalk.yellow('Fetching templates...')}`).start();
+  const { data, error } = await supabaseAPI.listBuckets();
+
+  if (error) {
+    spinner.fail();
+    throw new BucketError(`\nFailed to fetch templates!\n\n${error.stack?.slice(17)}`);
+  }
+
+  if (data.length === 0) {
+    spinner.fail(`${chalk.red('There are no templates in the server. Use \'mailer bucket -c [name]\' to create one.')}`);
+
+    return;
+  }
+
+  spinner.succeed(`${chalk.yellow('Templates:')}`);
+  let count = 1;
+  for (let index in data) {
+    console.log(`  ${chalk.yellow(`${count}.`)} ${chalk.blue(data[index].name)}`);
+    count++
+  }
 }
 
 program
@@ -199,48 +280,18 @@ program
 .argument('[name]', 'Name of your template')
 .option('-d, --delete', 'deletes a template', false)
 .option('-c, --create [components]', 'creates a template', false)
-.action(async (name: string, options: {delete: boolean, create: boolean}) => {
+.option('-l, --list', 'lists all templates', false)
+.action(async (name: string, options: {delete: boolean, create: string, list: boolean}) => {
   try {
     if (options.create) {
       if (existsSync(__dirname + `templates\\${name}`)) {
         openVS(name, 'template');
-
         return;
       }
 
-      process.stdout.write('\n');
-      const spinner = ora(`${chalk.yellow(`Creating template named ${name}`)}`).start();
-      const { error } = await supabaseAPI.createBucket(name);
-
-      if (error) {
-        spinner.fail();
-        throw new BucketError(`\nFailed to create template named ${name}!\n\n${error.stack?.slice(17)}`);
-      }
-
-      spinner.succeed();
+      await manageBucket(name, 'create');
       await manageTemplate(name, false, 'template');
-
-      let mjml = readFileSync(resolve(__dirname, `templates\\${name}\\index.mjml`), { encoding: 'utf8' });
-
-      // @ts-ignore
-      const components: string[] = options.create.split(',');
-      console.log(components);
-
-      for (const component of components) {
-        const parts = await getSections(await getFullComponent(component));
-        // @ts-ignore
-        const beautified = await beautifySections(parts);
-        const indented = indent(beautified);
-        mjml = await insertSections(indented[0], mjml, 'styles');
-        mjml = await insertSections(indented[1], mjml, 'body');
-        writeFileSync(resolve(__dirname, `templates\\${name}\\index.mjml`), mjml);
-
-        const images = await getImages(resolve(__dirname, `components\\${component}`));
-
-        Object.keys(images).forEach(imageName => {
-          writeFileSync(resolve(__dirname, `templates\\${name}\\img\\${imageName}`), images[imageName]);
-        });
-      }
+      await importComponents(options.create, name);
 
       openVS(name, 'template');
 
@@ -249,54 +300,17 @@ program
 
     if (options.delete) {
       await manageTemplate(name, true, 'template');
-
-      process.stdout.write('\n');
-      const spinner = ora(`${chalk.yellow(`Deleting template named ${name}`)}`).start();
-      const { error } = await supabaseAPI.deleteBucket(name);
-
-      if (error) {
-        spinner.fail();
-        throw new BucketError(`\nFailed to delete template named ${name}!\n\n${error.stack?.slice(17)}`);
-      }
-
-      spinner.succeed();
+      await manageBucket(name, 'delete');
       return;
     }
 
-    const vscodeCommand = process.platform === 'win32' ? 'code.cmd' : 'code';
+    if (options.list) {
+      await listComponents();
+    }
 
-    if (existsSync(__dirname + `templates\\${name}`)) {
-      exec(`${vscodeCommand} "${__dirname}\\templates\\${name}"`, (error, stdout, stderr) => {
-        if (error) {
-          console.error(`Error executing the command: ${error.message}`);
-        } else {
-          console.log('Folder opened in VSCode.');
-        }
-      });
-
+    if (existsSync(resolve(__dirname, `templates\\${name}`))) {
+      openVS(name, 'template');
       return;
-    }
-
-    process.stdout.write('\n');
-    const spinner = ora(`${chalk.yellow('Fetching templates...')}`).start();
-    const { data, error } = await supabaseAPI.listBuckets();
-
-    if (error) {
-      spinner.fail();
-      throw new BucketError(`\nFailed to fetch templates!\n\n${error.stack?.slice(17)}`);
-    }
-
-    if (data.length === 0) {
-      spinner.fail(`${chalk.red('There are no templates in the server. Use \'mailer bucket -c [name]\' to create one.')}`);
-
-      return;
-    }
-
-    spinner.succeed(`${chalk.yellow('Templates:')}`);
-    let count = 1;
-    for (let index in data) {
-      console.log(`  ${chalk.yellow(`${count}.`)} ${chalk.blue(data[index].name)}`);
-      count++
     }
   }
 
