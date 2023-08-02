@@ -18,7 +18,6 @@ import ora from 'ora';
 import chalk from 'chalk';
 import { program } from 'commander';
 import { resolve } from 'node:path';
-import { exec } from 'child_process';
 import { BucketError } from '../lib/error.js';
 import { importBucket } from '../lib/import.js';
 import { AuthError } from '@supabase/supabase-js';
@@ -444,7 +443,7 @@ program
 });
 
 program
-.command('mail')
+.command('send')
 .description('Mails a HTML file to a recipient list')
 .argument('<name>', 'Name of the bucket where the template is located')
 .argument('<recipients>', 'Recipient list (e.g. "davidsobral@me.com, davidcsobral@gmail.com"')
