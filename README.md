@@ -1,4 +1,4 @@
-# MJML Mailer
+# MailGuardian (previously Mailer)
 
 ## About
 
