@@ -4,10 +4,6 @@ config/
 temp/
 
 # Other files & folders
-test/
-demo/
-build/
 downloads/
 templates/
 components/
-boilerplate/
