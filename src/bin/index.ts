@@ -18,20 +18,70 @@ import ora from 'ora';
 import chalk from 'chalk';
 import { program } from 'commander';
 import { resolve } from 'node:path';
-import { BucketError } from '../lib/error.js';
-import { importBucket } from '../lib/import.js';
 import { AuthError } from '@supabase/supabase-js';
 import * as supabaseAPI from '../api/supabase.js';
-import { isLoggedIn, login } from '../lib/login.js';
 import { isStorageError } from '@supabase/storage-js';
-import { downloadHTML, mailHTML } from '../lib/mail.js';
-import { downloadMJML, parseMJML } from '../lib/prepare.js';
 import { existsSync, writeFileSync, readFileSync } from 'node:fs';
-import { save, getConfigAndPath, getVersion, openVS } from '../api/filesystem.js';
-import { getPath, watch, uploadMJML, uploadImages, getImages } from '../lib/export.js';
-import { enquire, EnquireMessages, EnquireNames, EnquireTypes } from '../api/enquire.js';
-import { beautifySections, getFullComponent, getSections, indent, insertSections } from '../lib/append.js';
-import { buildImage, convertHTML, isSpam, train, parseSpamAnalysis, generatePDF } from '../api/spamassassin.js';
+
+import {
+  BucketError
+} from '../lib/error.js';
+
+import {
+  importBucket
+} from '../lib/import.js';
+
+
+import {
+  isLoggedIn,
+  login
+} from '../lib/login.js';
+
+import {
+  downloadHTML,
+  mailHTML
+} from '../lib/mail.js';
+
+import {
+  downloadMJML,
+  parseMJML
+} from '../lib/prepare.js';
+
+import {
+  save,
+  getConfigAndPath,
+  getVersion,
+  openVS
+} from '../api/filesystem.js';
+
+import {
+  getPath,
+  watch,
+  uploadMJML,
+  uploadImages
+} from '../lib/export.js';
+
+import {
+  enquire,
+  EnquireMessages,
+  EnquireNames,
+  EnquireTypes
+} from '../api/enquire.js';
+
+import {
+  buildImage,
+  convertHTML,
+  isSpam,
+  train,
+  parseSpamAnalysis,
+  generatePDF
+} from '../api/spamassassin.js';
+
+import {
+  listComponents,
+  importComponents
+} from '../lib/append.js';
+
 import {
   cleanTemp,
   createFolders,
@@ -192,99 +242,6 @@ async function delay(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-type Manager = typeof supabaseAPI.createBucket | typeof supabaseAPI.deleteBucket
-
-async function manageBucket(name: string, type: 'create' | 'delete'): Promise<void> {
-  let manager: Manager = type === 'create' ? supabaseAPI.createBucket : supabaseAPI.deleteBucket;
-
-  function capitalizeFirstLetter(string: string): string {
-    return `${string[0].toUpperCase() + string.slice(1)}`
-  }
-
-  process.stdout.write('\n');
-  const spinner = ora(`${chalk.yellow(`Attempting to ${type} template named ${name}`)}`).start();
-  const { error } = await manager(name);
-
-  if (error) {
-    spinner.fail();
-    throw new BucketError(`\nFailed to ${type} template named ${name}!\n\n${error.stack?.slice(17)}`);
-  }
-
-  spinner.succeed(`${chalk.yellow(`${capitalizeFirstLetter(type)}d template named ${name}.`)}`);
-}
-
-function splitComponents(components: string): string[] {
-  return components.split(',').map(component => component.trim());
-}
-
-async function importComponents(commandParameter: string | boolean, name: string): Promise<void> {
-  if (typeof commandParameter === 'string') {
-    const components: string[] = splitComponents(commandParameter);
-    let mjml = readFileSync(resolve(__dirname, `templates\\${name}\\index.mjml`), { encoding: 'utf8' });
-
-    let media480: string = '';
-    let media280: string = '';
-    let regularStyles: string = '';
-
-    for (const i in components) {
-      const parts = await getSections(await getFullComponent(components[i]));
-      // @ts-ignore
-      const beautified = await beautifySections(parts);
-      const indented = indent(beautified);
-
-      mjml = await insertSections(indented[1], mjml, 'body', components[i]);
-      media480 += indented[0];
-      media280 += indented[2];
-      regularStyles += indented[3];
-
-      if (Number(i) < (components.length - 1)) {
-        media480 += '\n';
-      }
-
-      const images = await getImages(resolve(__dirname, `components\\${components[i]}`));
-      Object.keys(images).forEach(imageName => {
-        writeFileSync(resolve(__dirname, `templates\\${name}\\img\\${imageName}`), images[imageName]);
-      });
-    }
-
-    mjml = await insertSections(media480, mjml, 'media480');
-
-    if (media280 !== '') {
-      mjml = await insertSections(media280, mjml, 'media280');
-    }
-
-    if (regularStyles !== '') {
-      mjml = await insertSections(regularStyles, mjml, 'regularStyles');
-    }
-
-    writeFileSync(resolve(__dirname, `templates\\${name}\\index.mjml`), mjml);
-  }
-}
-
-async function listComponents(): Promise<void> {
-  process.stdout.write('\n');
-  const spinner = ora(`${chalk.yellow('Fetching templates...')}`).start();
-  const { data, error } = await supabaseAPI.listBuckets();
-
-  if (error) {
-    spinner.fail();
-    throw new BucketError(`\nFailed to fetch templates!\n\n${error.stack?.slice(17)}`);
-  }
-
-  if (data.length === 0) {
-    spinner.fail(`${chalk.red('There are no templates in the server. Use \'mailer bucket -c [name]\' to create one.')}`);
-
-    return;
-  }
-
-  spinner.succeed(`${chalk.yellow('Templates:')}`);
-  let count = 1;
-  for (let index in data) {
-    console.log(`  ${chalk.yellow(`${count}.`)} ${chalk.blue(data[index].name)}`);
-    count++
-  }
-}
-
 program
 .command('template')
 .description('Lists, creates or deletes a template')
@@ -300,7 +257,7 @@ program
         return;
       }
 
-      await manageBucket(name, 'create');
+      await supabaseAPI.manageBucket(name, 'create');
       await manageTemplate(name, false, 'template');
       await importComponents(options.create, name);
 
@@ -311,7 +268,7 @@ program
 
     if (options.delete) {
       await manageTemplate(name, true, 'template');
-      await manageBucket(name, 'delete');
+      await supabaseAPI.manageBucket(name, 'delete');
       return;
     }
 

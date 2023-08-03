@@ -1,5 +1,11 @@
+import ora from 'ora';
+import chalk from 'chalk';
 import { resolve } from 'path';
 import { format } from 'prettier';
+import { getImages } from './export.js';
+import { BucketError } from './error.js';
+import { listBuckets } from '../api/supabase.js';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { getFile, __dirname } from '../api/filesystem.js';
 
 export async function getFullComponent(name: string): Promise<string> {
@@ -104,24 +110,74 @@ export async function insertSections(
   return mjml;
 }
 
-// const mjml = `<mjml>
-//   <mj-head>
-//     <mj-style>
-//       
-//     </mj-style>
-//   </mj-head>
+export async function listComponents(): Promise<void> {
+  process.stdout.write('\n');
+  const spinner = ora(`${chalk.yellow('Fetching templates...')}`).start();
+  const { data, error } = await listBuckets();
 
-//   <mj-body background-color="#ffffff">
+  if (error) {
+    spinner.fail();
+    throw new BucketError(`\nFailed to fetch templates!\n\n${error.stack?.slice(17)}`);
+  }
 
-//   </mj-body>
-// </mjml>`
+  if (data.length === 0) {
+    spinner.fail(`${chalk.red('There are no templates in the server. Use \'mailer bucket -c [name]\' to create one.')}`);
 
-// const parts = await getSections(await getFullComponent('rating-conecta'));
-// // @ts-ignore
-// const bparts = await beautifySections(parts);
-// // console.log(bparts[1]);
-// const ibparts = indent(bparts);
-// console.log(ibparts[0])
-// let finalMJML = await insertSections(ibparts[0], mjml, 'styles');
-// finalMJML = await insertSections(ibparts[1], finalMJML, 'body');
-// console.log(finalMJML);
+    return;
+  }
+
+  spinner.succeed(`${chalk.yellow('Templates:')}`);
+  let count = 1;
+  for (let index in data) {
+    console.log(`  ${chalk.yellow(`${count}.`)} ${chalk.blue(data[index].name)}`);
+    count++
+  }
+}
+
+function splitComponents(components: string): string[] {
+  return components.split(',').map(component => component.trim());
+}
+
+export async function importComponents(commandParameter: string | boolean, name: string): Promise<void> {
+  if (typeof commandParameter === 'string') {
+    const components: string[] = splitComponents(commandParameter);
+    let mjml = readFileSync(resolve(__dirname, `templates\\${name}\\index.mjml`), { encoding: 'utf8' });
+
+    let media480: string = '';
+    let media280: string = '';
+    let regularStyles: string = '';
+
+    for (const i in components) {
+      const parts = await getSections(await getFullComponent(components[i]));
+      // @ts-ignore
+      const beautified = await beautifySections(parts);
+      const indented = indent(beautified);
+
+      mjml = await insertSections(indented[1], mjml, 'body', components[i]);
+      media480 += indented[0];
+      media280 += indented[2];
+      regularStyles += indented[3];
+
+      if (Number(i) < (components.length - 1)) {
+        media480 += '\n';
+      }
+
+      const images = await getImages(resolve(__dirname, `components\\${components[i]}`));
+      Object.keys(images).forEach(imageName => {
+        writeFileSync(resolve(__dirname, `templates\\${name}\\img\\${imageName}`), images[imageName]);
+      });
+    }
+
+    mjml = await insertSections(media480, mjml, 'media480');
+
+    if (media280 !== '') {
+      mjml = await insertSections(media280, mjml, 'media280');
+    }
+
+    if (regularStyles !== '') {
+      mjml = await insertSections(regularStyles, mjml, 'regularStyles');
+    }
+
+    writeFileSync(resolve(__dirname, `templates\\${name}\\index.mjml`), mjml);
+  }
+}
