@@ -1,3 +1,4 @@
+import ora from 'ora';
 import chalk from 'chalk';
 import { readFileSync } from 'node:fs';
 import { __dirname } from './filesystem.js';
@@ -116,4 +117,25 @@ export async function fileExists(name: string, list: any) {
 
 export async function listBuckets() {
   return await supabase.storage.listBuckets();
+}
+
+type Manager = typeof createBucket | typeof deleteBucket;
+
+export async function manageBucket(name: string, type: 'create' | 'delete'): Promise<void> {
+  let manager: Manager = type === 'create' ? createBucket : deleteBucket;
+
+  function capitalizeFirstLetter(string: string): string {
+    return `${string[0].toUpperCase() + string.slice(1)}`
+  }
+
+  process.stdout.write('\n');
+  const spinner = ora(`${chalk.yellow(`Attempting to ${type} template named ${name}`)}`).start();
+  const { error } = await manager(name);
+
+  if (error) {
+    spinner.fail();
+    throw new BucketError(`\nFailed to ${type} template named ${name}!\n\n${error.stack?.slice(17)}`);
+  }
+
+  spinner.succeed(`${chalk.yellow(`${capitalizeFirstLetter(type)}d template named ${name}.`)}`);
 }

@@ -8,3 +8,6 @@ test/
 demo/
 build/
 downloads/
+templates/
+components/
+boilerplate/

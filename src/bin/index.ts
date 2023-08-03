@@ -18,22 +18,74 @@ import ora from 'ora';
 import chalk from 'chalk';
 import { program } from 'commander';
 import { resolve } from 'node:path';
-import { BucketError } from '../lib/error.js';
-import { importBucket } from '../lib/import.js';
 import { AuthError } from '@supabase/supabase-js';
 import * as supabaseAPI from '../api/supabase.js';
-import { isLoggedIn, login } from '../lib/login.js';
 import { isStorageError } from '@supabase/storage-js';
-import { downloadHTML, mailHTML } from '../lib/mail.js';
-import { downloadMJML, parseMJML } from '../lib/prepare.js';
-import { save, getConfigAndPath, getVersion } from '../api/filesystem.js';
 import { existsSync, writeFileSync, readFileSync } from 'node:fs';
-import { getPath, watch, uploadMJML, uploadImages } from '../lib/export.js';
-import { enquire, EnquireMessages, EnquireNames, EnquireTypes } from '../api/enquire.js';
-import { buildImage, convertHTML, isSpam, train, parseSpamAnalysis, generatePDF } from '../api/spamassassin.js';
+
+import {
+  BucketError
+} from '../lib/error.js';
+
+import {
+  importBucket
+} from '../lib/import.js';
+
+
+import {
+  isLoggedIn,
+  login
+} from '../lib/login.js';
+
+import {
+  downloadHTML,
+  mailHTML
+} from '../lib/mail.js';
+
+import {
+  downloadMJML,
+  parseMJML
+} from '../lib/prepare.js';
+
+import {
+  save,
+  getConfigAndPath,
+  getVersion,
+  openVS
+} from '../api/filesystem.js';
+
+import {
+  getPath,
+  watch,
+  uploadMJML,
+  uploadImages
+} from '../lib/export.js';
+
+import {
+  enquire,
+  EnquireMessages,
+  EnquireNames,
+  EnquireTypes
+} from '../api/enquire.js';
+
+import {
+  buildImage,
+  convertHTML,
+  isSpam,
+  train,
+  parseSpamAnalysis,
+  generatePDF
+} from '../api/spamassassin.js';
+
+import {
+  listComponents,
+  importComponents
+} from '../lib/append.js';
+
 import {
   cleanTemp,
   createFolders,
+  manageTemplate,
   pathAndFile,
   saveFile,
   __dirname,
@@ -186,66 +238,88 @@ program
   }
 });
 
-async function delay(ms: number) {
+async function delay(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 program
-.command('bucket')
-.description('Lists, creates or deletes a remote bucket')
-.argument('[name]', 'Name of the bucket as it exists in the server')
-.option('-d, --delete', 'deletes a bucket', false)
-.option('-c, --create', 'creates a bucket', false)
-.action(async (name: string, options: {delete: boolean, create: boolean}) => {
+.command('template')
+.description('Lists, creates or deletes a template')
+.argument('[name]', 'Name of your template')
+.option('-d, --delete', 'deletes a template', false)
+.option('-c, --create [components]', 'creates a template', false)
+.option('-l, --list', 'lists all templates', false)
+.action(async (name: string, options: {delete: boolean, create: string, list: boolean}) => {
   try {
     if (options.create) {
-      process.stdout.write('\n');
-      const spinner = ora(`${chalk.yellow(`Creating bucket named ${name}`)}`).start();
-      const { error } = await supabaseAPI.createBucket(name);
-      if (error) {
-        spinner.fail();
-        throw new BucketError(`\nFailed to create bucket named ${name}!\n\n${error.stack?.slice(17)}`);
+      if (existsSync(__dirname + `templates\\${name}`)) {
+        openVS(name, 'template');
+        return;
       }
-      spinner.succeed();
+
+      await supabaseAPI.manageBucket(name, 'create');
+      await manageTemplate(name, false, 'template');
+      await importComponents(options.create, name);
+
+      openVS(name, 'template');
+
       return;
     }
 
     if (options.delete) {
-      process.stdout.write('\n');
-      const spinner = ora(`${chalk.yellow(`Deleting bucket named ${name}`)}`).start();
-      const { error } = await supabaseAPI.deleteBucket(name);
-      if (error) {
-        spinner.fail();
-        throw new BucketError(`\nFailed to delete bucket named ${name}!\n\n${error.stack?.slice(17)}`);
-      }
-      spinner.succeed();
+      await manageTemplate(name, true, 'template');
+      await supabaseAPI.manageBucket(name, 'delete');
       return;
     }
 
-    process.stdout.write('\n');
-    const spinner = ora(`${chalk.yellow('Fetching buckets...')}`).start();
-    const { data, error } = await supabaseAPI.listBuckets();
-
-    if (error) {
-      spinner.fail();
-      throw new BucketError(`\nFailed to fetch buckets!\n\n${error.stack?.slice(17)}`);
+    if (options.list) {
+      await listComponents();
     }
 
-    if (data.length === 0) {
-      spinner.fail(`${chalk.red('There are no buckets in the server. Use \'mailer bucket -c [name]\' to create one.')}`);
+    if (existsSync(resolve(__dirname, `templates\\${name}`))) {
+      openVS(name, 'template');
       return;
-    }
-
-    spinner.succeed(`${chalk.yellow('Buckets:')}`);
-    let count = 1;
-    for (let index in data) {
-      console.log(`  ${chalk.yellow(`${count}.`)} ${chalk.blue(data[index].name)}`);
-      count++
     }
   }
 
   catch (error: any) {
     console.log(`${chalk.red(error)}`);
+  }
+});
+
+program
+.command('component').description('Lists, creates or deletes a component')
+.argument('[name]', 'Name of the component')
+.option('-d, --delete', 'deletes a template', false)
+.option('-c, --create', 'creates a template', false)
+.action(async (name: string, options: {delete: boolean, create: boolean}) => {
+  try {
+    await createFolders(name);
+
+    if (options.create) {
+      if (existsSync(resolve(__dirname, `components\\${name}`))) {
+        openVS(name, 'component');
+
+        return;
+      }
+
+      await manageTemplate(name, false, 'component');
+      console.log(`${chalk.yellow(`\nCreated component named ${name} at ${__dirname}\\components\\${name}. Opening in new VSCode window...`)}`);
+      await delay(1000);
+
+      openVS(name, 'component');
+
+      return;
+    }
+
+    if (options. delete) {
+      await manageTemplate(name, true, 'component');
+      console.log(`${chalk.yellow(`\nDeleted component named ${name}.`)}`);
+    }
+  }
+
+  catch (error: any) {
+    console.error(`${chalk.red(error)}`);
   }
 });
 
@@ -301,11 +375,13 @@ program
         mjmlString = mjmlString.replace(replacer, signedUrlList[index]);
       };
 
-      // save mjml with new paths
-      await saveFile(__dirname + 'temp\\', 'source.mjml', mjmlString);
+      const __tempdirname = resolve(__dirname, 'temp')
 
-      const parsedHTML = parseMJML(readFileSync(__dirname + 'temp\\source.mjml', { encoding: 'utf8' }), options.marketo);
-      await saveFile(__dirname + 'temp\\', 'parsed.html', parsedHTML);
+      // save mjml with new paths
+      await saveFile(__tempdirname, 'source.mjml', mjmlString);
+
+      const parsedHTML = parseMJML(readFileSync(resolve(__tempdirname, 'source.mjml'), { encoding: 'utf8' }), options.marketo);
+      await saveFile(__tempdirname, 'parsed.html', parsedHTML);
 
       const list = await supabaseAPI.listFiles(name);
       const exists = await supabaseAPI.fileExists(`${options.marketo? 'marketo.html' : 'index.html'}`, list.data);
@@ -319,7 +395,7 @@ program
         }
       }
 
-      const results = await supabaseAPI.uploadFile(readFileSync(__dirname + 'temp\\parsed.html', { encoding: 'utf8' }), `${options.marketo? 'marketo.html' : 'index.html'}`, name);
+      const results = await supabaseAPI.uploadFile(readFileSync(resolve(__tempdirname, 'parsed.html'), { encoding: 'utf8' }), `${options.marketo? 'marketo.html' : 'index.html'}`, name);
 
       if (results.error) {
         spinner.fail();
@@ -336,7 +412,7 @@ program
 });
 
 program
-.command('mail')
+.command('send')
 .description('Mails a HTML file to a recipient list')
 .argument('<name>', 'Name of the bucket where the template is located')
 .argument('<recipients>', 'Recipient list (e.g. "davidsobral@me.com, davidcsobral@gmail.com"')
@@ -467,36 +543,38 @@ program
   }
 
   try {
+    const __importdirname = resolve(__dirname, `downloads/${name}`);
+
     Object.keys(files).forEach(key => {
       if (key === 'images') {
         // @ts-ignore
         for (let image of files[key]) {
-          writeFileSync(__dirname + `downloads\\${name}\\img\\${image[0]}`, image[1])
+          writeFileSync(resolve(__importdirname, `img\\${image[0]}`), image[1])
         }
       }
 
       if (key === 'mjml') {
         // @ts-ignore
-        writeFileSync(__dirname + `downloads\\${name}\\index.mjml`, files[key]);
+        writeFileSync(resolve(__importdirname, 'index.mjml'), files[key]);
       }
 
       if (key === 'mktomjml') {
         // @ts-ignore
-        writeFileSync(__dirname + `downloads\\${name}\\marketo.mjml`, files[key]);
+        writeFileSync(resolve(__importdirname, 'marketo.mjml'), files[key]);
       }
 
       if (key === 'html') {
         // @ts-ignore
-        writeFileSync(__dirname + `downloads\\${name}\\index.html`, files[key]);
+        writeFileSync(resolve(__importdirname, 'index.html'), files[key]);
       }
 
       if (key === 'mktohtml') {
         // @ts-ignore
-        writeFileSync(__dirname + `downloads\\${name}\\marketo.html`, files[key]);
+        writeFileSync(resolve(__importdirname, 'marketo.html'), files[key]);
       }
     });
 
-    spinner.succeed(`Imported files from ${chalk.green(name)} bucket to ${chalk.green(__dirname + `downloads\\\\${name}`)}`);
+    spinner.succeed(`Imported files from ${chalk.green(name)} bucket to ${chalk.green(__importdirname)}`);
   }
 
   catch (error) {
@@ -520,11 +598,11 @@ program
     }
 
     if (options.test) {
-      const pathToFile = options.test === true ? __dirname + 'temp\\parsed' : absolutePath(options.test);
+      const pathToFile = options.test === true ? resolve(__dirname, 'temp/parsed') : absolutePath(options.test);
       const [path, filename] = pathAndFile(pathToFile);
       const html = await getFile('html', path, false, filename);
       const RFC822 = await convertHTML(html);
-      const rfcPath = __dirname + 'temp\\rfc822.txt'
+      const rfcPath = resolve(__dirname, 'temp/rfc822.txt');
       writeFileSync(rfcPath, RFC822);
 
       await isSpam(rfcPath);
@@ -539,10 +617,10 @@ program
       const spinner = ora(`${chalk.yellow('Generating PDF...')}`).start();
 
       try {
-        const log = readFileSync(__dirname + 'temp\\log.txt', 'utf-8');
+        const log = readFileSync(__dirname + 'temp/log.txt', 'utf-8');
         const analysis = parseSpamAnalysis(log);
         generatePDF(analysis);
-        spinner.succeed(`Generated PDF file at ${chalk.green(resolve(__dirname + 'temp\\spam-analysis.pdf'))}`);
+        spinner.succeed(`Generated PDF file at ${chalk.green(resolve(__dirname, 'temp/spam-analysis.pdf'))}`);
       }
 
       catch (error) {
