@@ -35,15 +35,15 @@ export function pathAndFile(path: string): [string, string] {
   return [dirname(path), basename(path)];
 }
 
-export async function getFile(fileType: 'html' | 'mjml', pathToFile: string, marketo: boolean = false, fileName: string = 'index'): Promise<string> {
+export async function getFile(fileType: 'html' | 'mjml', pathToRoot: string, marketo: boolean = false, fileName: string = 'index'): Promise<string> {
   let string: string;
 
   if (fileType === 'html') {
-    string = (await readFile(pathToFile + `\\${fileName}.html`)).toString();
+    string = (await readFile(pathToRoot + `\\${fileName}.html`)).toString();
     return string;
   }
 
-  string = (await readFile(pathToFile + `\\${marketo ? 'marketo' : 'index'}.mjml`)).toString();
+  string = (await readFile(pathToRoot + `\\${marketo ? 'marketo' : fileName}.mjml`)).toString();
   return string;
 }
 

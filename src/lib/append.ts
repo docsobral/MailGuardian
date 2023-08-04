@@ -66,7 +66,7 @@ export async function insertSections(
 
   if (type === 'media480') {
     finder = /( *)(?=<\/mj-style>)/;
-    replacer = '\n      @media only screen and (max-width: 480px) {' + section + '}\n';
+    replacer = '\n      @media only screen and (max-width: 480px) {\n' + section + '}\n';
     mjml = mjml.replace(finder, replacer);
 
     finder = /  }\n<\/mj-style>/;

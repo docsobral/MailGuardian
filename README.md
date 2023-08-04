@@ -12,6 +12,30 @@ Install [Docker](https://www.docker.com/). Then clone this repository, `cd` into
 
 If you want to be able to run MailGuardian globally, run `npm install -g`. This will create a reference to `./build/bin/index.js` to your PATH.
 
+## Style requirements for importing components
+
+For now, the only format supported by the component importer is the one below. Outer styles must come first, followed by a 480px media query and a 280px media query. A different order hasn't been tested, so keep to this one.
+
+```
+<mj-head>
+  <mj-style>
+    outer-style {
+      styles;
+    }
+
+    @media (max-width: 480px) {
+      480px-mobile-styles;
+    }
+
+    @media (max-width: 280px) {
+      280px-mobile-styles
+    }
+  </mj-style>
+</mj-head>
+```
+
+***WARNING***: Use 2 spaces for each indentation, not tabs.
+
 ## Requirements for exporting an email/template to Supabase
 
 Images should be PNG. Your template should be in a directory arranged the following way:
@@ -96,6 +120,10 @@ You can list one or more component that you want to import directly into the new
 
 Creates or deletes a new component. This component's body and styles can then be imported when creating a new template. Mind the style guide when writing the components styles, so that they are properly read by the parser.
 
+### build \[fileName] \[path] \[-a/-i/-w]
+
+Compiles HTML from a MJML file. Has a watch function.
+
 ### export \<name\> \[-w/-n/-i/-c/-m] \[path]
 
 Exports a template's .mjml and .png files to a bucket. Path is optional on Windows only.
@@ -122,9 +150,11 @@ Sends the template on a bucket to all recipients. Recipient list should be surro
 
 `-m or --marketo` will send the Marketo HTML. **WARNING**: if there are any variables in the MJML, Mailer will send it as is. A future implementation should replace all variables with their respective defaults when sending a Marketo HTML.
 
-### import \<name\> **WARNING**: this functionality is currently broken
+### import \<name\>
 
 Downloads the template's files from the supabase bucket. Files are saved at `root/downloads`.
+
+**WARNING**: this functionality is currently broken
 
 ### spam \[-b, -t, -l]
 
