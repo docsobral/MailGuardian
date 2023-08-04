@@ -12,6 +12,30 @@ Install [Docker](https://www.docker.com/). Then clone this repository, `cd` into
 
 If you want to be able to run MailGuardian globally, run `npm install -g`. This will create a reference to `./build/bin/index.js` to your PATH.
 
+## Style requirements for importing components
+
+For now, the only format supported by the component importer is the one below. Outer styles must come first, followed by a 480px media query and a 280px media query. A different order hasn't been tested, so keep to this one.
+
+```
+<mj-head>
+  <mj-style>
+    outer-style {
+      styles;
+    }
+
+    @media (max-width: 480px) {
+      480px-mobile-styles;
+    }
+
+    @media (max-width: 280px) {
+      280px-mobile-styles
+    }
+  </mj-style>
+</mj-head>
+```
+
+***WARNING***: Use 2 spaces for each indentation, not tabs.
+
 ## Requirements for exporting an email/template to Supabase
 
 Images should be PNG. Your template should be in a directory arranged the following way:
