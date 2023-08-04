@@ -18,6 +18,7 @@ import ora from 'ora';
 import chalk from 'chalk';
 import { program } from 'commander';
 import { resolve } from 'node:path';
+import { watchFile } from 'node:fs';
 import { AuthError } from '@supabase/supabase-js';
 import * as supabaseAPI from '../api/supabase.js';
 import { isStorageError } from '@supabase/storage-js';
@@ -46,13 +47,6 @@ import {
   downloadMJML,
   parseMJML
 } from '../lib/prepare.js';
-
-import {
-  save,
-  getConfigAndPath,
-  getVersion,
-  openVS
-} from '../api/filesystem.js';
 
 import {
   getPath,
@@ -91,8 +85,18 @@ import {
   __dirname,
   absolutePath,
   checkFirstUse,
-  getFile
+  getFile,
+  save,
+  getConfigAndPath,
+  getVersion,
+  openVS,
 } from '../api/filesystem.js';
+
+import {
+  compileHTML,
+  CompilerOptions,
+  getFolder,
+} from '../lib/build.js';
 
 await checkFirstUse();
 
@@ -288,7 +292,8 @@ program
 });
 
 program
-.command('component').description('Lists, creates or deletes a component')
+.command('component')
+.description('Lists, creates or deletes a component')
 .argument('[name]', 'Name of the component')
 .option('-d, --delete', 'deletes a template', false)
 .option('-c, --create', 'creates a template', false)
@@ -320,6 +325,70 @@ program
 
   catch (error: any) {
     console.error(`${chalk.red(error)}`);
+  }
+});
+
+program
+.command('build')
+.description('Compiles MJML into HTML')
+.argument('[name]', 'Name of the MJML file (e.g.: index.mjml is called \'index\'', '')
+.argument('[path]', 'Path to the folder where the MJML file is located', '')
+.option('-a, --author [taskCode]', 'Inserts Author meta tag into HTML', '')
+.option('-i, --if', 'Inserts IF block', false)
+.option('-w, --watch', 'Compiles file after every change', false)
+.action(async (path: string, name: string, options: {author: string, if: boolean, watch: boolean}) => {
+  const compilerOptions: CompilerOptions = {
+    folderPath: path,
+    fileName: name,
+    insertAuthor: options.author ? true : false,
+    taskCode: options.author,
+    insertIF: options.if,
+    watch: options.watch,
+  }
+
+  if (options.watch) {
+    const folderPath = path ? await getFolder() : resolve(path);
+    const fileName: string = name ? name : 'index.mjml';
+
+    let waiting = false;
+    watchFile(resolve(folderPath, fileName), async (eventType, filename) => {
+      if (waiting) return;
+      waiting = true;
+
+      const time = new Date();
+      const hours = `${time.getHours()}:${time.getMinutes()}:${time.getSeconds()}`;
+      spinner.text += chalk.blueBright(`\n  Change detected in ${fileName} at ${hours}`);
+      const [result, error, pathToHTML] = await compileHTML(compilerOptions);
+
+      if (result === 'error') {
+        spinner.fail(error);
+      } else {
+        spinner.text += chalk.blueBright(`\n  Parsed MJML and saved HTML at ${pathToHTML}`);
+      }
+
+      setTimeout(() => {
+        waiting = false;
+      }, 5000);
+    });
+
+    process.stdout.write('\n');
+    const spinner = ora(`${chalk.yellow(`Now watching file: ${folderPath}`)}`).start();
+    process.on('SIGINT', () => {
+      spinner.info(spinner.text + chalk.red('\n  Stopping the watcher...'));
+      process.exit(0);
+    });
+    return;
+  }
+
+  process.stdout.write('\n');
+  const spinner = ora(`${chalk.yellow('Compiling HTML...')}`).start();
+  const [result, error, pathToHTML] = await compileHTML(compilerOptions);
+  await delay(500);
+
+  if (result === 'error') {
+    spinner.fail(error);
+  } else {
+    spinner.succeed(`Parsed MJML and saved HTML at ${pathToHTML}`);
   }
 });
 
