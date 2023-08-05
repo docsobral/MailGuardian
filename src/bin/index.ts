@@ -350,7 +350,8 @@ program
     const folderPath = path ? await getFolder() : resolve(path);
     const fileName: string = name ? name : 'index.mjml';
 
-    let waiting = false;
+    let waiting = true;
+
     const watcher = watchFile(resolve(folderPath, fileName), async () => {
       if (waiting) return;
       waiting = true;
@@ -375,6 +376,9 @@ program
       if (result === 'error') {
         spinner.fail(error);
       }
+
+      spinner.text = `${chalk.yellow(`Now watching file: ${folderPath}`)}`;
+      waiting = false;
     });
 
     process.stdout.write('\n');
@@ -383,10 +387,9 @@ program
 
     watcher.emit('start');
 
-    spinner.text = `${chalk.yellow(`Now watching file: ${folderPath}`)}`;
-
     process.on('SIGINT', () => {
       spinner.succeed(spinner.text + chalk.red('\n  Stopping the watcher...'));
+      watcher.removeAllListeners();
       process.exit(0);
     });
     return;
