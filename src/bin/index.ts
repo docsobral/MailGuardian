@@ -351,7 +351,7 @@ program
     const fileName: string = name ? name : 'index.mjml';
 
     let waiting = false;
-    watchFile(resolve(folderPath, fileName), async () => {
+    const watcher = watchFile(resolve(folderPath, fileName), async () => {
       if (waiting) return;
       waiting = true;
 
@@ -369,16 +369,21 @@ program
       }, 5000);
     });
 
+    watcher.once('start', async () => {
+      const [result, error] = await compileHTML(compilerOptions);
+
+      if (result === 'error') {
+        spinner.fail(error);
+      }
+    });
+
     process.stdout.write('\n');
     const spinner = ora(`${chalk.white(`Starting watcher...`)}`).start();
     await delay(1000);
+
+    watcher.emit('start');
+
     spinner.text = `${chalk.yellow(`Now watching file: ${folderPath}`)}`;
-
-    const [result, error] = await compileHTML(compilerOptions);
-
-    if (result === 'error') {
-      spinner.fail(error);
-    }
 
     process.on('SIGINT', () => {
       spinner.succeed(spinner.text + chalk.red('\n  Stopping the watcher...'));
