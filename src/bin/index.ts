@@ -351,19 +351,17 @@ program
     const fileName: string = name ? name : 'index.mjml';
 
     let waiting = false;
-    watchFile(resolve(folderPath, fileName), async (eventType, filename) => {
+    watchFile(resolve(folderPath, fileName), async () => {
       if (waiting) return;
       waiting = true;
 
       const time = new Date();
       const hours = `${time.getHours()}:${time.getMinutes()}:${time.getSeconds()}`;
-      spinner.text += chalk.blueBright(`\n  Change detected in ${fileName} at ${hours}`);
-      const [result, error, pathToHTML] = await compileHTML(compilerOptions);
+      spinner.suffixText += chalk.blueBright(`\n  Change detected in ${fileName} at ${hours}`);
+      const [result, error] = await compileHTML(compilerOptions);
 
       if (result === 'error') {
         spinner.fail(error);
-      } else {
-        spinner.text += chalk.blueBright(`\n  Parsed MJML and saved HTML at ${pathToHTML}`);
       }
 
       setTimeout(() => {
@@ -372,9 +370,11 @@ program
     });
 
     process.stdout.write('\n');
-    const spinner = ora(`${chalk.yellow(`Now watching file: ${folderPath}`)}`).start();
+    const spinner = ora(`${chalk.white(`Starting watcher...`)}`).start();
+    await delay(1000);
+    spinner.text = `${chalk.yellow(`Now watching file: ${folderPath}`)}`;
     process.on('SIGINT', () => {
-      spinner.info(spinner.text + chalk.red('\n  Stopping the watcher...'));
+      spinner.succeed(spinner.text + chalk.red('\n  Stopping the watcher...'));
       process.exit(0);
     });
     return;
@@ -388,7 +388,7 @@ program
   if (result === 'error') {
     spinner.fail(error);
   } else {
-    spinner.succeed(`Parsed MJML and saved HTML at ${pathToHTML}`);
+    spinner.succeed(`Parsed MJML and saved HTML at ${pathToHTML}\n`);
   }
 });
 
