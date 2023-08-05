@@ -357,7 +357,7 @@ program
 
       const time = new Date();
       const hours = `${time.getHours()}:${time.getMinutes()}:${time.getSeconds()}`;
-      spinner.suffixText += chalk.blueBright(`\n  Change detected in ${fileName} at ${hours}`);
+      spinner.text += chalk.blueBright(`\n  Change detected in ${fileName} at ${hours}`);
       const [result, error] = await compileHTML(compilerOptions);
 
       if (result === 'error') {
