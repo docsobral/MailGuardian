@@ -373,6 +373,13 @@ program
     const spinner = ora(`${chalk.white(`Starting watcher...`)}`).start();
     await delay(1000);
     spinner.text = `${chalk.yellow(`Now watching file: ${folderPath}`)}`;
+
+    const [result, error] = await compileHTML(compilerOptions);
+
+    if (result === 'error') {
+      spinner.fail(error);
+    }
+
     process.on('SIGINT', () => {
       spinner.succeed(spinner.text + chalk.red('\n  Stopping the watcher...'));
       process.exit(0);
