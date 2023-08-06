@@ -1,4 +1,3 @@
-import { enquire, EnquireMessages, EnquireNames, EnquireTypes } from './enquire.js';
 import { readFile, mkdir, writeFile, readdir, unlink, rm } from 'node:fs/promises';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve, basename } from 'path';
@@ -6,7 +5,6 @@ import { exec } from 'child_process';
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'url';
 import Cryptr from 'cryptr';
-import chalk from 'chalk';
 
 function escapeBackslashes(path: string): string {
   const pathArray: string[] = path.split('');
@@ -56,48 +54,6 @@ export async function getImage(path: string, imageName: string): Promise<Buffer>
 
 export async function saveFile(path: string, name: string, file: string | Buffer): Promise<void> {
   await writeFile(`${path}\\${name}`, file);
-}
-
-export async function checkFirstUse(): Promise<void> {
-  if (!existsSync(__dirname + 'config')) {
-    console.log(`${chalk.blue('Creating save files...\n')}`);
-    await mkdir(__dirname + 'config');
-
-    writeFile(__dirname + 'config\\paths.json', JSON.stringify({}, null, 2));
-
-    const initialState: AppState = {logged: [false, false]};
-    writeFile(__dirname + 'config\\state.json', JSON.stringify(initialState, null, 2));
-
-    const answers = await enquire([
-      {
-        type: EnquireTypes.input,
-        name: EnquireNames.supabaseSecret,
-        message: EnquireMessages.supabaseSecret
-      },
-
-      {
-        type: EnquireTypes.input,
-        name: EnquireNames.supabaseURL,
-        message: EnquireMessages.supabaseURL
-      },
-
-      {
-        type: EnquireTypes.input,
-        name: EnquireNames.secretKey,
-        message: EnquireMessages.secretKey
-      }
-    ]);
-
-    const appConfigs = {
-      'SUPA_SECRET': answers.supabaseSecret,
-      'SUPA_URL': answers.supabaseURL,
-      'SECRET_KEY': answers.secretKey,
-    }
-
-    await writeFile(__dirname + 'config\\config.json', JSON.stringify(appConfigs, null, 2));
-    console.log(`${chalk.yellow('Finished creating config files and terminating process. Now run \'mailer login <email> <passoword>\'.')}`);
-    process.exit(0);
-  };
 }
 
 export async function createFolders(templateName: string): Promise<void> {
