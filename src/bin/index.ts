@@ -20,7 +20,6 @@ import { program } from 'commander';
 import { resolve } from 'node:path';
 import { watchFile } from 'node:fs';
 import { AuthError } from '@supabase/supabase-js';
-import * as supabaseAPI from '../api/supabase.js';
 import { isStorageError } from '@supabase/storage-js';
 import { existsSync, writeFileSync, readFileSync } from 'node:fs';
 
@@ -84,7 +83,6 @@ import {
   saveFile,
   __dirname,
   absolutePath,
-  checkFirstUse,
   getFile,
   save,
   getConfigAndPath,
@@ -98,7 +96,7 @@ import {
   getFolder,
 } from '../lib/build.js';
 
-await checkFirstUse();
+import * as supabaseAPI from '../api/supabase.js';
 
 program.version(getVersion());
 
