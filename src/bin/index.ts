@@ -375,7 +375,7 @@ program
         spinner.fail(error);
       }
 
-      spinner.text = `${chalk.yellow(`Now watching file: ${folderPath}`)}`;
+      spinner.text = `${chalk.yellow(`Now watching file: ${resolve(folderPath, fileName)}`)}`;
       waiting = false;
     });
 
