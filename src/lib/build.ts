@@ -43,8 +43,8 @@ export async function getFolder(): Promise<string> {
 }
 
 export type CompilerOptions = {
-  folderPath?: string,
-  fileName?: string,
+  folderPath: string,
+  fileName: string,
   insertAuthor?: boolean,
   taskCode?: string,
   insertIF?: boolean,
@@ -79,8 +79,8 @@ function insertIF(html: string): string {
 
 export async function compileHTML(options: CompilerOptions): Promise<['success' | 'error', any, string]> {
   try {
-    const folderPath = options.folderPath ? await getFolder() : resolve();
-    const fileName: string = options.fileName ? options.fileName : 'index';
+    const folderPath = options.folderPath;
+    const fileName: string = options.fileName;
     const mjml: string = await getFile('mjml', folderPath, false, fileName);
     let htmlString = beautifyHTML(mjml2html(mjml, { validationLevel: 'soft' }).html);
 
@@ -93,7 +93,7 @@ export async function compileHTML(options: CompilerOptions): Promise<['success' 
     }
 
     writeFileSync(resolve(folderPath, fileName + '.html'), htmlString, { encoding: 'utf8' });
-    return ['success', '', folderPath + fileName + '.html'];
+    return ['success', '', resolve(folderPath, fileName + '.html')];
   }
 
   catch (error: any) {

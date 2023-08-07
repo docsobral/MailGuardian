@@ -93,7 +93,6 @@ import {
 import {
   compileHTML,
   CompilerOptions,
-  getFolder,
 } from '../lib/build.js';
 
 import * as supabaseAPI from '../api/supabase.js';
@@ -329,15 +328,15 @@ program
 program
 .command('build')
 .description('Compiles MJML into HTML')
-.argument('[name]', 'Name of the MJML file (e.g.: index.mjml is called \'index\'', '')
-.argument('[path]', 'Path to the folder where the MJML file is located', '')
+.argument('[path]', 'Path to the folder where the MJML file is located', resolve())
+.option('-n, --name <name>', 'Specifies the name of the MJML file (e.g.: \'filename.mjml\')', 'index.mjml')
 .option('-a, --author [taskCode]', 'Inserts Author meta tag into HTML', '')
 .option('-i, --if', 'Inserts IF block', false)
 .option('-w, --watch', 'Compiles file after every change', false)
-.action(async (path: string, name: string, options: {author: string, if: boolean, watch: boolean}) => {
+.action(async (path: string, options: {name: string, author: string, if: boolean, watch: boolean}) => {
   const compilerOptions: CompilerOptions = {
     folderPath: path,
-    fileName: name,
+    fileName: options.name.replace(/.mjml/, ''),
     insertAuthor: options.author ? true : false,
     taskCode: options.author,
     insertIF: options.if,
@@ -345,8 +344,8 @@ program
   }
 
   if (options.watch) {
-    const folderPath = path ? await getFolder() : resolve(path);
-    const fileName: string = name ? name : 'index.mjml';
+    const folderPath = path;
+    const fileName: string = options.name;
 
     let waiting = true;
 
