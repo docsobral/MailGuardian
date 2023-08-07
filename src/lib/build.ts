@@ -56,7 +56,8 @@ async function insertLabels(html: string): Promise<string> {
   let result: string = html;
 
   function getAnchors(html: string) {
-    const finder = /(?<=<a.*"\s?>\n?)(.*)(?=\n?.*<\/a>)/g;
+    // const finder = /(?<=<a.*"\s?>\n?)(.*)(?=\n? *<\/a>)/g;
+    const finder = /(?<=<a.*href=".*">\s*)(.*?)(?=\s*<\/a>)/g;
     const finds = html.matchAll(finder);
     return finds;
   }
