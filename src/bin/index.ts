@@ -167,7 +167,8 @@ program
 .option('-m, --marketo', 'Exports marketo MJML', false)
 .option('-c, --clean', 'Clean the bucket before export', false)
 .option('-i, --images', 'Doesn\'t export images', false)
-.action(async (name: string, path: string, options: { watch: boolean, newPath: boolean, marketo: boolean, clean: boolean, images: boolean}) => {
+.action(async (
+  name: string, path: string, options: { watch: boolean, newPath: boolean, marketo: boolean, clean: boolean, images: boolean}) => {
   try {
     let bucket: supabaseAPI.SupabaseStorageResult;
 
@@ -348,6 +349,7 @@ program
   if (options.watch) {
     const folderPath = path;
     const fileName: string = options.name;
+    compilerOptions.insertLabels = false;
 
     let waiting = true;
 
