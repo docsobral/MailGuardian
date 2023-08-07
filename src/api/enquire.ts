@@ -14,6 +14,8 @@ export enum EnquireMessages {
   supabaseSecret = 'Enter the supabase secret key: ',
   supabaseURL = 'Enter the supabase URL: ',
   secretKey = 'Enter a secret key that will be used to encrypt your credentials: ',
+  addLabel = 'Do you want to add a label to this anchor?',
+  label = 'Enter the label: ',
 }
 
 export enum EnquireNames {
@@ -24,6 +26,8 @@ export enum EnquireNames {
   supabaseSecret = 'supabaseSecret',
   supabaseURL = 'supabaseURL',
   secretKey = 'secretKey',
+  addLabel = 'addLabel',
+  label = 'label',
 }
 
 export type EnquireOptions = {
@@ -41,6 +45,8 @@ export type EnquireResults = {
   supabaseSecret?: string;
   supabaseURL?: string;
   secretKey?: string;
+  addLabel?: boolean;
+  label?: string;
 }
 
 export async function enquire(options: EnquireOptions[]): Promise<EnquireResults> {

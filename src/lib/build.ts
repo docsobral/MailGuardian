@@ -1,11 +1,12 @@
-// import chalk from 'chalk';
+import chalk from 'chalk';
 import mjml2html from 'mjml';
 import { resolve } from 'node:path';
 // @ts-ignore
 import selectFolder from 'win-select-folder';
 import { writeFileSync } from 'node:fs';
-import { getFile } from '../api/filesystem.js';
+import { __dirname, getFile } from '../api/filesystem.js';
 import beautify, { HTMLBeautifyOptions } from 'js-beautify';
+import { EnquireMessages, EnquireNames, EnquireTypes, enquire } from '../api/enquire.js';
 
 const { html_beautify } = beautify;
 
@@ -49,6 +50,56 @@ export type CompilerOptions = {
   taskCode?: string,
   insertIF?: boolean,
   watch?: boolean,
+  insertLabels?: boolean,
+}
+
+export async function insertLabels(html: string): Promise<string> {
+  let result: string = html;
+
+  function getAnchors(html: string) {
+    const finder = /(?<=<a.*"\s?>\n?)(.*)(?=\n?.*<\/a>)/g;
+    const finds = html.matchAll(finder);
+    return finds;
+  }
+
+  const finds = getAnchors(result);
+  let done: boolean | undefined = false;
+
+  while (!done) {
+    const next = finds.next();
+    const value = next.value;
+    done = next.done;
+
+    if (done) break;
+
+    console.log(chalk.blue(`\nFound this anchor: ${chalk.green(value[0])}`));
+    const { addLabel } = await enquire([
+      {
+        type: EnquireTypes.confirm,
+        name: EnquireNames.addLabel,
+        message: EnquireMessages.addLabel
+      }
+    ]);
+
+    if (addLabel) {
+      const { label } = await enquire([
+        {
+          type: EnquireTypes.input,
+          name: EnquireNames.label,
+          message: EnquireMessages.label
+        }
+      ]);
+
+      const labelTag = `<b style="display:none;color:#ffffff;">${label}</b>`;
+      const finder = value[0];
+      const replacer = labelTag + next.value[0];
+      result = result.replace(finder, replacer);
+    }
+  }
+
+  result = beautifyHTML(result);
+
+  return result;
 }
 
 function insertAuthor(html: string, taskCode: string | undefined): string {
@@ -88,6 +139,10 @@ export async function compileHTML(options: CompilerOptions): Promise<['success' 
       htmlString = insertAuthor(htmlString, options.taskCode);
     }
 
+    if (options.insertLabels) {
+      htmlString = await insertLabels(htmlString);
+    }
+
     if (options.insertIF) {
       htmlString = insertIF(htmlString);
     }
@@ -101,4 +156,6 @@ export async function compileHTML(options: CompilerOptions): Promise<['success' 
   }
 }
 
-// await compileHTML({ insertAuthor: true, taskCode: 'TEST' });
+// const html = readFileSync(resolve(__dirname, 'templates/labels/index.html'), { encoding: 'utf8' });
+
+// console.log(await insertLabels(html));

@@ -333,7 +333,8 @@ program
 .option('-a, --author [taskCode]', 'Inserts Author meta tag into HTML', '')
 .option('-i, --if', 'Inserts IF block', false)
 .option('-w, --watch', 'Compiles file after every change', false)
-.action(async (path: string, options: {name: string, author: string, if: boolean, watch: boolean}) => {
+.option('-l, --labels', 'Inserts labels in the final HTML', false)
+.action(async (path: string, options: {name: string, author: string, if: boolean, watch: boolean, labels: boolean}) => {
   const compilerOptions: CompilerOptions = {
     folderPath: path,
     fileName: options.name.replace(/.mjml/, ''),
@@ -341,6 +342,7 @@ program
     taskCode: options.author,
     insertIF: options.if,
     watch: options.watch,
+    insertLabels: options.labels,
   }
 
   if (options.watch) {
@@ -392,9 +394,9 @@ program
     return;
   }
 
+  const [result, error, pathToHTML] = await compileHTML(compilerOptions);
   process.stdout.write('\n');
   const spinner = ora(`${chalk.yellow('Compiling HTML...')}`).start();
-  const [result, error, pathToHTML] = await compileHTML(compilerOptions);
   await delay(500);
 
   if (result === 'error') {
