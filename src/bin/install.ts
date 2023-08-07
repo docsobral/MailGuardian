@@ -10,42 +10,48 @@ import { enquire, EnquireMessages, EnquireNames, EnquireTypes } from "../api/enq
 console.log('\nInstalling MailGuardian...');
 
 if (!existsSync(resolve(__dirname, 'config'))) {
-    console.log(`${chalk.blue('Creating save files...\n')}`);
-    mkdirSync(__dirname + 'config');
+  console.log(`${chalk.blue('Creating save files...\n')}`);
+  mkdirSync(__dirname + 'config');
 
-    await writeFile(__dirname + 'config\\paths.json', JSON.stringify({}, null, 2));
+  await writeFile(__dirname + 'config\\paths.json', JSON.stringify({}, null, 2));
 
-    const initialState: AppState = {logged: [false, false]};
+  const initialState: AppState = {logged: [false, false]};
 
-    await writeFile(__dirname + 'config\\state.json', JSON.stringify(initialState, null, 2));
+  await writeFile(__dirname + 'config\\state.json', JSON.stringify(initialState, null, 2));
 
-    const answers = await enquire([
-        {
-        type: EnquireTypes.input,
-        name: EnquireNames.supabaseSecret,
-        message: EnquireMessages.supabaseSecret
-        },
+  const answers = await enquire([
+    {
+      type: EnquireTypes.input,
+      name: EnquireNames.supabaseSecret,
+      message: EnquireMessages.supabaseSecret
+    },
 
-        {
-        type: EnquireTypes.input,
-        name: EnquireNames.supabaseURL,
-        message: EnquireMessages.supabaseURL
-        },
+    {
+      type: EnquireTypes.input,
+      name: EnquireNames.supabaseURL,
+      message: EnquireMessages.supabaseURL
+    },
 
-        {
-        type: EnquireTypes.input,
-        name: EnquireNames.secretKey,
-        message: EnquireMessages.secretKey
-        }
-    ]);
-
-    const appConfigs = {
-        'SUPA_SECRET': answers.supabaseSecret,
-        'SUPA_URL': answers.supabaseURL,
-        'SECRET_KEY': answers.secretKey,
+    {
+      type: EnquireTypes.input,
+      name: EnquireNames.secretKey,
+      message: EnquireMessages.secretKey
     }
+  ]);
 
-    await writeFile(__dirname + 'config\\config.json', JSON.stringify(appConfigs, null, 2));
-    console.log(`${chalk.yellow('Finished creating config files and terminating process. Now run \'mailer login <email> <passoword>\'.')}`);
-    process.exit(0);
+  const appConfigs = {
+    'SUPA_SECRET': answers.supabaseSecret,
+    'SUPA_URL': answers.supabaseURL,
+    'SECRET_KEY': answers.secretKey,
+  }
+
+  await writeFile(__dirname + 'config\\config.json', JSON.stringify(appConfigs, null, 2));
+  console.log(`${chalk.yellow('Finished creating config files and terminating process. Now run \'mailer login <email> <passoword>\'.')}`);
+  process.exit(0);
 };
+
+if (!existsSync(resolve(__dirname, 'node_modules/win-select-folder/dist/select-folder.d.ts'))) {
+  const thing = 'export = selectFolder;\n\ntype FolderSelectOptions = {\n  root: string;\n  description: string;\n  newFolder: number;\n}\n\ndeclare function selectFolder(e: FolderSelectOptions, o?: any): Promise<string>;';
+
+  await writeFile(resolve(__dirname, 'node_modules/win-select-folder/dist/select-folder.d.ts'), thing, { encoding: 'utf8' });
+}

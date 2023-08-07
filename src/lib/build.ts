@@ -2,7 +2,6 @@ import chalk from 'chalk';
 import mjml2html from 'mjml';
 import { resolve } from 'node:path';
 import { writeFileSync } from 'node:fs';
-// @ts-ignore
 import selectFolder from 'win-select-folder';
 import { __dirname, getFile } from '../api/filesystem.js';
 import beautify, { HTMLBeautifyOptions } from 'js-beautify';

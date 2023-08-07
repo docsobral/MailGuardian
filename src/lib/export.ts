@@ -2,7 +2,6 @@ import ora from 'ora';
 import chalk from 'chalk';
 import Watch from 'node-watch';
 import { readdir } from 'node:fs/promises';
-// @ts-ignore
 import selectFolder from 'win-select-folder';
 import { __dirname } from '../api/filesystem.js';
 import { getFile, getImage } from '../api/filesystem.js';
