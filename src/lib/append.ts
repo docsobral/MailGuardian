@@ -17,7 +17,7 @@ export async function getSections(fullComponent: string): Promise<(string | unde
   const media480 = /(?<=@media *\(max-width: *480px\) *{\n)([\s\S]*?})(?=\n *}[\s\S]*<\/mj-style>)/.exec(fullComponent);
   const media280 = /(?<=@media *\(max-width: *280px\) *{\n)([\s\S]*?})(?=\n *}[\s\S]*<\/mj-style>)/.exec(fullComponent);
   const regularStyles = /(?<=<mj-style>\n)([\s\S]*)(?=\n\s*\n\s{6}@media[\w\s]*\(max-width: 4)/.exec(fullComponent);
-  const body = /(?<=<mj-body.*?>\n)([\s\S]*?)(?=\n.*<\/mj-body>)/.exec(fullComponent);
+  const body = /(?<=<mj-body[\s\S]*?>\n)([\s\S]*?)(?=\n.*<\/mj-body>)/.exec(fullComponent);
 
   return [
     media480 ? media480.shift() : '',
