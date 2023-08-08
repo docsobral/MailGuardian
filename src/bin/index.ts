@@ -359,7 +359,7 @@ program
 
       const time = new Date();
       const hours = `${time.getHours()}:${time.getMinutes()}:${time.getSeconds()}`;
-      spinner.text += chalk.blueBright(`\n  Change detected in ${fileName} at ${hours}`);
+      spinner.suffixText = chalk.blueBright(`\n  Change detected at ${hours}`);
       const [result, error] = await compileHTML(compilerOptions);
 
       if (result === 'error') {
@@ -389,7 +389,8 @@ program
     watcher.emit('start');
 
     process.on('SIGINT', () => {
-      spinner.succeed(spinner.text + chalk.red('\n  Stopping the watcher...'));
+      spinner.suffixText = spinner.suffixText + chalk.red('\n  Stopping the watcher...')
+      spinner.succeed();
       watcher.removeAllListeners();
       process.exit(0);
     });
