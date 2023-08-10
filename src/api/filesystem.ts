@@ -1,5 +1,5 @@
 import { readFile, mkdir, writeFile, readdir, unlink, rm } from 'node:fs/promises';
-import { AuthSessionMissingError, Session } from '@supabase/supabase-js';
+// import { AuthSessionMissingError, Session } from '@supabase/supabase-js';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve, basename } from 'path';
 import { exec } from 'child_process';
@@ -194,21 +194,21 @@ export function getVersion(): string {
   return `Current version is v${JSON.parse(readFileSync(resolve(__dirname, 'package.json'), { encoding: 'utf8' })).version}`;
 }
 
-export function saveSession(session: Session): void {
-  const info = JSON.stringify(session, null, 2);
-  writeFileSync(resolve(__dirname, 'config/session.json'), info);
-}
+// export function saveSession(session: Session): void {
+//   const info = JSON.stringify(session, null, 2);
+//   writeFileSync(resolve(__dirname, 'config/session.json'), info);
+// }
 
-function isSession(session: Session): session is Session {
-  return session.refresh_token && session.access_token ? true : false;
-}
+// function isSession(session: Session): session is Session {
+//   return session.refresh_token && session.access_token ? true : false;
+// }
 
-export function getSession(): Session {
-  const session: any = JSON.parse(readFileSync(resolve(__dirname, 'config/session.json'), { encoding: 'utf8' }));
+// export function getSession(): Session {
+//   const session: any = JSON.parse(readFileSync(resolve(__dirname, 'config/session.json'), { encoding: 'utf8' }));
 
-  if (!(isSession(session))) {
-    throw new AuthSessionMissingError();
-  }
+//   if (!(isSession(session))) {
+//     throw new AuthSessionMissingError();
+//   }
 
-  return session;
-}
+//   return session;
+// }

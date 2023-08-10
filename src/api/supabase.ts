@@ -2,11 +2,21 @@ import ora from 'ora';
 import chalk from 'chalk';
 import { readFileSync } from 'node:fs';
 import { BucketError } from '../lib/error.js';
-import { Broadcaster } from './broadcaster.js';
-import { __dirname, getSession } from './filesystem.js';
-import { Database, Tables } from '../types/database.types.js';
+// import { Broadcaster } from './broadcaster.js';
+import {
+  __dirname,
+  // getSession
+} from './filesystem.js';
+import {
+  Database,
+  Tables
+} from '../types/database.types.js';
 import { FileObject, StorageError } from '@supabase/storage-js';
-import { createClient, isAuthError, Session } from '@supabase/supabase-js';
+import {
+  createClient,
+  // isAuthError,
+  // Session
+} from '@supabase/supabase-js';
 
 type Config = {
   [config: string]: string;
@@ -142,166 +152,166 @@ export async function manageBucket(name: string, type: 'create' | 'delete'): Pro
   spinner.succeed(`${chalk.yellow(`${capitalizeFirstLetter(type)}d template named ${name}.`)}`);
 }
 
-export async function newUser(email: string, password: string): Promise<Session> {
-  const { data, error } = await supabase.auth.signUp({ email, password });
+// export async function newUser(email: string, password: string): Promise<Session> {
+//   const { data, error } = await supabase.auth.signUp({ email, password });
 
-  if (isAuthError(error)) {
-    throw error;
-  }
+//   if (isAuthError(error)) {
+//     throw error;
+//   }
 
-  return data.session as Session;
-}
+//   return data.session as Session;
+// }
 
-export async function refreshSession(session: Session): Promise<[Session, boolean]> {
-  const { data, error } = await supabase.auth.setSession(session);
+// export async function refreshSession(session: Session): Promise<[Session, boolean]> {
+//   const { data, error } = await supabase.auth.setSession(session);
 
-  if (isAuthError(error)) {
-    throw error;
-  }
+//   if (isAuthError(error)) {
+//     throw error;
+//   }
 
-  let refreshed: boolean = false;
+//   let refreshed: boolean = false;
 
-  if (data.session?.refresh_token !== session.refresh_token) {
-    refreshed = true;
-  }
+//   if (data.session?.refresh_token !== session.refresh_token) {
+//     refreshed = true;
+//   }
 
-  return [data.session as Session, refreshed];
-}
+//   return [data.session as Session, refreshed];
+// }
 
-export async function logIn(email: string, password: string): Promise<Session> {
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+// export async function logIn(email: string, password: string): Promise<Session> {
+//   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
-  if (isAuthError(error)) {
-    throw error;
-  }
+//   if (isAuthError(error)) {
+//     throw error;
+//   }
 
-  return data.session as Session;
-}
+//   return data.session as Session;
+// }
 
-export async function newBucket(name: string): Promise<void> {
-  if (!name) {
-    throw new BucketError(chalk.red('Set a name for the bucket!'));
-  }
+// export async function newBucket(name: string): Promise<void> {
+//   if (!name) {
+//     throw new BucketError(chalk.red('Set a name for the bucket!'));
+//   }
 
-  if (await checkBucket(name)) {
-    throw new BucketError(chalk.red('This bucket already exists.'));
-  }
+//   if (await checkBucket(name)) {
+//     throw new BucketError(chalk.red('This bucket already exists.'));
+//   }
 
-  const uuid = getSession().user.id;
+//   const uuid = getSession().user.id;
 
-  const { error } = await supabase.from('buckets').insert({
-    name,
-    created_by: uuid,
-  });
+//   const { error } = await supabase.from('buckets').insert({
+//     name,
+//     created_by: uuid,
+//   });
 
-  if (error) {
-    throw error;
-  }
-}
+//   if (error) {
+//     throw error;
+//   }
+// }
 
-export async function eraseBucket(name: string): Promise<void> {
-  if (!(await checkBucket(name))) {
-    throw new BucketError(chalk.red('This bucket doesn\'t exist.'));
-  }
+// export async function eraseBucket(name: string): Promise<void> {
+//   if (!(await checkBucket(name))) {
+//     throw new BucketError(chalk.red('This bucket doesn\'t exist.'));
+//   }
 
-  const { error } = await supabase.from('buckets').delete().eq('name', name);
+//   const { error } = await supabase.from('buckets').delete().eq('name', name);
 
-  if (error) {
-    throw error;
-  }
-}
+//   if (error) {
+//     throw error;
+//   }
+// }
 
-export async function listAllBuckets(): Promise<string[]> {
-  let result: string[] = [];
+// export async function listAllBuckets(): Promise<string[]> {
+//   let result: string[] = [];
 
-  const { data, error } = await supabase.from('buckets').select('name');
+//   const { data, error } = await supabase.from('buckets').select('name');
 
-  if (error) {
-    throw error;
-  }
+//   if (error) {
+//     throw error;
+//   }
 
-  for (const bucket of data) {
-    result.push(bucket.name);
-  }
+//   for (const bucket of data) {
+//     result.push(bucket.name);
+//   }
 
-  return result;
-}
+//   return result;
+// }
 
-export async function checkBucket(name: string): Promise<boolean> {
-  const buckets = await listAllBuckets();
+// export async function checkBucket(name: string): Promise<boolean> {
+//   const buckets = await listAllBuckets();
 
-  if (buckets.includes(name)) {
-    return true;
-  }
+//   if (buckets.includes(name)) {
+//     return true;
+//   }
 
-  return false;
-}
+//   return false;
+// }
 
 type Bucket = Partial<Tables<'buckets'>>;
 
-export async function getBucket(name: string): Promise<Bucket> {
-  if (!(await checkBucket(name))) {
-    throw new BucketError(chalk.red(`This bucket doesn't exist.`));
-  }
+// export async function getBucket(name: string): Promise<Bucket> {
+//   if (!(await checkBucket(name))) {
+//     throw new BucketError(chalk.red(`This bucket doesn't exist.`));
+//   }
 
-  const { data, error } = await supabase.from('buckets').select().eq('name', name);
+//   const { data, error } = await supabase.from('buckets').select().eq('name', name);
 
-  if (error) {
-    throw error;
-  }
+//   if (error) {
+//     throw error;
+//   }
 
-  const bucket = data[0];
-  return bucket;
-}
+//   const bucket = data[0];
+//   return bucket;
+// }
 
-export async function updateBucket(name: string, updates: Partial<Bucket>): Promise<void> {
-  if (!(await checkBucket(name))) {
-    throw new BucketError(chalk.red(`This bucket doesn't exist.`));
-  }
+// export async function updateBucket(name: string, updates: Partial<Bucket>): Promise<void> {
+//   if (!(await checkBucket(name))) {
+//     throw new BucketError(chalk.red(`This bucket doesn't exist.`));
+//   }
 
-  const { data: timestamp, error: functionError } = await supabase.rpc('get_timestamptz');
+//   const { data: timestamp, error: functionError } = await supabase.rpc('get_timestamptz');
 
-  if (functionError) {
-    throw functionError;
-  }
+//   if (functionError) {
+//     throw functionError;
+//   }
 
-  updates.updated_at = timestamp;
-  updates.updated_by = getSession().user.id;
+//   updates.updated_at = timestamp;
+//   updates.updated_by = getSession().user.id;
 
-  const { error: updateError } = await supabase.from('buckets').update(updates).eq('name', name);
+//   const { error: updateError } = await supabase.from('buckets').update(updates).eq('name', name);
 
-  if (updateError) {
-    throw updateError;
-  }
-}
+//   if (updateError) {
+//     throw updateError;
+//   }
+// }
 
-type DBBucketManagerOptions = {
-  create: boolean,
-  delete: boolean,
-  list: boolean
-};
+// type DBBucketManagerOptions = {
+//   create: boolean,
+//   delete: boolean,
+//   list: boolean
+// };
 
-export async function manageDBBucket(name: string, options: DBBucketManagerOptions, broadcaster: Broadcaster): Promise<string[] | void> {
-  type Manager = typeof newBucket | typeof eraseBucket | typeof listAllBuckets;
+// export async function manageDBBucket(name: string, options: DBBucketManagerOptions, broadcaster: Broadcaster): Promise<string[] | void> {
+//   type Manager = typeof newBucket | typeof eraseBucket | typeof listAllBuckets;
 
-  let manager: Manager;
+//   let manager: Manager;
 
-  if (options.create) {
-    broadcaster.start(chalk.yellow(`Creating bucket named ${name}...`));
-    manager = newBucket;
-  }
+//   if (options.create) {
+//     broadcaster.start(chalk.yellow(`Creating bucket named ${name}...`));
+//     manager = newBucket;
+//   }
 
-  else if (options.delete) {
-    broadcaster.start(chalk.yellow(`Deleting bucket named ${name}...`));
-    manager = eraseBucket;
-  }
+//   else if (options.delete) {
+//     broadcaster.start(chalk.yellow(`Deleting bucket named ${name}...`));
+//     manager = eraseBucket;
+//   }
 
-  else {
-    broadcaster.start(chalk.yellow(`Fetching list of buckets...`));
-    manager = listAllBuckets;
-  }
+//   else {
+//     broadcaster.start(chalk.yellow(`Fetching list of buckets...`));
+//     manager = listAllBuckets;
+//   }
 
-  const result = await manager(name);
+//   const result = await manager(name);
 
-  return result;
-}
+//   return result;
+// }
