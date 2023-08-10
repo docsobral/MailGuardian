@@ -191,4 +191,8 @@ export class Broadcaster {
   error(text: string) {
     throw new Error(chalk.red(text));
   }
+
+  solve(text: string) {
+    this._process.stdout.write(chalk.blue(text) + '\n');
+  }
 }
