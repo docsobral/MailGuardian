@@ -91,8 +91,18 @@ async function insertLabels(html: string): Promise<string> {
       ]);
 
       const labelTag = `<b style="display:none;color:#ffffff;">${label}</b>`;
-      const finder = value[0];
+      let finder: string | RegExp = value[0];
+
+      if ((finder as string).includes('unsubscribe')) {
+        finder = new RegExp(finder + '(?!_product_link)');
+      }
+
+      console.log(finder)
+
       const replacer = labelTag + next.value[0];
+
+      console.log(replacer)
+
       result = result.replace(finder, replacer);
     }
   }
