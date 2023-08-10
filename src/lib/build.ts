@@ -1,4 +1,3 @@
-import chalk from 'chalk';
 import mjml2html from 'mjml';
 import { resolve } from 'node:path';
 import { writeFileSync } from 'node:fs';
@@ -6,6 +5,7 @@ import selectFolder from 'win-select-folder';
 import { __dirname, getFile } from '../api/filesystem.js';
 import beautify, { HTMLBeautifyOptions } from 'js-beautify';
 import { EnquireMessages, EnquireNames, EnquireTypes, enquire } from '../api/enquire.js';
+import { broadcaster } from '../bin/index.js';
 
 const { html_beautify } = beautify;
 
@@ -72,7 +72,7 @@ async function insertLabels(html: string): Promise<string> {
 
     if (done) break;
 
-    console.log(chalk.blue(`\nFound this anchor: ${chalk.green(value[0].trim())}`));
+    broadcaster.solve(`\nFound this anchor: ${broadcaster.color(value[0].trim(), 'green')}`);
     const { addLabel } = await enquire([
       {
         type: EnquireTypes.confirm,
