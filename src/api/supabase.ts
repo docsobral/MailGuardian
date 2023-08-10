@@ -1,22 +1,10 @@
-import ora from 'ora';
-import chalk from 'chalk';
 import { readFileSync } from 'node:fs';
+import { __dirname } from './filesystem.js';
+import { broadcaster } from '../bin/index.js';
 import { BucketError } from '../lib/error.js';
-// import { Broadcaster } from './broadcaster.js';
-import {
-  __dirname,
-  // getSession
-} from './filesystem.js';
-import {
-  Database,
-  Tables
-} from '../types/database.types.js';
+import { createClient } from '@supabase/supabase-js';
+import { Database, Tables } from '../types/database.types.js';
 import { FileObject, StorageError } from '@supabase/storage-js';
-import {
-  createClient,
-  // isAuthError,
-  // Session
-} from '@supabase/supabase-js';
 
 type Config = {
   [config: string]: string;
@@ -25,7 +13,7 @@ type Config = {
 const config: Config = JSON.parse(readFileSync(__dirname + 'config\\config.json', { encoding: 'utf8' }));
 
 if (typeof config['SUPA_URL'] === 'undefined' || typeof config['SUPA_SECRET'] === 'undefined') {
-  throw new Error(`${chalk.red('Missing API url, key or secret key! Please run \'mailer config\' to set them.')}`);
+  broadcaster.error('Missing API url, key or secret key! Please run \'mailer config\' to set them.');
 }
 
 export type SupabaseStorageResult = {
@@ -140,178 +128,15 @@ export async function manageBucket(name: string, type: 'create' | 'delete'): Pro
     return `${string[0].toUpperCase() + string.slice(1)}`
   }
 
-  process.stdout.write('\n');
-  const spinner = ora(`${chalk.yellow(`Attempting to ${type} template named ${name}`)}`).start();
+  broadcaster.start(`Attempting to ${type} template named ${name}`);
   const { error } = await manager(name);
 
   if (error) {
-    spinner.fail();
+    broadcaster.fail();
     throw new BucketError(`\nFailed to ${type} template named ${name}!\n\n${error.stack?.slice(17)}`);
   }
 
-  spinner.succeed(`${chalk.yellow(`${capitalizeFirstLetter(type)}d template named ${name}.`)}`);
+  broadcaster.succeed(`${capitalizeFirstLetter(type)}d template named ${name}.`);
 }
 
-// export async function newUser(email: string, password: string): Promise<Session> {
-//   const { data, error } = await supabase.auth.signUp({ email, password });
-
-//   if (isAuthError(error)) {
-//     throw error;
-//   }
-
-//   return data.session as Session;
-// }
-
-// export async function refreshSession(session: Session): Promise<[Session, boolean]> {
-//   const { data, error } = await supabase.auth.setSession(session);
-
-//   if (isAuthError(error)) {
-//     throw error;
-//   }
-
-//   let refreshed: boolean = false;
-
-//   if (data.session?.refresh_token !== session.refresh_token) {
-//     refreshed = true;
-//   }
-
-//   return [data.session as Session, refreshed];
-// }
-
-// export async function logIn(email: string, password: string): Promise<Session> {
-//   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-
-//   if (isAuthError(error)) {
-//     throw error;
-//   }
-
-//   return data.session as Session;
-// }
-
-// export async function newBucket(name: string): Promise<void> {
-//   if (!name) {
-//     throw new BucketError(chalk.red('Set a name for the bucket!'));
-//   }
-
-//   if (await checkBucket(name)) {
-//     throw new BucketError(chalk.red('This bucket already exists.'));
-//   }
-
-//   const uuid = getSession().user.id;
-
-//   const { error } = await supabase.from('buckets').insert({
-//     name,
-//     created_by: uuid,
-//   });
-
-//   if (error) {
-//     throw error;
-//   }
-// }
-
-// export async function eraseBucket(name: string): Promise<void> {
-//   if (!(await checkBucket(name))) {
-//     throw new BucketError(chalk.red('This bucket doesn\'t exist.'));
-//   }
-
-//   const { error } = await supabase.from('buckets').delete().eq('name', name);
-
-//   if (error) {
-//     throw error;
-//   }
-// }
-
-// export async function listAllBuckets(): Promise<string[]> {
-//   let result: string[] = [];
-
-//   const { data, error } = await supabase.from('buckets').select('name');
-
-//   if (error) {
-//     throw error;
-//   }
-
-//   for (const bucket of data) {
-//     result.push(bucket.name);
-//   }
-
-//   return result;
-// }
-
-// export async function checkBucket(name: string): Promise<boolean> {
-//   const buckets = await listAllBuckets();
-
-//   if (buckets.includes(name)) {
-//     return true;
-//   }
-
-//   return false;
-// }
-
 type Bucket = Partial<Tables<'buckets'>>;
-
-// export async function getBucket(name: string): Promise<Bucket> {
-//   if (!(await checkBucket(name))) {
-//     throw new BucketError(chalk.red(`This bucket doesn't exist.`));
-//   }
-
-//   const { data, error } = await supabase.from('buckets').select().eq('name', name);
-
-//   if (error) {
-//     throw error;
-//   }
-
-//   const bucket = data[0];
-//   return bucket;
-// }
-
-// export async function updateBucket(name: string, updates: Partial<Bucket>): Promise<void> {
-//   if (!(await checkBucket(name))) {
-//     throw new BucketError(chalk.red(`This bucket doesn't exist.`));
-//   }
-
-//   const { data: timestamp, error: functionError } = await supabase.rpc('get_timestamptz');
-
-//   if (functionError) {
-//     throw functionError;
-//   }
-
-//   updates.updated_at = timestamp;
-//   updates.updated_by = getSession().user.id;
-
-//   const { error: updateError } = await supabase.from('buckets').update(updates).eq('name', name);
-
-//   if (updateError) {
-//     throw updateError;
-//   }
-// }
-
-// type DBBucketManagerOptions = {
-//   create: boolean,
-//   delete: boolean,
-//   list: boolean
-// };
-
-// export async function manageDBBucket(name: string, options: DBBucketManagerOptions, broadcaster: Broadcaster): Promise<string[] | void> {
-//   type Manager = typeof newBucket | typeof eraseBucket | typeof listAllBuckets;
-
-//   let manager: Manager;
-
-//   if (options.create) {
-//     broadcaster.start(chalk.yellow(`Creating bucket named ${name}...`));
-//     manager = newBucket;
-//   }
-
-//   else if (options.delete) {
-//     broadcaster.start(chalk.yellow(`Deleting bucket named ${name}...`));
-//     manager = eraseBucket;
-//   }
-
-//   else {
-//     broadcaster.start(chalk.yellow(`Fetching list of buckets...`));
-//     manager = listAllBuckets;
-//   }
-
-//   const result = await manager(name);
-
-//   return result;
-// }
