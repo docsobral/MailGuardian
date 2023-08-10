@@ -121,7 +121,7 @@ program
     const check = await isLoggedIn();
 
     if (check) {
-      console.log(`${chalk.yellow('\nYou already have saved credentials... do you want to switch accounts?')}`);
+      broadcaster.inform('\nYou already have saved credentials... do you want to switch accounts?');
 
       const { confirm } = await enquire([
         {
@@ -132,33 +132,31 @@ program
       ]);
 
       if (confirm) {
-        process.stdout.write('\n');
-        const spinner = ora('Validating credentials...').start();
+        broadcaster.start('Validating credentials...');
 
         if (!(await login(id, password))) {
-          spinner.fail();
+          broadcaster.fail();
           throw new Error('Failed to login!');
         }
 
-        spinner.succeed(`${chalk.green('Success! Your credentials were saved.')}`);
+        broadcaster.succeed('Success! Your credentials were saved.');
       }
 
       else {
-        console.log(`${chalk.blueBright('Ok, exiting...')}`);
+        broadcaster.calm('Ok, exiting...');
         process.exit();
       }
     }
 
     else {
-      process.stdout.write('\n');
-      const spinner = ora('Validating credentials...').start();
+      broadcaster.start('Validating credentials...');
 
       if (await login(id, password)) {
-        spinner.fail();
+        broadcaster.fail();
         throw new Error('Something went wrong... try again!');
       }
 
-      spinner.succeed(`${chalk.blueBright('Success! Your credentials were saved.')}`);
+      broadcaster.succeed('Success! Your credentials were saved.');
     }
   }
 
