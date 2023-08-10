@@ -1,5 +1,5 @@
-import chalk from 'chalk';
 import mjml2html from 'mjml';
+import { broadcaster } from '../bin/index.js';
 import { __dirname } from '../api/filesystem.js';
 import { downloadFile } from '../api/supabase.js';
 import beautify, { HTMLBeautifyOptions } from 'js-beautify';
@@ -51,7 +51,7 @@ export async function downloadMJML(projectName: string, marketo: boolean = false
   }
 
   catch (error) {
-    console.error(`${chalk.red(error)}`);
+    broadcaster.error(error as string);
     process.exit(1);
   }
 }
