@@ -83,4 +83,12 @@ export class Broadcaster {
   warn(text: string) {
     this._process.stdout.write(chalk.red(text) + '\n');
   }
+
+  inform(text: string) {
+    this._process.stdout.write(chalk.yellow(text) + '\n');
+  }
+
+  calm(text: string) {
+    this._process.stdout.write(chalk.blueBright(text) + '\n');
+  }
 }
