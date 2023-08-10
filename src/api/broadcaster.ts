@@ -24,6 +24,27 @@ export class Broadcaster {
     throw new Error('Start the spinner first...');
   }
 
+  color(text: string, color: 'yellow' | 'blue' | 'green' | 'red'){
+    let colorer;
+
+    switch (color) {
+      case 'red':
+        colorer = chalk.red;
+        break;
+      case 'yellow':
+        colorer = chalk.yellow;
+        break;
+      case 'blue':
+        colorer = chalk.blue;
+        break;
+      case 'green':
+        colorer = chalk.green;
+        break;
+    }
+
+    return colorer(text);
+  }
+
   appendSuffix(text: string, color: 'yellow' | 'blue' | 'green' | 'red') {
     if (this._spinner) {
       let colorer;
