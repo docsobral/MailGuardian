@@ -59,7 +59,7 @@ export class Broadcaster {
   succeed(text?: string) {
     if (this._spinner) {
       if (text) {
-        const yellowText = chalk.green(text);
+        const yellowText = chalk.yellow(text);
         this._spinner.succeed(yellowText);
       } else {
         this._spinner.succeed();
@@ -80,6 +80,35 @@ export class Broadcaster {
     this._process.stdout.write(text);
   }
 
+  logSeries(array: [string, 'yellow' | 'blue' | 'green' | 'red'][]) {
+    let string: string = '';
+    let colorer;
+
+    array.forEach(part => {
+      const text = part[0];
+      const color = part[1];
+
+      switch (color) {
+        case 'red':
+          colorer = chalk.red;
+          break;
+        case 'yellow':
+          colorer = chalk.yellow;
+          break;
+        case 'blue':
+          colorer = chalk.blue;
+          break;
+        case 'green':
+          colorer = chalk.green;
+          break;
+      }
+
+      string += colorer(text);
+    });
+
+    this._process.stdout.write(string + '\n');
+  }
+
   warn(text: string) {
     this._process.stdout.write(chalk.red(text) + '\n');
   }
@@ -90,5 +119,9 @@ export class Broadcaster {
 
   calm(text: string) {
     this._process.stdout.write(chalk.blueBright(text) + '\n');
+  }
+
+  error(text: string) {
+    throw new Error(chalk.red(text));
   }
 }
