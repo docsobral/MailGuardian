@@ -1,5 +1,3 @@
-import ora from 'ora';
-import chalk from 'chalk';
 import PDFDocument from 'pdfkit';
 import { resolve } from 'node:path';
 import { spawn } from 'child_process';
@@ -7,6 +5,7 @@ import { spawn } from 'child_process';
 import mailcomposer from 'mailcomposer';
 import { createWriteStream } from 'node:fs';
 import { __dirname, saveFile } from './filesystem.js';
+import { broadcaster } from '../bin/index.js';
 
 async function copyEmail(path: string): Promise<void> {
   return new Promise<void>((resolve, reject) => {
@@ -31,8 +30,7 @@ async function testEmail(): Promise<void> {
     let score: number;
     let logBuffer: Buffer = Buffer.from('');
 
-    process.stdout.write('\n');
-    const spinner = ora(`${chalk.yellow(`Testing email...`)}`).start();
+    broadcaster.start(`Testing email...`);
 
     sa.stdout.on('data', data => {
       const match = /X-Spam-Status:\s[\w]{2,3},\sscore=([-\d.]+)/.exec(data.toString());
@@ -49,11 +47,11 @@ async function testEmail(): Promise<void> {
 
     sa.on('close', code => {
       if (code !== 0) {
-        reject(spinner.fail(`SpamAssassin exited with code ${code}`));
+        reject(broadcaster.fail(`SpamAssassin exited with code ${code}`));
       } else if (score === null) {
-        reject(spinner.fail('Could not determine spam score'));
+        reject(broadcaster.fail('Could not determine spam score'));
       } else {
-        spinner.succeed(`${chalk.yellow('Score:')}${chalk.green(` ${score}`)}`);
+        broadcaster.succeed(`${broadcaster.color('Score:', 'yellow')}${broadcaster.color(` ${score}`, 'green')}`);
       }
 
       saveFile(__dirname + 'temp', 'log.txt', logBuffer)
@@ -65,21 +63,20 @@ async function testEmail(): Promise<void> {
 
 async function startContainer(): Promise<void> {
   return new Promise<void>((resolve, reject) => {
-    process.stdout.write('\n');
-    const spinner = ora(`${chalk.yellow('Starting container...')}`).start();
+    broadcaster.start('Starting container...');
     const child = spawn('sh', ['./sa/start.sh']);
 
     child.on('error', (error) => {
-      spinner.fail(error.message);
+      broadcaster.fail(error.message);
       throw new Error(error.message);
     });
 
     child.on('close', (code) => {
       if (code === 0) {
-        spinner.succeed(`${chalk.yellow('Started container')}`);
+        broadcaster.succeed('Started container');
         resolve();
       } else {
-        spinner.fail(`${chalk.red(`Script exited with code ${code}`)}`);
+        broadcaster.fail(`Script exited with code ${code}`);
         reject(`Script exited with code ${code}`);
       }
     });
@@ -88,21 +85,20 @@ async function startContainer(): Promise<void> {
 
 async function stopContainer(): Promise<void> {
   return new Promise<void>((resolve, reject) => {
-    process.stdout.write('\n');
-    const spinner = ora(`${chalk.yellow('Stopping container...')}`).start();
+    broadcaster.start('Stopping container...');
     const child = spawn('sh', ['./sa/stop.sh']);
 
     child.on('error', (error) => {
-      spinner.fail(error.message);
+      broadcaster.fail(error.message);
       reject(error.message);
     });
 
     child.on('close', (code) => {
       if (code === 0) {
-        spinner.succeed(`${chalk.yellow('Stopped container')}`);
+        broadcaster.succeed('Stopped container');
         resolve();
       } else {
-        spinner.fail(`${chalk.red(`Script exited with code ${code}`)}`);
+        broadcaster.fail(`Script exited with code ${code}`);
         reject(`Script exited with code ${code}`);
       }
     });
@@ -111,29 +107,28 @@ async function stopContainer(): Promise<void> {
 
 async function trainSpamAssassin(): Promise<void> {
   return new Promise<void>((resolve, reject) => {
-    process.stdout.write('\n');
-    const spinner = ora(`${chalk.yellow('Training...\n')}`).start();
+    broadcaster.start('Training...\n');
     const child = spawn('sh', ['./sa/train.sh']);
 
     child.on('error', (error: Error) => {
-      spinner.fail(error.message);
+      broadcaster.fail(error.message);
       reject(error.message);
     });
 
     child.stderr.on('data', (data: string) => {
-      spinner.text = `${spinner.text}${data}`;
+      broadcaster.text = `${broadcaster.text}${data}`;
     });
 
     child.stdout.on('data', (data: string) => {
-      spinner.text = `${spinner.text}${data}`;
+      broadcaster.text = `${broadcaster.text}${data}`;
     })
 
     child.on('close', (code) => {
       if (code === 0) {
-        spinner.succeed(`${chalk.yellow('Done training')}\n${spinner.text.slice(32)}`);
+        broadcaster.succeed(`'Done training'\n${broadcaster.text.slice(32)}`);
         resolve();
       } else {
-        spinner.fail(`Script exited with code ${code}`);
+        broadcaster.fail(`Script exited with code ${code}`);
         reject(`Script exited with code ${code}`);
       }
     });
@@ -182,10 +177,10 @@ export async function buildImage(): Promise<void> {
 
     dockerBuild.on('exit', (code) => {
       if (code !== 0) {
-        console.error(`${chalk.red(`Docker build process exited with code ${code}`)}`);
+        broadcaster.error(`Docker build process exited with code ${code}`);
         reject();
       } else {
-        console.log(`${chalk.green('Docker build process completed successfully!')}`);
+        broadcaster.log(broadcaster.color('Docker build process completed successfully!', 'green'));
         resolve();
       }
     });
