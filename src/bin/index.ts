@@ -14,8 +14,6 @@ process.emitWarning = (warning, ...args) => {
   return emitWarning(warning, ...args);
 }
 
-import ora from 'ora';
-import chalk from 'chalk';
 import { program } from 'commander';
 import { resolve } from 'node:path';
 import { watchFile } from 'node:fs';
@@ -151,7 +149,7 @@ program
   }
 
   catch (error) {
-    console.error(`${chalk.red(error)}`);
+    broadcaster.error(error as string);
   }
 });
 
@@ -235,7 +233,7 @@ program
   }
 
   catch (error) {
-    console.error(`${chalk.red(error)}`);
+    broadcaster.error(error as string);
   }
 });
 
@@ -286,7 +284,7 @@ program
   }
 
   catch (error: any) {
-    console.log(`${chalk.red(error)}`);
+    broadcaster.error(error as string);
   }
 });
 
@@ -491,7 +489,7 @@ program
   }
 
   catch (error) {
-    console.error(`${chalk.red(error)}`);
+    broadcaster.error(error as string);
   }
 });
 
@@ -545,7 +543,7 @@ program
   }
 
   catch (error) {
-    console.error(`${chalk.red(error)}`);
+    broadcaster.error(error as string);
   }
 });
 
@@ -602,20 +600,11 @@ program
 .action(async (name: string) => {
   const supabaseAPI = await import('../api/supabase.js');
 
-  // check if bucket exists
-  try {
-    const bucket = await supabaseAPI.bucketExists(name);
-    if (bucket.error) {
-      broadcaster.error('\nBUCKET ERROR: bucket doesn\'t exist! Use \'mailer bucket -c [name]\' to create one before trying to export a template.');
-    }
+  const bucket = await supabaseAPI.bucketExists(name);
+  if (bucket.error) {
+    broadcaster.error('\nBUCKET ERROR: bucket doesn\'t exist! Use \'mailer bucket -c [name]\' to create one before trying to export a template.');
   }
 
-  catch (error) {
-    broadcaster.error(error as string);
-    process.exit(1);
-  }
-
-  // Create template folders
   await createFolders(name);
 
   broadcaster.start(`Importing files...`);
@@ -697,19 +686,18 @@ program
     }
 
     if (options.pdf) {
-      process.stdout.write('\n');
-      const spinner = ora(`${chalk.yellow('Generating PDF...')}`).start();
+      broadcaster.start('Generating PDF...');
 
       try {
         const log = readFileSync(__dirname + 'temp/log.txt', 'utf-8');
         const analysis = parseSpamAnalysis(log);
         generatePDF(analysis);
-        spinner.succeed(`Generated PDF file at ${chalk.green(resolve(__dirname, 'temp/spam-analysis.pdf'))}`);
+        broadcaster.succeed(`Generated PDF file at ${broadcaster.color(resolve(__dirname, 'temp/spam-analysis.pdf'), 'green')}`);
       }
 
       catch (error) {
-        spinner.fail();
-        console.error(`${chalk.red(error)}`);
+        broadcaster.fail();
+        broadcaster.error(error as string);
       }
     }
   }
@@ -717,11 +705,11 @@ program
   catch (error) {
     if (error instanceof Error) {
       if (error.message.startsWith('ENOENT')) {
-        console.error(`${chalk.red('ERROR: File not found! Try running \'mailer prepare\' first.')}`);
+        broadcaster.error('ERROR: File not found! Check if the file exists in the specified path');
       }
 
       else {
-        console.error(`${chalk.red(error.message)}`);
+        broadcaster.error(error.message);
       }
     }
   }
