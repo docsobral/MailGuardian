@@ -1,9 +1,8 @@
-import ora from 'ora';
-import chalk from 'chalk';
 import { resolve } from 'path';
 import { format } from 'prettier';
 import { getImages } from './export.js';
 import { BucketError } from './error.js';
+import { broadcaster } from '../bin/index.js';
 import { listBuckets } from '../api/supabase.js';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { getFile, __dirname } from '../api/filesystem.js';
@@ -111,25 +110,24 @@ export async function insertSections(
 }
 
 export async function listComponents(): Promise<void> {
-  process.stdout.write('\n');
-  const spinner = ora(`${chalk.yellow('Fetching templates...')}`).start();
+  broadcaster.start('Fetching templates...');
   const { data, error } = await listBuckets();
 
   if (error) {
-    spinner.fail();
+    broadcaster.fail();
     throw new BucketError(`\nFailed to fetch templates!\n\n${error.stack?.slice(17)}`);
   }
 
   if (data.length === 0) {
-    spinner.fail(`${chalk.red('There are no templates in the server. Use \'mailer bucket -c [name]\' to create one.')}`);
+    broadcaster.fail('There are no templates in the server. Use \'mailer template -c [name]\' to create one.');
 
     return;
   }
 
-  spinner.succeed(`${chalk.yellow('Templates:')}`);
+  broadcaster.succeed('Templates:');
   let count = 1;
   for (let index in data) {
-    console.log(`  ${chalk.yellow(`${count}.`)} ${chalk.blue(data[index].name)}`);
+    broadcaster.logSeries([[`  ${count}.`, 'yellow'], [` ${data[index].name}`, 'blue']]);
     count++
   }
 }
@@ -138,8 +136,9 @@ function splitComponents(components: string): string[] {
   return components.split(',').map(component => component.trim());
 }
 
-export async function importComponents(commandParameter: string | boolean, name: string): Promise<void> {
-  if (typeof commandParameter === 'string') {
+export async function importComponents(commandParameter: string, name: string): Promise<void> {
+  try {
+    broadcaster.start('Importing components to new template...');
     const components: string[] = splitComponents(commandParameter);
     let mjml = readFileSync(resolve(__dirname, `templates\\${name}\\index.mjml`), { encoding: 'utf8' });
 
@@ -179,5 +178,10 @@ export async function importComponents(commandParameter: string | boolean, name:
     }
 
     writeFileSync(resolve(__dirname, `templates\\${name}\\index.mjml`), mjml);
+  }
+
+  catch (error) {
+    broadcaster.fail();
+    broadcaster.warn(error as string);
   }
 }
