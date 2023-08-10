@@ -24,6 +24,29 @@ export class Broadcaster {
     throw new Error('Start the spinner first...');
   }
 
+  appendSuffix(text: string, color: 'yellow' | 'blue' | 'green' | 'red') {
+    if (this._spinner) {
+      let colorer;
+
+      switch (color) {
+        case 'red':
+          colorer = chalk.red;
+          break;
+        case 'yellow':
+          colorer = chalk.yellow;
+          break;
+        case 'blue':
+          colorer = chalk.blue;
+          break;
+        case 'green':
+          colorer = chalk.green;
+          break;
+      }
+
+      this._spinner.suffixText += colorer(text);
+    }
+  }
+
   append(text: string, color: 'red' | 'yellow' | 'green' | 'blue', linebreak: boolean = true) {
     if (this._spinner) {
       let colorer;
@@ -47,6 +70,29 @@ export class Broadcaster {
       const toAppend = prefix + text;
 
       this.text += colorer(toAppend);
+    }
+  }
+
+  set(text: string, color: 'red' | 'yellow' | 'green' | 'blue') {
+    if (this._spinner) {
+      let colorer;
+
+      switch (color) {
+        case 'red':
+          colorer = chalk.red;
+          break;
+        case 'yellow':
+          colorer = chalk.yellow;
+          break;
+        case 'blue':
+          colorer = chalk.blue;
+          break;
+        case 'green':
+          colorer = chalk.green;
+          break;
+      }
+
+      this.text = colorer(text);
     }
   }
 
