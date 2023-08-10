@@ -420,23 +420,13 @@ program
   try {
     const supabaseAPI = await import('../api/supabase.js');
 
-    // const session = getSession();
-    // const [newSession, refreshed] = await supabaseAPI.refreshSession(session);
-
-    // if (refreshed) {
-    //   saveSession(newSession);
-    // }
-
-    // Check if bucket exists
     await supabaseAPI.bucketExists(name);
 
     // Prepare temp folder
     await createFolders(name);
     await cleanTemp();
 
-    // fetches mjml file
-    process.stdout.write('\n');
-    const spinner = ora(`${chalk.yellow('Fetching and parsing MJML file from the', name, 'bucket...')}`).start();
+    broadcaster.start(`Fetching and parsing MJML file from the ${name} bucket...`);
     const mjmlBlob = await downloadMJML(name, options.marketo);
 
     if (mjmlBlob) {
@@ -448,7 +438,7 @@ program
       const firstFetch = await supabaseAPI.listImages(name);
 
       if (firstFetch.error) {
-        spinner.fail();
+        broadcaster.fail();
         throw new Error(`Failed to fetch list of image names! ${firstFetch.error.stack?.slice(17)}`);
       }
 
@@ -458,7 +448,7 @@ program
       const secondFetch = await supabaseAPI.imagesUrls(name, imgList);
 
       if (secondFetch.error) {
-        spinner.fail();
+        broadcaster.fail();
         throw new Error(`Failed to get signed URLs! ${secondFetch.error.stack?.slice(17)}`);
       }
 
@@ -487,7 +477,7 @@ program
         const result = await supabaseAPI.deleteFile(`${options.marketo? 'marketo.html' : 'index.html'}`, name);
 
         if (result.error) {
-          spinner.fail();
+          broadcaster.fail();
           throw new Error(`Failed to delete ${options.marketo? 'marketo.html' : 'index.html'} file! ${result.error.stack?.slice(17)}`);
         }
       }
@@ -495,11 +485,11 @@ program
       const results = await supabaseAPI.uploadFile(readFileSync(resolve(__tempdirname, 'parsed.html'), { encoding: 'utf8' }), `${options.marketo? 'marketo.html' : 'index.html'}`, name);
 
       if (results.error) {
-        spinner.fail();
+        broadcaster.fail();
         throw new Error(`Failed to upload HTML file! ${results.error.stack?.slice(17)}`);
       }
 
-      spinner.succeed(`${chalk.green('Successfully parsed MJML and uploaded HTML to server')}`);
+      broadcaster.succeed('Successfully parsed MJML and uploaded HTML to server');
     }
   }
 
