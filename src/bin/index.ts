@@ -49,7 +49,7 @@ import {
 
 import {
   getPath,
-  watch,
+  // watch,
   uploadMJML,
   uploadImages,
   // getMJML,
@@ -105,8 +105,7 @@ import {
 
 import { Broadcaster } from '../api/broadcaster.js';
 
-// @ts-ignore
-const broadcaster = new Broadcaster();
+export const broadcaster = new Broadcaster();
 
 program.version(getVersion());
 
@@ -223,16 +222,15 @@ program
     }
 
     if (options.clean) {
-      process.stdout.write('\n');
-      const spinner = ora(`${chalk.yellow('Cleaning bucket...')}`).start();
+      broadcaster.start('Cleaning bucket...');
       const result = await supabaseAPI.cleanBucket(name);
 
       if (result.error) {
-        spinner.fail(`${chalk.red('Failed to clean bucket!\n')}`);
+        broadcaster.fail('Failed to clean bucket!');
         throw new Error(result.error.stack);
       }
 
-      spinner.succeed(`${chalk.yellow(result.data.message + ' bucket!')}`);
+      broadcaster.succeed(result.data.message + ' bucket!');
     }
 
     const check = existsSync(path);
@@ -243,7 +241,7 @@ program
     save('paths', name, path);
 
     if (options.watch) {
-      await watch(path, name, options.marketo);
+      // await watch(path, name, options.marketo);
     }
 
     else {
