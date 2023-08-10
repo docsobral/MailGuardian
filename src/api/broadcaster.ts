@@ -1,16 +1,12 @@
+import chalk from "chalk";
 import ora, { Ora } from "ora";
 
 export class Broadcaster {
-  _spinner: Ora;
+  _spinner: Ora | undefined;
   _process: typeof process;
 
   constructor() {
-    this._spinner = ora();
     this._process = process;
-  }
-
-  setSpinner(text?: string) {
-    this._spinner = ora(text);
   }
 
   set text(text: string) {
@@ -20,41 +16,71 @@ export class Broadcaster {
     }
   }
 
-  append(text: string) {
+  get text() {
     if (this._spinner) {
-      this._spinner.text += text;
+      return this._spinner.text;
+    }
+
+    throw new Error('Start the spinner first...');
+  }
+
+  append(text: string, color: 'red' | 'yellow' | 'green' | 'blue', linebreak: boolean = true) {
+    if (this._spinner) {
+      let colorer;
+
+      switch (color) {
+        case 'red':
+          colorer = chalk.red;
+          break;
+        case 'yellow':
+          colorer = chalk.yellow;
+          break;
+        case 'blue':
+          colorer = chalk.blue;
+          break;
+        case 'green':
+          colorer = chalk.green;
+          break;
+      }
+
+      const prefix = linebreak ? '\n' : '';
+      const toAppend = prefix + text;
+
+      this.text += colorer(toAppend);
     }
   }
 
-  start(text?: string) {
-    if (this._spinner) {
-      this.logToConsole('\n');
-      this._spinner.start(text);
-      return;
-    }
+  start(text: string) {
+    this.log('\n');
+    const yellowText = chalk.yellow(text);
+    this._spinner = ora(yellowText).start();
   }
 
   succeed(text?: string) {
     if (this._spinner) {
-      this._spinner.succeed(text);
-      this.logToConsole('\n');
+      if (text) {
+        const yellowText = chalk.green(text);
+        this._spinner.succeed(yellowText);
+      } else {
+        this._spinner.succeed();
+      }
       return;
     }
   }
 
   fail(text?: string) {
     if (this._spinner) {
-      this._spinner.fail(text);
-      this.logToConsole('\n');
+      const redText = chalk.red(text);
+      this._spinner.fail(redText);
       return;
     }
   }
 
-  logToConsole(text: string) {
+  log(text: string) {
     this._process.stdout.write(text);
   }
-}
 
-// async function delay(ms: number): Promise<void> {
-//   return new Promise(resolve => setTimeout(resolve, ms));
-// }
+  warn(text: string) {
+    this._process.stdout.write(chalk.red(text) + '\n');
+  }
+}
