@@ -51,7 +51,9 @@ import {
   getPath,
   watch,
   uploadMJML,
-  uploadImages
+  uploadImages,
+  getMJML,
+  getImages
 } from '../lib/export.js';
 
 import {
@@ -88,6 +90,8 @@ import {
   getConfigAndPath,
   getVersion,
   openVS,
+  getSession,
+  saveSession,
 } from '../api/filesystem.js';
 
 import {
@@ -95,7 +99,13 @@ import {
   CompilerOptions,
 } from '../lib/build.js';
 
-import * as supabaseAPI from '../api/supabase.js';
+import {
+  MJML,
+} from '../types/mjml.types.js';
+
+import { Broadcaster } from '../api/broadcaster.js';
+
+const broadcaster = new Broadcaster();
 
 program.version(getVersion());
 
@@ -170,7 +180,16 @@ program
 .action(async (
   name: string, path: string, options: { watch: boolean, newPath: boolean, marketo: boolean, clean: boolean, images: boolean}) => {
   try {
-    let bucket: supabaseAPI.SupabaseStorageResult;
+    const supabaseAPI = await import('../api/supabase.js');
+
+    const session = getSession();
+    const [newSession, refreshed] = await supabaseAPI.refreshSession(session);
+
+    if (refreshed) {
+      saveSession(newSession);
+    }
+
+    let bucket;
 
     bucket = await supabaseAPI.bucketExists(name);
     if (bucket.error) {
@@ -245,6 +264,58 @@ async function delay(ms: number): Promise<void> {
 }
 
 program
+.command('bucket')
+.description('Lists, creates or deletes buckets')
+.argument('[name]', 'Name of the bucket')
+.option('-c, --create', 'creates a bucket', false)
+.option('-d, --delete', 'deletes a bucket', false)
+.option('-l, --list', 'lists buckets', false)
+.action(async (name: string, options: {create: boolean, delete: boolean, list: boolean}) => {
+  try {
+    const supabaseAPI = await import('../api/supabase.js');
+
+    const session = getSession();
+    const [newSession, refreshed] = await supabaseAPI.refreshSession(session);
+    if (refreshed) {
+      saveSession(newSession);
+    }
+
+    const result = await supabaseAPI.manageDBBucket(name, options, broadcaster);
+    await delay(1000);
+
+    broadcaster.succeed();
+
+    if (typeof result !== 'undefined') {
+      async function broadcastList() {
+        process.stdout.write('\n');
+        const spinner = ora(`${chalk.yellow('Fetching templates...')}`).start();
+        const list: string[] = await supabaseAPI.listAllBuckets();
+
+        await delay(1000);
+
+        if (list.length === 0) {
+          spinner.fail(`${chalk.red('There are no buckets in the server. Use \'mailer bucket [name] -c\' to create one.')}`);
+          return;
+        }
+
+        spinner.succeed(`${chalk.yellow('Templates:')}`);
+        let count = 1;
+        for (let index in list) {
+          console.log(`  ${chalk.yellow(`${count}.`)} ${chalk.blue(list[index])}`);
+          count++
+        }
+      }
+
+      await broadcastList();
+    }
+  }
+
+  catch (error) {
+
+  }
+});
+
+program
 .command('template')
 .description('Lists, creates or deletes a template')
 .argument('[name]', 'Name of your template')
@@ -253,6 +324,15 @@ program
 .option('-l, --list', 'lists all templates', false)
 .action(async (name: string, options: {delete: boolean, create: string, list: boolean}) => {
   try {
+    const supabaseAPI = await import('../api/supabase.js');
+
+    const session = getSession();
+    const [newSession, refreshed] = await supabaseAPI.refreshSession(session);
+
+    if (refreshed) {
+      saveSession(newSession);
+    }
+
     if (options.create) {
       if (existsSync(__dirname + `templates\\${name}`)) {
         openVS(name, 'template');
@@ -325,6 +405,30 @@ program
     console.error(`${chalk.red(error)}`);
   }
 });
+
+program
+.command('login')
+.description('Logs in to supabase')
+.argument('<email>', 'User ID')
+.argument('<password>', 'Passowrd')
+.action(async (email: string, password: string) => {
+  try {
+    const supabaseAPI = (await import('../api/supabase.js'));
+
+    broadcaster.start(chalk.yellow('Logging you in...'));
+    const session = await supabaseAPI.logIn(email, password);
+    broadcaster.succeed();
+
+    if (session) {
+      saveSession(session);
+    }
+  }
+
+  catch (error) {
+    broadcaster.fail();
+    throw error;
+  }
+})
 
 program
 .command('build')
@@ -409,6 +513,75 @@ program
   }
 });
 
+program.command('export-template')
+.description('Exports a template to the server')
+.argument('<name>', 'Name of the bucket to where the template should be exported')
+.argument('[path]', 'Path to the folder where the template is located', resolve())
+.option('-n, --name <name>', 'Name of the MJML file (e.g. \'index.mjml\'', 'index')
+.option('-m, --marketo', 'Specifies that the MJML is destined for Marketo', false)
+.action(async (name: string, path: string, options: {name: string, marketo: boolean}) => {
+  try {
+    const supabaseAPI = (await import('../api/supabase.js'));
+    const session = getSession();
+    const [newSession] = await supabaseAPI.refreshSession(session);
+    saveSession(newSession);
+
+    options.name = options.name.replace(/.mjml/, '');
+
+    broadcaster.start(chalk.yellow('Fetching local MJML file...'));
+    await delay(1000);
+
+    const localMJMLOBJ: MJML = {
+      marketo: options.marketo,
+      markup: await getMJML(path, options.marketo),
+    }
+
+    const remoteFiles = await supabaseAPI.getBucket(name);
+
+    const remoteMJML = remoteFiles.mjml;
+    let MJMLObject: any;
+
+    if (typeof remoteMJML === 'string') {
+      MJMLObject = JSON.parse(remoteMJML);
+    } else {
+      MJMLObject = remoteMJML;
+    }
+
+    MJMLObject[options.name] = localMJMLOBJ;
+    const MJMLJSONString = JSON.stringify(MJMLObject, null, 2);
+
+    broadcaster.text = chalk.yellow('Fetching images...')
+    await delay(1000);
+
+    const remoteIMG: any = remoteFiles.img;
+    const images = await getImages(path);
+    let IMGObject: any;
+
+    if (typeof IMGObject === 'string') {
+      IMGObject = JSON.parse(remoteIMG);
+    } else {
+      IMGObject = remoteIMG;
+    }
+
+
+    Object.keys(images).forEach(image => {
+      IMGObject[image] = images[image].toJSON();
+    });
+
+    const IMGJSONString = JSON.stringify(IMGObject, null, 2);
+
+    broadcaster.text = chalk.yellow('Updating remote files...');
+    await delay(1000);
+    await supabaseAPI.updateBucket(name, { mjml: MJMLJSONString, img: IMGJSONString });
+    broadcaster.succeed(chalk.yellow('Finished exporting MJML.'));
+  }
+
+  catch (error) {
+    broadcaster.fail();
+    throw error;
+  }
+});
+
 program
 .command('prepare')
 .description('Parses MJML file into HTML according to provided parameters')
@@ -416,6 +589,15 @@ program
 .option('-m, --marketo', 'parses MJML for Marketo', false)
 .action(async (name: string, options: {marketo: boolean}) => {
   try {
+    const supabaseAPI = await import('../api/supabase.js');
+
+    const session = getSession();
+    const [newSession, refreshed] = await supabaseAPI.refreshSession(session);
+
+    if (refreshed) {
+      saveSession(newSession);
+    }
+
     // Check if bucket exists
     await supabaseAPI.bucketExists(name);
 
@@ -505,6 +687,15 @@ program
 .option('-m, --marketo', 'sends the Marketo compatible HTML', false)
 .action(async (name: string, recipientsString: string, options: { marketo: boolean }) => {
   try {
+    const supabaseAPI = await import('../api/supabase.js');
+
+    const session = getSession();
+    const [newSession, refreshed] = await supabaseAPI.refreshSession(session);
+
+    if (refreshed) {
+      saveSession(newSession);
+    }
+
     const check: boolean = await isLoggedIn();
     if (!check) {
       process.stdout.write('\n');
@@ -603,6 +794,15 @@ program
 .description('Fetch all files from a template bucket (including the .html file')
 .argument('<name>', 'The bucket\'s name')
 .action(async (name: string) => {
+  const supabaseAPI = await import('../api/supabase.js');
+
+  const session = getSession();
+  const [newSession, refreshed] = await supabaseAPI.refreshSession(session);
+
+  if (refreshed) {
+    saveSession(newSession);
+  }
+
   // check if bucket exists
   try {
     const bucket = await supabaseAPI.bucketExists(name);
