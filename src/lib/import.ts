@@ -1,6 +1,6 @@
 import { downloadFile, listImages } from '../api/supabase.js';
 import { StorageError } from '@supabase/storage-js';
-import chalk from 'chalk';
+import { broadcaster } from '../bin/index.js';
 
 export interface BucketFiles {
   images?: [string, Buffer][];
@@ -16,11 +16,9 @@ export async function importBucket(projectName: string, marketo: boolean = false
   let bucketFiles: BucketFiles = {};
   let images: [string, Buffer][] = [];
 
-  // get images
-  // console.log(`${chalk.green('\nDownloading images...')}`);
   const fetch = await listImages(projectName);
   if (fetch.error) {
-    return new StorageError(`${chalk.red('Download of the images failed!')}`);
+    return new StorageError(broadcaster.color('Download of the images failed!', 'red'));
   }
 
   fetch.data.forEach(fileObject => imgList.push(fileObject.name));
@@ -35,8 +33,6 @@ export async function importBucket(projectName: string, marketo: boolean = false
 
   bucketFiles.images = images;
 
-  // get mjml
-  // console.log(`${chalk.green('Downloading MJML...')}`);
   const mjml = await (await downloadFile(projectName, 'mjml')).data?.text();
   const mktomjml = marketo ? await (await downloadFile(projectName, 'mjml', marketo)).data?.text() : undefined;
 
