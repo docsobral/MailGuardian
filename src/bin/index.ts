@@ -19,7 +19,6 @@ import chalk from 'chalk';
 import { program } from 'commander';
 import { resolve } from 'node:path';
 import { watchFile } from 'node:fs';
-import { AuthError } from '@supabase/supabase-js';
 import { isStorageError } from '@supabase/storage-js';
 import { existsSync, writeFileSync, readFileSync } from 'node:fs';
 
@@ -49,7 +48,6 @@ import {
 
 import {
   getPath,
-  // watch,
   uploadMJML,
   uploadImages,
 } from '../lib/export.js';
@@ -434,25 +432,24 @@ program
       let imgList: string[] = [];
       let signedUrlList: string[] = [];
 
-      // get list of images
-      const firstFetch = await supabaseAPI.listImages(name);
+      const imageList = await supabaseAPI.listImages(name);
 
-      if (firstFetch.error) {
+      if (imageList.error) {
         broadcaster.fail();
-        throw new Error(`Failed to fetch list of image names! ${firstFetch.error.stack?.slice(17)}`);
+        broadcaster.error(`Failed to fetch list of image names! ${imageList.error.stack?.slice(17)}`);
       }
 
-      firstFetch.data.forEach(fileObject => imgList.push(fileObject.name));
+      // @ts-ignore
+      imageList.data.forEach(fileObject => imgList.push(fileObject.name));
+      const signedList = await supabaseAPI.imagesUrls(name, imgList);
 
-      // get list of signes urls
-      const secondFetch = await supabaseAPI.imagesUrls(name, imgList);
-
-      if (secondFetch.error) {
+      if (signedList.error) {
         broadcaster.fail();
-        throw new Error(`Failed to get signed URLs! ${secondFetch.error.stack?.slice(17)}`);
+        broadcaster.error(`Failed to get signed URLs! ${signedList.error.stack?.slice(17)}`);
       }
 
-      secondFetch.data.forEach(object => signedUrlList.push(object.signedUrl));
+      // @ts-ignore
+      signedList.data.forEach(object => signedUrlList.push(object.signedUrl));
 
       // MOVE THIS FUNCTION TO A SEPARATE FILE
       // replace local paths for remote paths
@@ -478,7 +475,7 @@ program
 
         if (result.error) {
           broadcaster.fail();
-          throw new Error(`Failed to delete ${options.marketo? 'marketo.html' : 'index.html'} file! ${result.error.stack?.slice(17)}`);
+          broadcaster.error(`Failed to delete ${options.marketo? 'marketo.html' : 'index.html'} file! ${result.error.stack?.slice(17)}`);
         }
       }
 
@@ -486,7 +483,7 @@ program
 
       if (results.error) {
         broadcaster.fail();
-        throw new Error(`Failed to upload HTML file! ${results.error.stack?.slice(17)}`);
+        broadcaster.error(`Failed to upload HTML file! ${results.error.stack?.slice(17)}`);
       }
 
       broadcaster.succeed('Successfully parsed MJML and uploaded HTML to server');
@@ -508,49 +505,40 @@ program
   try {
     const supabaseAPI = await import('../api/supabase.js');
 
-    // const session = getSession();
-    // const [newSession, refreshed] = await supabaseAPI.refreshSession(session);
-
-    // if (refreshed) {
-    //   saveSession(newSession);
-    // }
-
     const check: boolean = await isLoggedIn();
     if (!check) {
-      process.stdout.write('\n');
-      throw new AuthError(`${chalk.red('Please enter valid email credentials with \'mailer save-credentials\' before trying to send an email')}`);
+      broadcaster.error('Please enter valid email credentials with \'mailer save-credentials\' before trying to send an email');
     }
 
     const bucket = await supabaseAPI.bucketExists(name);
     if (bucket.error) {
-      process.stdout.write('\n');
-      throw new BucketError('Bucket doesn\'t exist! Use \'mailer bucket -c <name>\' to create one before trying to export a template.');
+      broadcaster.error('Bucket doesn\'t exist! Use \'mailer template <name> -c\' to create one before trying to export a template.');
     }
 
     const recipientsList = recipientsString.split(/ *, */);
 
     process.stdout.write('\n');
-    const spinner = ora(`${chalk.yellow('Fetching HTML file from the bucket')}`).start();
+    broadcaster.start('Fetching HTML file from the bucket');
 
     const { data, error } = await downloadHTML(name, options.marketo);
     if (error) {
-      spinner.fail();
+      broadcaster.fail();
       throw new Error('Failed to download HTML file!');
     }
 
-    spinner.succeed();
+    broadcaster.succeed();
 
     if (data) {
       const htmlString = await data.text();
       try {
         process.stdout.write('\n');
-        const spinner = ora(`${chalk.yellow('Sending email...')}`).start();
+        broadcaster.start('Sending email...');
         await mailHTML(recipientsList, htmlString);
-        spinner.succeed();
+        broadcaster.succeed();
       }
 
       catch (error: any) {
-        spinner.fail();
+        broadcaster.fail();
         console.error(error);
       }
     }
