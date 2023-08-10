@@ -562,7 +562,7 @@ program
   }
 
   catch (error) {
-    console.error(`${chalk.red(error)}`);
+    broadcaster.error(error as string);
   }
 });
 
@@ -584,15 +584,14 @@ program
   const key = Object.keys(options).find(key => !!options[key as keyof typeof options]);
 
   try {
-    process.stdout.write('\n');
-    const spinner = ora(`${chalk.yellow('Saving config...')}`).start();
+    broadcaster.start('Saving config...');
     save('config', (key as keyof typeof Config).toUpperCase(), options[key as keyof typeof Config]);
     await delay(1000);
-    spinner.succeed(`Saved ${chalk.green(key)} as ${chalk.green(options[key as keyof typeof Config])}`);
+    broadcaster.succeed(`Saved ${broadcaster.color(key as string, 'green')} as ${broadcaster.color(options[key as keyof typeof Config], 'green')}`);
   }
 
   catch (error) {
-    console.error(`${chalk.red(error)}`);
+    broadcaster.error(error as string);
   }
 });
 
@@ -603,36 +602,28 @@ program
 .action(async (name: string) => {
   const supabaseAPI = await import('../api/supabase.js');
 
-  // const session = getSession();
-  // const [newSession, refreshed] = await supabaseAPI.refreshSession(session);
-
-  // if (refreshed) {
-  //   saveSession(newSession);
-  // }
-
   // check if bucket exists
   try {
     const bucket = await supabaseAPI.bucketExists(name);
     if (bucket.error) {
-      throw new Error('\nBUCKET ERROR: bucket doesn\'t exist! Use \'mailer bucket -c [name]\' to create one before trying to export a template.');
+      broadcaster.error('\nBUCKET ERROR: bucket doesn\'t exist! Use \'mailer bucket -c [name]\' to create one before trying to export a template.');
     }
   }
 
   catch (error) {
-    console.error(`${chalk.red(error)}`);
+    broadcaster.error(error as string);
     process.exit(1);
   }
 
   // Create template folders
   await createFolders(name);
 
-  process.stdout.write('\n');
-  const spinner = ora(`${chalk.yellow(`Importing files...`)}`).start();
+  broadcaster.start(`Importing files...`);
   const files = await importBucket(name, true);
 
   if (isStorageError(files)) {
-    spinner.fail();
-    throw new Error(files.stack);
+    broadcaster.fail();
+    broadcaster.error(files.stack as string);
   }
 
   try {
@@ -667,12 +658,12 @@ program
       }
     });
 
-    spinner.succeed(`Imported files from ${chalk.green(name)} bucket to ${chalk.green(__importdirname)}`);
+    broadcaster.succeed(`Imported files from ${broadcaster.color(name, 'green')} bucket to ${broadcaster.color(__importdirname, 'green')}`);
   }
 
   catch (error) {
-    spinner.fail();
-    console.error(`${chalk.red(error)}`);
+    broadcaster.fail();
+    broadcaster.error(error as string);
     process.exit(1);
   }
 });
