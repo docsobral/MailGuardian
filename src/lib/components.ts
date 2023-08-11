@@ -1,10 +1,41 @@
-import { resolve } from 'path';
 import { format } from 'prettier';
-import { getImages } from './export.js';
-import { BucketError } from './error.js';
-import { listBuckets } from '../api/supabase.js';
+import { resolve } from 'node:path';
+import { Broadcaster } from '../api/broadcaster.js';
+import { readdir, readFile } from 'node:fs/promises';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { getFile, __dirname } from '../api/filesystem.js';
+
+import { listBuckets } from '../api/supabase.js';
+
+export async function getImage(path: string, imageName: string): Promise<Buffer> {
+  let image: Buffer;
+
+  image = await readFile(path + `\\img\\${imageName}`);
+  return image;
+}
+
+export async function getImageNames(path: string): Promise<string[]> {
+  let list: string[] = [];
+
+  list = await readdir(path + '\\img');
+
+  return list;
+}
+
+type Images = {
+  [name: string]: Buffer
+}
+
+export async function getImages(path: string): Promise<Images> {
+  let images: Images = {};
+  const list = await getImageNames(path);
+
+  for (let image of list) {
+    images[image] = await getImage(path, image);
+  }
+
+  return images;
+}
 
 export async function getFullComponent(name: string): Promise<string> {
   const component: string = await getFile('mjml', resolve(__dirname, `components\\${name}`));
@@ -112,7 +143,7 @@ function splitComponents(components: string): string[] {
   return components.split(',').map(component => component.trim());
 }
 
-export async function importComponents(commandParameter: string, name: string, broadcaster: any): Promise<void> {
+export async function importComponents(commandParameter: string, name: string, broadcaster: Broadcaster): Promise<void> {
   try {
     broadcaster.start('Importing components to new template...');
     const components: string[] = splitComponents(commandParameter);
@@ -124,8 +155,7 @@ export async function importComponents(commandParameter: string, name: string, b
 
     for (const i in components) {
       const parts = await getSections(await getFullComponent(components[i]));
-      // @ts-ignore
-      const beautified = await beautifySections(parts);
+      const beautified = await beautifySections(parts as string[]);
       const indented = indent(beautified);
 
       mjml = await insertSections(indented[1], mjml, 'body', components[i]);
@@ -166,10 +196,12 @@ export async function importComponents(commandParameter: string, name: string, b
 
 export async function listComponents(broadcaster: any): Promise<void> {
   broadcaster.start('Fetching templates...');
+  // @ts-ignore
   const { data, error } = await listBuckets();
 
   if (error) {
     broadcaster.fail();
+    // @ts-ignore
     throw new BucketError(`\nFailed to fetch templates!\n\n${error.stack?.slice(17)}`);
   }
 

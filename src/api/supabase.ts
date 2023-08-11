@@ -1,6 +1,5 @@
 import { readFileSync } from 'node:fs';
 import { __dirname } from './filesystem.js';
-import { broadcaster } from '../bin/index.js';
 import { BucketError } from '../lib/error.js';
 import { createClient } from '@supabase/supabase-js';
 import { Database, Tables } from '../types/database.types.js';
@@ -13,7 +12,7 @@ type Config = {
 const config: Config = JSON.parse(readFileSync(__dirname + 'config\\config.json', { encoding: 'utf8' }));
 
 if (typeof config['SUPA_URL'] === 'undefined' || typeof config['SUPA_SECRET'] === 'undefined') {
-  broadcaster.error('Missing API url, key or secret key! Please run \'mailer config\' to set them.');
+  throw new Error('Missing API url, key or secret key! Please run \'mailer config\' to set them.');
 }
 
 export type SupabaseStorageResult = {
@@ -27,7 +26,7 @@ export type SupabaseDownloadResult = {
 }
 
 // const options = { db: { schema: 'public' }, auth: { autoRefreshToken: true, persistSession: true, detectSessionInUrl: true } };
-const supabase = createClient<Database>(config['SUPA_URL'], config['SUPA_SECRET']);
+export const supabase = createClient<Database>(config['SUPA_URL'], config['SUPA_SECRET']);
 
 export async function createBucket(bucketName: string) {
   let result: SupabaseStorageResult = await supabase.storage.createBucket(bucketName, { public: false });
@@ -121,19 +120,19 @@ export async function listBuckets() {
 
 type Manager = typeof createBucket | typeof deleteBucket;
 
-export async function manageBucket(name: string, type: 'create' | 'delete'): Promise<void> {
+export async function manageBucket(name: string, type: 'create' | 'delete', broadcaster: any): Promise<void> {
   let manager: Manager = type === 'create' ? createBucket : deleteBucket;
 
   function capitalizeFirstLetter(string: string): string {
     return `${string[0].toUpperCase() + string.slice(1)}`
   }
 
-  broadcaster.start(`Attempting to ${type} template named ${name}`);
+  broadcaster.start(`Attempting to ${type} bucket named ${name}`);
   const { error } = await manager(name);
 
   if (error) {
     broadcaster.fail();
-    throw new BucketError(`\nFailed to ${type} template named ${name}!\n\n${error.stack?.slice(17)}`);
+    throw new BucketError(`\nFailed to ${type} bucket named ${name}!\n\n${error.stack?.slice(17)}`);
   }
 
   broadcaster.succeed(`${capitalizeFirstLetter(type)}d template named ${name}.`);

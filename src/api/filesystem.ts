@@ -1,11 +1,18 @@
 import { readFile, mkdir, writeFile, readdir, unlink, rm } from 'node:fs/promises';
 // import { AuthSessionMissingError, Session } from '@supabase/supabase-js';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { dirname, resolve, basename } from 'path';
+import { Broadcaster } from './broadcaster.js';
 import { exec } from 'child_process';
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'url';
 import Cryptr from 'cryptr';
+
+async function delay(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+const broadcaster = new Broadcaster();
 
 function escapeBackslashes(path: string): string {
   const pathArray: string[] = path.split('');
@@ -92,6 +99,10 @@ const newMJML = `<mjml>
 </mjml>`
 
 export async function manageTemplate(name: string, remove: boolean, type: 'template' | 'component'): Promise<void> {
+  const option = remove ? 'Delet' : 'Creat';
+  broadcaster.start(`${option}ing ${type} named ${name}`);
+  await delay(1000);
+
   let manage: typeof mkdir | typeof rm;
   let options = {};
 
@@ -108,6 +119,8 @@ export async function manageTemplate(name: string, remove: boolean, type: 'templ
   if (!remove) {
     writeFileSync(__dirname + `${type}s\\${name}\\index.mjml`, newMJML);
   }
+
+  broadcaster.succeed(`${option}ed ${type} named ${name} at ${__dirname}/${type}s/${name}.`);
 }
 
 export async function openVS(name: string, type: 'template' | 'component'): Promise<void> {
@@ -115,7 +128,8 @@ export async function openVS(name: string, type: 'template' | 'component'): Prom
     if (error) {
       throw new Error(`Error executing the command: ${error.message}`);
     } else {
-      console.log('Folder opened in VSCode.');
+      broadcaster.indent = 3;
+      broadcaster.inform('\n   Folder opened in VSCode.');
     }
   });
 }
@@ -212,3 +226,9 @@ export function getVersion(): string {
 
 //   return session;
 // }
+
+export function getChildDirectories(path: string): string[] {
+  return readdirSync(path, { withFileTypes: true })
+      .filter((dirent: any) => dirent.isDirectory())
+      .map((dirent: any) => dirent.name);
+}

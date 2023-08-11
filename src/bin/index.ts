@@ -258,9 +258,12 @@ program
         return;
       }
 
-      await supabaseAPI.manageBucket(name, 'create');
+      await supabaseAPI.manageBucket(name, 'create', broadcaster);
       await manageTemplate(name, false, 'template');
-      await importComponents(options.create, name);
+
+      if (typeof options.create !== 'boolean') {
+        await importComponents(options.create, name, broadcaster);
+      }
 
       openVS(name, 'template');
 
@@ -269,12 +272,12 @@ program
 
     if (options.delete) {
       await manageTemplate(name, true, 'template');
-      await supabaseAPI.manageBucket(name, 'delete');
+      await supabaseAPI.manageBucket(name, 'delete', broadcaster);
       return;
     }
 
     if (options.list) {
-      await listComponents();
+      await listComponents(broadcaster);
     }
 
     if (existsSync(resolve(__dirname, `templates\\${name}`))) {
@@ -306,7 +309,6 @@ program
       }
 
       await manageTemplate(name, false, 'component');
-      broadcaster.inform(`\nCreated component named ${name} at ${__dirname}\\components\\${name}. Opening in new VSCode window...`);
       await delay(1000);
 
       openVS(name, 'component');

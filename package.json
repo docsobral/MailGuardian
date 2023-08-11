@@ -1,6 +1,6 @@
 {
   "name": "mjml-mailer",
-  "version": "0.17.1",
+  "version": "0.18.0",
   "homepage": "https://github.com/orchidb0y/mailer",
   "license": "AGPL-3.0-only",
   "type": "module",
@@ -33,6 +33,7 @@
   },
   "bin": {
     "mailer": "./build/bin/index.js",
-    "install-mailer": "./build/bin/install.js"
+    "install-mailer": "./build/bin/install.js",
+    "mg": "./build/bin/cli.js"
   }
 }

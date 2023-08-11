@@ -1,13 +1,34 @@
 import chalk from "chalk";
 import ora, { Ora } from "ora";
+import Enquirer from "enquirer";
 
-export class Broadcaster {
+interface EnquireOptions {
+  type: string,
+  name: string,
+  message: string,
+  initial?: string,
+  choices?: string[],
+  multiple?: boolean,
+  result?(value: string): string | Promise<string>,
+}
+
+type EnquireAnswer = {
+  [name: string]: any;
+}
+
+export class Broadcaster implements Partial<Console> {
   _spinner: Ora | undefined;
+  _enquirer: Enquirer;
   _process: typeof process;
+  _indent: number;
 
   constructor() {
+    this._indent = 0;
     this._process = process;
+    this._enquirer = new Enquirer();
   }
+
+  clear = console.clear.bind(this);
 
   set text(text: string) {
     if (this._spinner) {
@@ -16,12 +37,30 @@ export class Broadcaster {
     }
   }
 
+  set prefix(text: string) {
+    if (this._spinner) {
+      this._spinner.prefixText = text;
+    }
+  }
+
+  set indent(number: number) {
+    if (this._spinner) {
+      this._spinner.indent = number;
+    }
+
+    this._indent = number;
+  }
+
   get text() {
     if (this._spinner) {
       return this._spinner.text;
     }
 
     throw new Error('Start the spinner first...');
+  }
+
+  get enquirer() {
+    return this._enquirer;
   }
 
   color(text: string, color: 'yellow' | 'blue' | 'green' | 'red'){
@@ -118,9 +157,10 @@ export class Broadcaster {
   }
 
   start(text: string) {
-    this.log('\n');
     const yellowText = chalk.yellow(text);
-    this._spinner = ora(yellowText).start();
+    this._spinner = ora(yellowText);
+    this.prefix = '\n';
+    this._spinner.start();
   }
 
   succeed(text?: string) {
@@ -144,7 +184,7 @@ export class Broadcaster {
   }
 
   log(text: string) {
-    this._process.stdout.write(text);
+    this._process.stdout.write(''.repeat(this.indent) + text + '\n');
   }
 
   logSeries(array: [string, 'yellow' | 'blue' | 'green' | 'red'][]) {
@@ -173,19 +213,19 @@ export class Broadcaster {
       string += colorer(text);
     });
 
-    this._process.stdout.write(string + '\n');
+    this._process.stdout.write(''.repeat(this.indent) + string + '\n');
   }
 
   warn(text: string) {
-    this._process.stdout.write(chalk.red(text) + '\n');
+    this._process.stdout.write(''.repeat(this.indent) + chalk.red(text) + '\n');
   }
 
   inform(text: string) {
-    this._process.stdout.write(chalk.yellow(text) + '\n');
+    this._process.stdout.write(''.repeat(this.indent) + chalk.yellow(text) + '\n');
   }
 
   calm(text: string) {
-    this._process.stdout.write(chalk.blueBright(text) + '\n');
+    this._process.stdout.write(''.repeat(this.indent) + chalk.blueBright(text) + '\n');
   }
 
   error(text: string) {
@@ -193,6 +233,12 @@ export class Broadcaster {
   }
 
   solve(text: string) {
-    this._process.stdout.write(chalk.blue(text) + '\n');
+    this._process.stdout.write(''.repeat(this.indent) + chalk.blue(text) + '\n');
+  }
+
+  async ask(questions: EnquireOptions[]): Promise<EnquireAnswer> {
+    const answer = await this._enquirer?.prompt(questions);
+
+    return answer as EnquireAnswer;
   }
 }
