@@ -63,8 +63,11 @@ import {
   isSpam,
   train,
   parseSpamAnalysis,
-  generatePDF
 } from '../api/spamassassin.js';
+
+import {
+  generatePDF
+} from '../api/pdf.js';
 
 import {
   listComponents,
@@ -517,7 +520,6 @@ program
 
     const recipientsList = recipientsString.split(/ *, */);
 
-    process.stdout.write('\n');
     broadcaster.start('Fetching HTML file from the bucket');
 
     const { data, error } = await downloadHTML(name, options.marketo);
@@ -531,7 +533,6 @@ program
     if (data) {
       const htmlString = await data.text();
       try {
-        process.stdout.write('\n');
         broadcaster.start('Sending email...');
         await mailHTML(recipientsList, htmlString);
         broadcaster.succeed();
@@ -693,7 +694,7 @@ program
       try {
         const log = readFileSync(__dirname + 'temp/log.txt', 'utf-8');
         const analysis = parseSpamAnalysis(log);
-        generatePDF(analysis);
+        await generatePDF(analysis);
         broadcaster.succeed(`Generated PDF file at ${broadcaster.color(resolve(__dirname, 'temp/spam-analysis.pdf'), 'green')}`);
       }
 
