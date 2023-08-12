@@ -295,6 +295,36 @@ program
 });
 
 program
+.command('bucket')
+.argument('[name]', 'Name of the bucket')
+.option('-d, --delete', 'deletes a bucket', false)
+.option('-c, --create [components]', 'creates a bucket', false)
+.option('-l, --list', 'lists all buckets', false)
+.action(async (name: string | undefined, options: {create: boolean, delete: boolean, list: boolean}) => {
+  const supabaseAPI = await import('../api/supabase.js');
+
+  if (options.list) {
+    await listComponents(broadcaster, true);
+  }
+
+  else if (options.create) {
+    if (!name) {
+      throw broadcaster.error('-c requires 1 argument');
+    }
+    await supabaseAPI.manageBucket(name, 'create', broadcaster);
+    return;
+  }
+
+  else if (options.delete) {
+    if (!name) {
+      throw broadcaster.error('-c requires 1 argument');
+    }
+    await supabaseAPI.manageBucket(name, 'delete', broadcaster);
+    return;
+  }
+});
+
+program
 .command('component')
 .description('Lists, creates or deletes a component')
 .argument('[name]', 'Name of the component')

@@ -164,7 +164,7 @@ export async function importComponents(commandParameter: string, name: string, b
   }
 }
 
-export async function listComponents(broadcaster: any): Promise<void> {
+export async function listComponents(broadcaster: any, bucket: boolean = false): Promise<void> {
   broadcaster.start('Fetching templates...');
   const { data, error } = await listBuckets();
 
@@ -174,7 +174,7 @@ export async function listComponents(broadcaster: any): Promise<void> {
   }
 
   if (data.length === 0) {
-    broadcaster.fail('There are no templates in the server. Use \'mailer template -c [name]\' to create one.');
+    broadcaster.fail(`There are no templates in the server. Use \'mailer ${bucket ? 'bucket' : 'template'} -c [name]\' to create one.`);
 
     return;
   }
