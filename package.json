@@ -12,6 +12,7 @@
     "commander": "^10.0.0",
     "cryptr": "^6.2.0",
     "enquirer": "^2.3.6",
+    "exiftool-vendored": "^22.0.0",
     "js-beautify": "^1.14.7",
     "mailcomposer": "^4.0.2",
     "mjml": "^4.13.0",
