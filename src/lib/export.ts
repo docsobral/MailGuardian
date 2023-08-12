@@ -80,9 +80,9 @@ export async function uploadImages(bucketName: string, path: string): Promise<vo
   Object.keys(images).forEach(async (imageName) => {
     const upload = await uploadFile(images[imageName], `img/${imageName}`, bucketName, 'image/png');
     if (upload.error) {
-      broadcaster.append(`  Failed to upload ${imageName}! ${upload.error.message}`, 'red', true);
+      broadcaster.append(`   Failed to upload ${imageName}! ${upload.error.message}`, 'red', true);
     }
-    broadcaster.append(`  Succesfully uploaded ${imageName}`, 'blue', true);
+    broadcaster.append(`   Succesfully uploaded ${imageName}`, 'blue', true);
   });
 
   await delay(1000);
