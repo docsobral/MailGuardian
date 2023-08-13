@@ -9,7 +9,7 @@ interface EnquireOptions {
   initial?: string,
   choices?: string[],
   multiple?: boolean,
-  result?(value: string): string | Promise<string>,
+  result?(value: string | string[]): string | Promise<string>,
 }
 
 type EnquireAnswer = {

@@ -221,33 +221,45 @@ class MailGuardian {
           return `${index + 1}. ${name}`;
         });
 
+        components.unshift('Back');
+
         let componentListString: string = '';
 
         componentsList.forEach(name => componentListString += name + '\n');
 
-        const message = `Which components do you want to import? (e.g.: 1, 14, 5, 3, 4)\nBack - Exit - None\n${componentListString}`
+        const message = 'Which components do you want to import? (spacebar to select and return/enter to submit)';
+        // const message = `Which components do you want to import? (e.g.: 1, 14, 5, 3, 4)\nBack - Exit - None\n${componentListString}`
 
         const { picks } = await this.caster.ask([
           {
-            type: 'input',
+            type: 'multiselect',
             name: 'picks',
             message,
-            result(names) {
-              const indexes = names.split(',').map(index => (Number(index.trim()) - 1).toString());
-
-              return indexes as any;
-            }
+            choices: components,
           }
         ]);
-
-        const pickedComponents = (picks as string[]).map((value) => {
-          return components[Number(value)];
-        }).join(', ');
 
         if ((picks as string[]).includes('Back')) {
           this.templates();
           break;
         }
+
+        const { sorted } = await this.caster.ask([
+          {
+            type: 'sort',
+            name: 'sorted',
+            message: 'Sort the components by the order they should appear:',
+            choices: picks,
+            result(names) {
+              const string = (names as string[]).join(', ');
+              return string;
+            }
+          }
+        ]);
+
+        console.log(sorted)
+
+        await delay(5000);
 
         const result = await supabase.storage.createBucket(templateName, { public: false });
         if (result.error) {
@@ -256,7 +268,7 @@ class MailGuardian {
         await manageTemplate(templateName, false, 'template');
 
         if (!(picks as string[]).includes('None')) {
-          await importComponents(pickedComponents, templateName, this.caster);
+          await importComponents(sorted, templateName, this.caster);
         }
 
         openVS(name, 'template');
