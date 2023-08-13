@@ -14,15 +14,23 @@ process.emitWarning = (warning, ...args) => {
   return emitWarning(warning, ...args);
 }
 
-import { __dirname, getChildDirectories, manageTemplate, openVS } from '../api/filesystem.js';
+import { __dirname, cleanTemp, getChildDirectories, manageTemplate, openVS, saveFile } from '../api/filesystem.js';
 import { importComponents, listComponents } from '../lib/components.js';
 import { createClient } from '@supabase/supabase-js';
 import { Broadcaster } from '../api/broadcaster.js';
+import { uploadImages, uploadMJML } from '../lib/export.js';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'path';
+import { imagesUrls, listBuckets, listImages, listFiles, fileExists, deleteFile, uploadFile } from '../api/supabase.js';
+import { downloadMJML, parseMJML } from '../lib/prepare.js';
+import { downloadHTML, mailHTML } from '../lib/mail.js';
 
 type Config = {
   [config: string]: string;
+}
+
+type Paths = {
+  [name: string]: string
 }
 
 const config: Config = JSON.parse(readFileSync(__dirname + 'config\\config.json', { encoding: 'utf8' }));
@@ -57,7 +65,7 @@ class MailGuardian {
         type: 'select',
         name: 'answer',
         message: 'Choose:',
-        choices: ['Components', 'Templates', 'Export', 'Send', 'Exit'],
+        choices: ['Components', 'Templates', 'Export', 'Prepare', 'Send', 'SpamAssassin', 'PDF report (not implemented)', 'Exit'],
       }
     ]);
 
@@ -69,8 +77,17 @@ class MailGuardian {
         this.templates();
         break;
       case 'Export':
+        this.export();
+        break;
+      case 'Prepare':
+        this.prepare();
         break;
       case 'Send':
+        this.send();
+        break;
+      case 'SpamAssassin':
+        break;
+      case 'PDR report':
         break;
       case 'Exit':
         this.caster.inform('\nOk, terminating process...');
@@ -134,7 +151,7 @@ class MailGuardian {
         await delay(1000);
         openVS(newName, 'component');
 
-        await delay(5000);
+        await delay(2000);
         this.start();
         break;
 
@@ -157,7 +174,7 @@ class MailGuardian {
 
         await manageTemplate(name, true, 'component');
 
-        await delay(5000);
+        await delay(2000);
         this.start();
         break;
     }
@@ -175,7 +192,6 @@ class MailGuardian {
       }
     ]);
 
-    // @ts-ignore
     let templateName: string;
 
     if (choice === 'Back') {
@@ -239,7 +255,7 @@ class MailGuardian {
 
         openVS(name, 'template');
 
-        await delay(5000);
+        await delay(2000);
         this.start();
         break;
 
@@ -263,7 +279,7 @@ class MailGuardian {
           throw deletionResult.error;
         }
 
-        await delay(5000);
+        await delay(2000);
 
         this.start();
         break;
@@ -285,7 +301,7 @@ class MailGuardian {
     }
   }
 
-  async export () {
+  async export() {
     this.switchScreen('Choose your option:');
 
     const { choice } = await this.caster.ask([
@@ -293,28 +309,217 @@ class MailGuardian {
         type: 'select',
         name: 'choice',
         message: 'Choose:',
-        choices: ['Template', 'Component', 'Back'],
+        choices: ['Template', 'Component (not implemented)', 'Back'],
       }
     ]);
 
-    if (choice === 'Back') {
+    if ((choice as string).toLowerCase() === 'back') {
       this.start();
     }
 
+    const paths: Paths = JSON.parse(readFileSync(resolve(__dirname, 'config/paths.json'), { encoding: 'utf8'}));
+    const choices: string[] = Object.keys(paths);
+    choices.push('Back');
+
     switch (choice) {
       case 'Template':
-        // const { form } = await this.caster.ask([
-        //   {
-        //     type: 'form',
-        //     name: 'choice',
-        //     message: 'Choose:',
-        //     choices: ['Template', 'Component', 'Back'],
-        //   }
-        // ]);
-        break;
+        const { confirm } = await this.caster.ask([
+          {
+            type: 'confirm',
+            name: 'confirm',
+            message: 'Have you exported this template before?'
+          }
+        ]);
 
-      case 'Component':
+        let type: 'autocomplete' | 'input';
+
+        if (confirm) {
+          type = 'autocomplete';
+          const { name } = await this.caster.ask([
+            {
+              type,
+              name: 'name',
+              message: 'Enter the template\'s name:',
+              choices,
+            }
+          ]);
+
+          if ((name as string).toLowerCase() === 'back') {
+            this.export();
+            break;
+          }
+
+          await uploadMJML(name, paths[name], false, this.caster);
+          await uploadImages(name, paths[name], this.caster);
+
+          await delay(2000);
+          this.start();
+          break;
+        }
+
+        else {
+          type = 'input';
+          const { name } = await this.caster.ask([
+            {
+              type,
+              name: 'name',
+              message: 'Enter the template\'s name:'
+            }
+          ]);
+
+          if ((name as string).toLowerCase() === 'back') {
+            this.export();
+            break;
+          }
+
+          await uploadMJML(name, paths[name], false, this.caster);
+          await uploadImages(name, paths[name], this.caster);
+
+          await delay(2000);
+          this.start();
+          break;
+        }
+
+      case 'Component (not implemented)':
+        this.start();
         break;
+    }
+  }
+
+  async prepare() {
+    let { data } = await listBuckets();
+
+    if (!data) {
+      throw new Error('Something happened while trying to fetch the buckets list...');
+    }
+
+    const buckets = data.map(bucket => bucket.name);
+
+    const { name } = await this.caster.ask([
+      {
+        type: 'autocomplete',
+        name: 'name',
+        message: 'What is the template\'s name?',
+        choices: buckets,
+      }
+    ]);
+
+    await cleanTemp();
+
+    this.caster.start(`Fetching and parsing MJML file from the ${name} bucket...`);
+    const mjmlBlob = await downloadMJML(name, false, this.caster);
+
+    if (mjmlBlob) {
+      let mjmlString = await mjmlBlob.text();
+      let imgList: string[] = [];
+      let signedUrlList: string[] = [];
+
+      const imageList = await listImages(name);
+
+      if (imageList.error) {
+        this.caster.fail();
+        this.caster.error(`Failed to fetch list of image names! ${imageList.error.stack?.slice(17)}`);
+      }
+
+      // @ts-ignore
+      imageList.data.forEach(fileObject => imgList.push(fileObject.name));
+      const signedList = await imagesUrls(name, imgList);
+
+      if (signedList.error) {
+        this.caster.fail();
+        this.caster.error(`Failed to get signed URLs! ${signedList.error.stack?.slice(17)}`);
+      }
+
+      // @ts-ignore
+      signedList.data.forEach(object => signedUrlList.push(object.signedUrl));
+
+      // MOVE THIS FUNCTION TO A SEPARATE FILE
+      // replace local paths for remote paths
+      for (let index in imgList) {
+        const localPath = `(?<=src=")(.*)(${imgList[index]})(?=")`;
+        const replacer = new RegExp(localPath, 'g');
+        mjmlString = mjmlString.replace(replacer, signedUrlList[index]);
+      };
+
+      const __tempdirname = resolve(__dirname, 'temp');
+
+      // save mjml with new paths
+      await saveFile(__tempdirname, 'source.mjml', mjmlString);
+
+      const parsedHTML = parseMJML(readFileSync(resolve(__tempdirname, 'source.mjml'), { encoding: 'utf8' }), false);
+      await saveFile(__tempdirname, 'parsed.html', parsedHTML);
+
+      const list = await listFiles(name);
+      const exists = await fileExists(`${false? 'marketo.html' : 'index.html'}`, list.data);
+
+      if (exists) {
+        const result = await deleteFile(`${false? 'marketo.html' : 'index.html'}`, name);
+
+        if (result.error) {
+          this.caster.fail();
+          this.caster.error(`Failed to delete ${false? 'marketo.html' : 'index.html'} file! ${result.error.stack?.slice(17)}`);
+        }
+      }
+
+      const results = await uploadFile(readFileSync(resolve(__tempdirname, 'parsed.html'), { encoding: 'utf8' }), `${false? 'marketo.html' : 'index.html'}`, name);
+
+      if (results.error) {
+        this.caster.fail();
+        this.caster.error(`Failed to upload HTML file! ${results.error.stack?.slice(17)}`);
+      }
+
+      this.caster.succeed('Successfully parsed MJML and uploaded HTML to server');
+    }
+  }
+
+  async send() {
+    let { data: availableTemplates } = await listBuckets();
+
+    if (!availableTemplates) {
+      throw new Error('Something happened while trying to fetch the buckets list...');
+    }
+
+    const buckets = availableTemplates.map(bucket => bucket.name);
+
+    const { name, recipients } = await this.caster.ask([
+      {
+        type: 'autocomplete',
+        name: 'name',
+        message: 'What is the template\'s name?',
+        choices: buckets,
+      },
+      {
+        type: 'input',
+        name: 'recipients',
+        message: 'Enter comma-separated recipients:'
+      }
+    ]);
+
+    const recipientsList = (recipients as string).split(/ *, */);
+
+    this.caster.start('Fetching HTML file from the bucket');
+
+    const { data, error } = await downloadHTML(name, false);
+
+    if (error) {
+      this.caster.fail();
+      throw new Error('Failed to download HTML file!');
+    }
+
+    this.caster.succeed();
+
+    if (data) {
+      const htmlString = await data.text();
+      try {
+        this.caster.start('Sending email...');
+        await mailHTML(recipientsList, htmlString);
+        this.caster.succeed();
+      }
+
+      catch (error: any) {
+        this.caster.fail();
+        console.error(error);
+      }
     }
   }
 }

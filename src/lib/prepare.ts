@@ -1,8 +1,8 @@
 import mjml2html from 'mjml';
-import { broadcaster } from '../bin/index.js';
 import { __dirname } from '../api/filesystem.js';
 import { downloadFile } from '../api/supabase.js';
 import beautify, { HTMLBeautifyOptions } from 'js-beautify';
+import { Broadcaster } from '../api/broadcaster.js';
 
 const { html_beautify } = beautify
 
@@ -41,11 +41,14 @@ enum InsertExpression {
   meta = '(?<=<meta name="viewport" content="width=device-width, initial-scale=1">)(\n)',
 }
 
-export async function downloadMJML(projectName: string, marketo: boolean = false): Promise<Blob | null> {
+export async function downloadMJML(projectName: string, marketo: boolean = false, broadcaster: Broadcaster): Promise<Blob> {
   try {
     const { data, error } = await downloadFile(projectName, 'mjml', marketo);
     if (error) {
       throw new Error('Failed to get MJML file! Check the project name or the project bucket');
+    }
+    if (!data) {
+      throw new Error('Data is empty!');
     }
     return data
   }

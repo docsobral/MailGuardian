@@ -1,8 +1,8 @@
 import { readdir } from 'node:fs/promises';
 import selectFolder from 'win-select-folder';
-import { broadcaster } from '../bin/index.js';
 import { uploadFile } from '../api/supabase.js';
 import { __dirname } from '../api/filesystem.js';
+import { Broadcaster } from '../api/broadcaster.js';
 import { getFile, getImage } from '../api/filesystem.js';
 
 type Images = {
@@ -50,7 +50,7 @@ export async function getImages(path: string): Promise<Images> {
   return images;
 }
 
-export async function uploadMJML(bucketName: string, path: string, marketo: boolean = false): Promise<void> {
+export async function uploadMJML(bucketName: string, path: string, marketo: boolean = false, broadcaster: Broadcaster): Promise<void> {
   try {
     const fileName = marketo ? 'marketo.mjml' : 'index.mjml';
 
@@ -72,7 +72,7 @@ export async function uploadMJML(bucketName: string, path: string, marketo: bool
   }
 }
 
-export async function uploadImages(bucketName: string, path: string): Promise<void> {
+export async function uploadImages(bucketName: string, path: string, broadcaster: Broadcaster): Promise<void> {
   const images = await getImages(path);
 
   broadcaster.start('Uploading images...')

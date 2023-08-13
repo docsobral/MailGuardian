@@ -36,7 +36,7 @@ type FolderSelectOptions = {
 export async function getPath(): Promise<string> {
   const options: FolderSelectOptions = {
     root: 'Desktop',
-    description: 'Find the template\'s directory:',
+    description: 'Find the directory:',
     newFolder: 0,
   }
 

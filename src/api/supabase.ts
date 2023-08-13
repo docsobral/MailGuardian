@@ -4,6 +4,7 @@ import { BucketError } from '../lib/error.js';
 import { createClient } from '@supabase/supabase-js';
 import { Database, Tables } from '../types/database.types.js';
 import { FileObject, StorageError } from '@supabase/storage-js';
+import { resolve } from 'path';
 
 type Config = {
   [config: string]: string;
@@ -98,10 +99,31 @@ export async function listImages(bucketName: string) {
   return await supabase.storage.from(bucketName).list('img', { sortBy: { column: 'name', order: 'asc' } });
 }
 
+export async function listImagesV2 (bucketName: string) {
+  const result = await supabase.storage.from(bucketName).list('img', { sortBy: { column: 'name', order: 'asc' } });
+
+  if (result.error) {
+    throw result.error;
+  }
+
+  return result.data.map(image => image.name);
+}
+
 export async function imagesUrls(bucketName: string, imageNames: string[]) {
   const pathList = imageNames.map(imageName => 'img/' + imageName);
 
   return supabase.storage.from(bucketName).createSignedUrls(pathList, 600);
+}
+
+export async function imagesUrlsV2(bucketName: string, imageList: string[]) {
+  const pathList: string[] = imageList.map(imageName => resolve('img', imageName));
+  const result = await supabase.storage.from(bucketName).createSignedUrls(pathList, 1200);
+
+  if (result.error) {
+    throw result.error;
+  }
+
+  return result.data.map(url => url.signedUrl);
 }
 
 export async function fileExists(name: string, list: any) {

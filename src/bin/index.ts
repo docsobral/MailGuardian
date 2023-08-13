@@ -227,10 +227,10 @@ program
     }
 
     else {
-      await uploadMJML(name, path, options.marketo);
+      await uploadMJML(name, path, options.marketo, broadcaster);
 
       if (!options.images) {
-        await uploadImages(name, path);
+        await uploadImages(name, path, broadcaster);
       }
     }
   }
@@ -458,10 +458,10 @@ program
     await cleanTemp();
 
     broadcaster.start(`Fetching and parsing MJML file from the ${name} bucket...`);
-    const mjmlBlob = await downloadMJML(name, options.marketo);
+    const mjmlBlob = await downloadMJML(name, options.marketo, broadcaster);
 
     if (mjmlBlob) {
-      let mjmlString = await mjmlBlob.text()
+      let mjmlString = await mjmlBlob.text();
       let imgList: string[] = [];
       let signedUrlList: string[] = [];
 
@@ -492,7 +492,7 @@ program
         mjmlString = mjmlString.replace(replacer, signedUrlList[index]);
       };
 
-      const __tempdirname = resolve(__dirname, 'temp')
+      const __tempdirname = resolve(__dirname, 'temp');
 
       // save mjml with new paths
       await saveFile(__tempdirname, 'source.mjml', mjmlString);
