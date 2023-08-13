@@ -63,7 +63,7 @@ class MailGuardian {
   }
 
   async start() {
-    this.switchScreen('Welcome to MailGuardian!');
+    this.switchScreen('  Welcome to MailGuardian!');
 
     const { answer } = await this.caster.ask([
       {
@@ -100,7 +100,7 @@ class MailGuardian {
         this.pdf();
         break;
       case 'Exit':
-        this.caster.inform('\nOk, terminating process...');
+        this.caster.inform('\n  Ok, terminating process...');
         await delay(1000);
         this.caster.clear();
         break;
@@ -114,7 +114,7 @@ class MailGuardian {
 
   async checkCommand(text: string) {
     if (text.toLowerCase() === 'quit' || text.toLowerCase() === 'exit') {
-      this.caster.inform('\nOk. Terminating process...');
+      this.caster.inform('\n  Ok. Terminating process...');
       await delay(1000);
       process.exit(0);
     }
@@ -230,8 +230,6 @@ class MailGuardian {
           return `${index + 1}. ${name}`;
         });
 
-        components.unshift('Back');
-
         let componentListString: string = '';
 
         componentsList.forEach(name => componentListString += name + '\n');
@@ -244,7 +242,7 @@ class MailGuardian {
             type: 'multiselect',
             name: 'picks',
             message,
-            choices: components,
+            choices: ['Back', 'None', ...components],
           }
         ]);
 
