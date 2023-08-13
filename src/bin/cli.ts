@@ -14,21 +14,21 @@ process.emitWarning = (warning, ...args) => {
   return emitWarning(warning, ...args);
 }
 
+import { imagesUrls, listBuckets, listImages, listFiles, fileExists, deleteFile, uploadFile, deleteBucket, manageBucket } from '../api/supabase.js';
 import { __dirname, cleanTemp, getChildDirectories, manageTemplate, openVS, saveFile, getFile, save } from '../api/filesystem.js';
+import { buildImage, convertHTML, isSpam, train, parseSpamAnalysis } from '../api/spamassassin.js';
 import { importComponents, listComponents } from '../lib/components.js';
+import { downloadMJML, parseMJML } from '../lib/prepare.js';
+import { uploadImages, uploadMJML } from '../lib/export.js';
+import { listComponents as list } from '../lib/append.js';
+import { downloadHTML, mailHTML } from '../lib/mail.js';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { createClient } from '@supabase/supabase-js';
 import { Broadcaster } from '../api/broadcaster.js';
-import { uploadImages, uploadMJML } from '../lib/export.js';
-import { readFileSync, writeFileSync } from 'node:fs';
-import { resolve } from 'path';
-import { imagesUrls, listBuckets, listImages, listFiles, fileExists, deleteFile, uploadFile, deleteBucket, manageBucket } from '../api/supabase.js';
-import { downloadMJML, parseMJML } from '../lib/prepare.js';
-import { downloadHTML, mailHTML } from '../lib/mail.js';
 import { getPath } from '../lib/filestats.js';
-import { buildImage, convertHTML, isSpam, train, parseSpamAnalysis } from '../api/spamassassin.js'
 import { generatePDF } from '../api/pdf.js';
+import { resolve } from 'path';
 import open from 'open';
-import { listComponents as list } from '../lib/append.js';
 
 type Config = {
   [config: string]: string;
@@ -430,29 +430,16 @@ class MailGuardian {
     }
 
     const paths: Paths = JSON.parse(readFileSync(resolve(__dirname, 'config/paths.json'), { encoding: 'utf8'}));
-    const choices: string[] = Object.keys(paths);
-    choices.push('Back');
+    const choices: string[] = getChildDirectories(resolve(__dirname, 'templates'));
 
     switch (choice) {
       case 'Template':
-        const { confirm } = await this.caster.ask([
-          {
-            type: 'confirm',
-            name: 'confirm',
-            message: 'Have you exported this template before?'
-          }
-        ]);
-
-        let type: 'autocomplete' | 'input';
-
-        if (confirm) {
-          type = 'autocomplete';
           const { name } = await this.caster.ask([
             {
-              type,
+              type: 'autocomplete',
               name: 'name',
               message: 'Enter the template\'s name:',
-              choices,
+              choices: [...choices, 'Back']
             }
           ]);
 
@@ -460,6 +447,8 @@ class MailGuardian {
             this.export();
             break;
           }
+
+          save('paths', name, paths[name]);
 
           await uploadMJML(name, paths[name], false, this.caster);
           await uploadImages(name, paths[name], this.caster);
@@ -467,33 +456,6 @@ class MailGuardian {
           await delay(2000);
           this.start();
           break;
-        }
-
-        else {
-          type = 'input';
-          const { name } = await this.caster.ask([
-            {
-              type,
-              name: 'name',
-              message: 'Enter the template\'s name:'
-            }
-          ]);
-
-          if ((name as string).toLowerCase() === 'back') {
-            this.export();
-            break;
-          }
-
-          const path = await getPath();
-          save('paths', name, path);
-
-          await uploadMJML(name, path, false, this.caster);
-          await uploadImages(name, path, this.caster);
-
-          await delay(2000);
-          this.start();
-          break;
-        }
 
       case 'Component (not implemented)':
         this.start();
