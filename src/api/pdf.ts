@@ -5,7 +5,6 @@ import {
   FilteredTag,
   getTotalMediaWeight,
   findGIFs,
-  getPath
 } from '../lib/filestats.js';
 import { createWriteStream } from 'node:fs';
 import { Tags, ExifTool } from 'exiftool-vendored';
@@ -36,8 +35,9 @@ interface SpamResult {
  *
  * @param {SpamResult} spamResult The result of the spam analysis
  */
-export async function generatePDF(spamResult: SpamResult): Promise<void> {
-  const path: string = resolve(__dirname, 'temp\\spam-analysis.pdf');
+export async function generatePDF(spamResult: SpamResult, path: string): Promise<void> {
+  const pathToPDF: string = resolve(__dirname, 'temp/spam-analysis.pdf');
+  // const pathToHTML: string = resolve(path, 'parsed.html');
 
   function scoreString(score: number): [string, string, string] {
     switch (true) {
@@ -143,7 +143,7 @@ export async function generatePDF(spamResult: SpamResult): Promise<void> {
     displayTitle: true,
   });
 
-  doc.pipe(createWriteStream(path));
+  doc.pipe(createWriteStream(pathToPDF));
 
   doc.image(resolve(__dirname, 'logo.jpg'), 152, 50, {
     align: 'right',
@@ -223,7 +223,7 @@ export async function generatePDF(spamResult: SpamResult): Promise<void> {
 
   const exiftool = new ExifTool();
 
-  const pathToGif = resolve(await getPath());
+  const pathToGif = resolve(path);
   const stats = await getStats(pathToGif, exiftool);
   let HTMLStats: Tags | FilteredTag = await getHTMLStats(pathToGif, 'index.html', exiftool);
 

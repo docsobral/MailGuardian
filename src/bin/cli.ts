@@ -14,16 +14,20 @@ process.emitWarning = (warning, ...args) => {
   return emitWarning(warning, ...args);
 }
 
-import { __dirname, cleanTemp, getChildDirectories, manageTemplate, openVS, saveFile } from '../api/filesystem.js';
+import { __dirname, cleanTemp, getChildDirectories, manageTemplate, openVS, saveFile, getFile, save } from '../api/filesystem.js';
 import { importComponents, listComponents } from '../lib/components.js';
 import { createClient } from '@supabase/supabase-js';
 import { Broadcaster } from '../api/broadcaster.js';
 import { uploadImages, uploadMJML } from '../lib/export.js';
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'path';
-import { imagesUrls, listBuckets, listImages, listFiles, fileExists, deleteFile, uploadFile } from '../api/supabase.js';
+import { imagesUrls, listBuckets, listImages, listFiles, fileExists, deleteFile, uploadFile, deleteBucket } from '../api/supabase.js';
 import { downloadMJML, parseMJML } from '../lib/prepare.js';
 import { downloadHTML, mailHTML } from '../lib/mail.js';
+import { getPath } from '../lib/filestats.js';
+import { buildImage, convertHTML, isSpam, train, parseSpamAnalysis } from '../api/spamassassin.js'
+import { generatePDF } from '../api/pdf.js';
+import open from 'open';
 
 type Config = {
   [config: string]: string;
@@ -65,7 +69,7 @@ class MailGuardian {
         type: 'select',
         name: 'answer',
         message: 'Choose:',
-        choices: ['Components', 'Templates', 'Export', 'Prepare', 'Send', 'SpamAssassin', 'PDF report (not implemented)', 'Exit'],
+        choices: ['Components', 'Templates', 'Export', 'Prepare', 'Send', 'SpamAssassin', 'PDF report', 'Exit'],
       }
     ]);
 
@@ -86,8 +90,10 @@ class MailGuardian {
         this.send();
         break;
       case 'SpamAssassin':
+        this.spamassassin();
         break;
-      case 'PDR report':
+      case 'PDF report':
+        this.pdf();
         break;
       case 'Exit':
         this.caster.inform('\nOk, terminating process...');
@@ -260,11 +266,20 @@ class MailGuardian {
         break;
 
       case 'Delete':
+        const { data: availableTemplates } = await listBuckets();
+
+        if (!availableTemplates) {
+          throw new Error('Something happened while trying to fetch the buckets list...');
+        }
+
+        const buckets = availableTemplates.map(bucket => bucket.name);
+
         const { name: toBeDeleted } = await this.caster.ask([
           {
-            type: 'input',
+            type: 'autocomplete',
             name: 'name',
             message: 'Enter the template\'s name:',
+            choices: buckets,
           }
         ]);
 
@@ -274,7 +289,7 @@ class MailGuardian {
           throw error;
         }
 
-        const deletionResult = await supabase.storage.deleteBucket(toBeDeleted);
+        const deletionResult = await deleteBucket(toBeDeleted);
         if (deletionResult.error) {
           throw deletionResult.error;
         }
@@ -372,8 +387,11 @@ class MailGuardian {
             break;
           }
 
-          await uploadMJML(name, paths[name], false, this.caster);
-          await uploadImages(name, paths[name], this.caster);
+          const path = await getPath();
+          save('paths', name, path);
+
+          await uploadMJML(name, path, false, this.caster);
+          await uploadImages(name, path, this.caster);
 
           await delay(2000);
           this.start();
@@ -405,6 +423,8 @@ class MailGuardian {
     ]);
 
     await cleanTemp();
+
+    writeFileSync(resolve(__dirname, 'temp/last'), name, { encoding: 'utf8' });
 
     this.caster.start(`Fetching and parsing MJML file from the ${name} bucket...`);
     const mjmlBlob = await downloadMJML(name, false, this.caster);
@@ -470,10 +490,13 @@ class MailGuardian {
 
       this.caster.succeed('Successfully parsed MJML and uploaded HTML to server');
     }
+
+    await delay(2000);
+    this.start();
   }
 
   async send() {
-    let { data: availableTemplates } = await listBuckets();
+    const { data: availableTemplates } = await listBuckets();
 
     if (!availableTemplates) {
       throw new Error('Something happened while trying to fetch the buckets list...');
@@ -521,6 +544,101 @@ class MailGuardian {
         console.error(error);
       }
     }
+
+    await delay(2000);
+    this.start();
+  }
+
+  async spamassassin() {
+    this.switchScreen('Choose your option:');
+
+    const { choice } = await this.caster.ask([
+      {
+        type: 'select',
+        name: 'choice',
+        message: 'Choose:',
+        choices: ['Build SpamAssassin Image', 'Test HTML', 'Train SpamAssassin', 'Back'],
+      }
+    ]);
+
+    if ((choice as string).toLowerCase() === 'back') {
+      this.start();
+    }
+
+    switch (choice) {
+      case 'Build SpamAssassin Image':
+        await buildImage(this.caster);
+        await delay(2000);
+        this.start();
+        break;
+
+      case 'Test HTML':
+        const { confirm } = await this.caster.ask([
+          {
+            type: 'confirm',
+            name: 'confirm',
+            message: 'Do you want to test the last email you prepared?',
+          }
+        ]);
+
+        let pathToFile: string = '';
+        let fileName: string = 'parsed';
+
+        if (confirm) {
+          pathToFile = resolve(__dirname, 'temp');
+        } else {
+          pathToFile = await getPath();
+
+          const { name } = await this.caster.ask([
+            {
+              type: 'input',
+              name: 'name',
+              message: 'What is the name of the HTML file?',
+            }
+          ]);
+
+          fileName = (name as string).replace(/.html/, '');
+        }
+
+        const html = await getFile('html', pathToFile, false, fileName);
+        const MIME = await convertHTML(html);
+        const MIMEPath = resolve(__dirname, 'temp/MIME.txt');
+        writeFileSync(MIMEPath, MIME);
+
+        await isSpam(MIMEPath, this.caster);
+
+        await delay(2000);
+        this.start();
+        break;
+
+      case 'Train SpamAssassin':
+        await train(this.caster);
+        break;
+    }
+  }
+
+  async pdf() {
+    this.caster.start('Generating PDF...');
+
+    const paths: Paths = JSON.parse(readFileSync(resolve(__dirname, 'config/paths.json'), { encoding: 'utf8'}));
+    const last = readFileSync(resolve(__dirname, 'temp/last'), { encoding: 'utf8' });
+
+    try {
+      const log = readFileSync(__dirname + 'temp/log.txt', 'utf-8');
+      const analysis = parseSpamAnalysis(log);
+      await generatePDF(analysis, paths[last]);
+      this.caster.succeed(`Generated PDF file at ${this.caster.color(resolve(__dirname, 'temp/spam-analysis.pdf'), 'green')}`);
+    }
+
+    catch (error) {
+      this.caster.fail();
+      this.caster.error(error as string);
+    }
+
+    await delay(2000);
+    this.start();
+
+    open(resolve(__dirname, 'temp/spam-analysis.pdf'), { app: { name: 'browser' } });
   }
 }
 

@@ -700,7 +700,7 @@ program
 .action(async (options: { build: boolean, test: boolean | string, learn: boolean, pdf: boolean}) => {
   try {
     if (options.build) {
-      await buildImage();
+      await buildImage(broadcaster);
     }
 
     if (options.test) {
@@ -711,11 +711,11 @@ program
       const rfcPath = resolve(__dirname, 'temp/rfc822.txt');
       writeFileSync(rfcPath, RFC822);
 
-      await isSpam(rfcPath);
+      await isSpam(rfcPath, broadcaster);
     }
 
     if (options.learn) {
-      await train();
+      await train(broadcaster);
     }
 
     if (options.pdf) {
@@ -724,7 +724,7 @@ program
       try {
         const log = readFileSync(__dirname + 'temp/log.txt', 'utf-8');
         const analysis = parseSpamAnalysis(log);
-        await generatePDF(analysis);
+        await generatePDF(analysis, await getPath());
         broadcaster.succeed(`Generated PDF file at ${broadcaster.color(resolve(__dirname, 'temp/spam-analysis.pdf'), 'green')}`);
       }
 

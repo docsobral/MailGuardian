@@ -1,8 +1,8 @@
 import { spawn } from 'child_process';
 // @ts-ignore
 import mailcomposer from 'mailcomposer';
-import { broadcaster } from '../bin/index.js';
 import { __dirname, saveFile } from './filesystem.js';
+import { Broadcaster } from './broadcaster.js';
 
 async function copyEmail(path: string): Promise<void> {
   return new Promise<void>((resolve, reject) => {
@@ -21,7 +21,7 @@ async function copyEmail(path: string): Promise<void> {
   });
 }
 
-async function testEmail(): Promise<void> {
+async function testEmail(broadcaster: Broadcaster): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     const sa = spawn('docker', ['exec', 'spamassassin-app', 'spamassassin', '-x', '-t', 'email.txt']);
     let score: number;
@@ -58,7 +58,7 @@ async function testEmail(): Promise<void> {
   });
 }
 
-async function startContainer(): Promise<void> {
+async function startContainer(broadcaster: Broadcaster): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     broadcaster.start('Starting container...');
     const child = spawn('sh', ['./sa/start.sh']);
@@ -80,7 +80,7 @@ async function startContainer(): Promise<void> {
   });
 }
 
-async function stopContainer(): Promise<void> {
+async function stopContainer(broadcaster: Broadcaster): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     broadcaster.start('Stopping container...');
     const child = spawn('sh', ['./sa/stop.sh']);
@@ -102,7 +102,7 @@ async function stopContainer(): Promise<void> {
   });
 }
 
-async function trainSpamAssassin(): Promise<void> {
+async function trainSpamAssassin(broadcaster: Broadcaster): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     broadcaster.start('Training...\n');
     const child = spawn('sh', ['./sa/train.sh']);
@@ -132,9 +132,11 @@ async function trainSpamAssassin(): Promise<void> {
   });
 }
 
-export async function isSpam(path: string): Promise<void> {
-  await startContainer();
-  copyEmail(path).then(async () => await testEmail()).then(async () => await stopContainer());
+export async function isSpam(path: string, broadcaster: Broadcaster): Promise<void> {
+  await startContainer(broadcaster);
+  await copyEmail(path)
+  await testEmail(broadcaster)
+  await stopContainer(broadcaster);
 }
 
 export async function convertHTML(html: string): Promise<string> {
@@ -156,12 +158,12 @@ export async function convertHTML(html: string): Promise<string> {
   });
 }
 
-export async function train(): Promise<void> {
-  await startContainer();
-  await trainSpamAssassin().then(async () => await stopContainer());
+export async function train(broadcaster: Broadcaster): Promise<void> {
+  await startContainer(broadcaster);
+  await trainSpamAssassin(broadcaster).then(async () => await stopContainer(broadcaster));
 }
 
-export async function buildImage(): Promise<void> {
+export async function buildImage(broadcaster: Broadcaster): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     const dockerBuild = spawn('docker', ['build', '-t', 'spamassassin:latest', 'sa']);
     dockerBuild.stdout.on('data', (data) => {
