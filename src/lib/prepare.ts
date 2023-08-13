@@ -61,7 +61,7 @@ export async function downloadMJML(projectName: string, marketo: boolean = false
 
 export function parseMJML(mjml: string, marketo?: boolean): string {
   const string = mjml;
-  const htmlObject = mjml2html(string, { validationLevel: 'soft' });
+  const htmlObject = mjml2html(string, { validationLevel: 'soft', keepComments: false });
   const html = beautifyHTML(htmlObject.html);
 
   if (marketo) {

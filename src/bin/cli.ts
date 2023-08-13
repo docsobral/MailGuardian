@@ -470,12 +470,17 @@ class MailGuardian {
 
     const buckets = data.map(bucket => bucket.name);
 
-    const { name } = await this.caster.ask([
+    const { name, marketo } = await this.caster.ask([
       {
         type: 'autocomplete',
         name: 'name',
         message: 'What is the template\'s name?',
         choices: buckets,
+      },
+      {
+        type: 'confirm',
+        name: 'marketo',
+        message: 'Marketo?',
       }
     ]);
 
@@ -523,7 +528,7 @@ class MailGuardian {
       // save mjml with new paths
       await saveFile(__tempdirname, 'source.mjml', mjmlString);
 
-      const parsedHTML = parseMJML(readFileSync(resolve(__tempdirname, 'source.mjml'), { encoding: 'utf8' }), false);
+      const parsedHTML = parseMJML(readFileSync(resolve(__tempdirname, 'source.mjml'), { encoding: 'utf8' }), marketo);
       await saveFile(__tempdirname, 'parsed.html', parsedHTML);
 
       const list = await listFiles(name);
