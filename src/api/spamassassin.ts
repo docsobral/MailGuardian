@@ -3,6 +3,7 @@ import { spawn } from 'child_process';
 import mailcomposer from 'mailcomposer';
 import { __dirname, saveFile } from './filesystem.js';
 import { Broadcaster } from './broadcaster.js';
+import { resolve as absolutePath } from 'path';
 
 async function copyEmail(path: string): Promise<void> {
   return new Promise<void>((resolve, reject) => {
@@ -61,7 +62,7 @@ async function testEmail(broadcaster: Broadcaster): Promise<void> {
 async function startContainer(broadcaster: Broadcaster): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     broadcaster.start('Starting container...');
-    const child = spawn('sh', ['./sa/start.sh']);
+    const child = spawn('sh', [absolutePath(__dirname, 'sa/start.sh')]);
 
     child.on('error', (error) => {
       broadcaster.fail(error.message);
@@ -83,7 +84,7 @@ async function startContainer(broadcaster: Broadcaster): Promise<void> {
 async function stopContainer(broadcaster: Broadcaster): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     broadcaster.start('Stopping container...');
-    const child = spawn('sh', ['./sa/stop.sh']);
+    const child = spawn('sh', [absolutePath(__dirname, 'sa/stop.sh')]);
 
     child.on('error', (error) => {
       broadcaster.fail(error.message);
@@ -105,7 +106,7 @@ async function stopContainer(broadcaster: Broadcaster): Promise<void> {
 async function trainSpamAssassin(broadcaster: Broadcaster): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     broadcaster.start('Training...\n');
-    const child = spawn('sh', ['./sa/train.sh']);
+    const child = spawn('sh', [absolutePath(__dirname, 'sa/train.sh')]);
 
     child.on('error', (error: Error) => {
       broadcaster.fail(error.message);
@@ -133,9 +134,13 @@ async function trainSpamAssassin(broadcaster: Broadcaster): Promise<void> {
 }
 
 export async function isSpam(path: string, broadcaster: Broadcaster): Promise<void> {
+  console.log('1')
   await startContainer(broadcaster);
+  console.log('2')
   await copyEmail(path)
+  console.log('3')
   await testEmail(broadcaster)
+  console.log('4')
   await stopContainer(broadcaster);
 }
 
