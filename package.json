@@ -7,7 +7,6 @@
   "dependencies": {
     "@stdlib/datasets-spam-assassin": "^0.0.8",
     "@supabase/supabase-js": "^2.12.0",
-    "@types/prettier": "^3.0.0",
     "chalk": "^5.2.0",
     "commander": "^10.0.0",
     "cryptr": "^6.2.0",
@@ -16,7 +15,6 @@
     "js-beautify": "^1.14.7",
     "mailcomposer": "^4.0.2",
     "mjml": "^4.13.0",
-    "node-watch": "^0.7.3",
     "nodemailer": "^6.9.1",
     "open": "^9.1.0",
     "ora": "^6.3.0",
@@ -29,6 +27,7 @@
     "@types/mjml": "^4.7.0",
     "@types/nodemailer": "^6.4.7",
     "@types/pdfkit": "^0.12.9",
+    "@types/prettier": "^3.0.0",
     "@typescript-eslint/eslint-plugin": "^5.59.2",
     "@typescript-eslint/parser": "^5.59.2",
     "typescript": "^5.0.2"
