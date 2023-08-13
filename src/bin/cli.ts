@@ -21,13 +21,14 @@ import { Broadcaster } from '../api/broadcaster.js';
 import { uploadImages, uploadMJML } from '../lib/export.js';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'path';
-import { imagesUrls, listBuckets, listImages, listFiles, fileExists, deleteFile, uploadFile, deleteBucket } from '../api/supabase.js';
+import { imagesUrls, listBuckets, listImages, listFiles, fileExists, deleteFile, uploadFile, deleteBucket, manageBucket } from '../api/supabase.js';
 import { downloadMJML, parseMJML } from '../lib/prepare.js';
 import { downloadHTML, mailHTML } from '../lib/mail.js';
 import { getPath } from '../lib/filestats.js';
 import { buildImage, convertHTML, isSpam, train, parseSpamAnalysis } from '../api/spamassassin.js'
 import { generatePDF } from '../api/pdf.js';
 import open from 'open';
+import { listComponents as list } from '../lib/append.js';
 
 type Config = {
   [config: string]: string;
@@ -69,7 +70,7 @@ class MailGuardian {
         type: 'select',
         name: 'answer',
         message: 'Choose:',
-        choices: ['Components', 'Templates', 'Export', 'Prepare', 'Send', 'SpamAssassin', 'PDF report', 'Exit'],
+        choices: ['Components', 'Templates', 'Bucket', 'Export', 'Prepare', 'Send', 'SpamAssassin', 'PDF report', 'Exit'],
       }
     ]);
 
@@ -79,6 +80,9 @@ class MailGuardian {
         break;
       case 'Templates':
         this.templates();
+        break;
+      case 'Bucket':
+        this.bucket();
         break;
       case 'Export':
         this.export();
@@ -210,9 +214,14 @@ class MailGuardian {
           {
             type: 'input',
             name: 'name',
-            message: 'Enter the template\'s name:',
+            message: 'Enter the template\'s name: (\'Back\' to return)',
           }
         ]);
+
+        if ((name as string).toLowerCase() === 'back') {
+          this.start();
+          return;
+        }
 
         templateName = name;
 
@@ -256,10 +265,6 @@ class MailGuardian {
             }
           }
         ]);
-
-        console.log(sorted)
-
-        await delay(5000);
 
         const result = await supabase.storage.createBucket(templateName, { public: false });
         if (result.error) {
@@ -312,11 +317,10 @@ class MailGuardian {
         break;
 
       case 'List':
-        console.log('list');
         await listComponents(this.caster);
 
         // @ts-ignore
-        const { confirm } = this.caster.ask([
+        const { confirm } = await this.caster.ask([
           {
             type: 'confirm',
             name: 'confirm',
@@ -325,6 +329,87 @@ class MailGuardian {
         ]);
 
         this.start();
+    }
+  }
+
+  async bucket() {
+    this.switchScreen('Choose your option:');
+
+    const { choice } = await this.caster.ask([
+      {
+        type: 'select',
+        name: 'choice',
+        message: 'Choose:',
+        choices: ['Create', 'Delete', 'List', 'Back'],
+      }
+    ]);
+
+    if (choice === 'Back') {
+      this.start();
+    }
+
+    else if (choice === 'List') {
+      await list(this.caster, true);
+
+      await delay(2000);
+      this.start();
+    }
+
+    else if (choice === 'Create') {
+      const { name } = await this.caster.ask([
+        {
+          type: 'input',
+          name: 'name',
+          message: 'Enter the bucket\'s name: (\'Back\' to return)'
+        }
+      ]);
+
+      if ((name as string).toLowerCase() === 'back') {
+        this.start();
+        return;
+      }
+
+      await manageBucket(name, 'create', this.caster);
+
+      await delay(2000);
+
+      this.start();
+      return;
+    }
+
+    else {
+      const { data: availableTemplates } = await listBuckets();
+
+      if (!availableTemplates) {
+        throw new Error('Something happened while trying to fetch the buckets list...');
+      }
+
+      const buckets = availableTemplates.map(bucket => bucket.name);
+
+      const { name: toBeDeleted } = await this.caster.ask([
+        {
+          type: 'autocomplete',
+          name: 'name',
+          message: 'Enter the bucket\'s name:',
+          choices: buckets,
+        }
+      ]);
+
+      try {
+        await manageTemplate(toBeDeleted, true, 'template');
+      } catch (error) {
+        throw error;
+      }
+
+      const deletionResult = await deleteBucket(toBeDeleted);
+      if (deletionResult.error) {
+        throw deletionResult.error;
+      }
+
+      await delay(2000);
+
+      this.start();
+      return;
     }
   }
 

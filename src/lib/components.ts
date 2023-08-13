@@ -206,7 +206,7 @@ export async function listComponents(broadcaster: any): Promise<void> {
   }
 
   if (data.length === 0) {
-    broadcaster.fail('There are no templates in the server. Use \'mailer template -c [name]\' to create one.');
+    broadcaster.fail('There are no templates in the server.');
 
     return;
   }

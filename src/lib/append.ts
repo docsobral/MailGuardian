@@ -170,11 +170,11 @@ export async function listComponents(broadcaster: any, bucket: boolean = false):
 
   if (error) {
     broadcaster.fail();
-    throw new BucketError(`\nFailed to fetch templates!\n\n${error.stack?.slice(17)}`);
+    throw new BucketError(`\nFailed to fetch ${bucket ? 'buckets' : 'templates'}!\n\n${error.stack?.slice(17)}`);
   }
 
   if (data.length === 0) {
-    broadcaster.fail(`There are no templates in the server. Use \'mailer ${bucket ? 'bucket' : 'template'} -c [name]\' to create one.`);
+    broadcaster.fail(`There are no ${bucket ? 'buckets' : 'templates'} in the server.`);
 
     return;
   }

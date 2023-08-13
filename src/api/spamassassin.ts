@@ -134,13 +134,9 @@ async function trainSpamAssassin(broadcaster: Broadcaster): Promise<void> {
 }
 
 export async function isSpam(path: string, broadcaster: Broadcaster): Promise<void> {
-  console.log('1')
   await startContainer(broadcaster);
-  console.log('2')
   await copyEmail(path)
-  console.log('3')
   await testEmail(broadcaster)
-  console.log('4')
   await stopContainer(broadcaster);
 }
 
