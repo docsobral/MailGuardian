@@ -294,9 +294,14 @@ class MailGuardian {
             type: 'autocomplete',
             name: 'name',
             message: 'Enter the template\'s name:',
-            choices: buckets,
+            choices: [...buckets, 'None'],
           }
         ]);
+
+        if (toBeDeleted === 'None') {
+          this.start();
+          return;
+        }
 
         try {
           await manageTemplate(toBeDeleted, true, 'template');
@@ -389,9 +394,14 @@ class MailGuardian {
           type: 'autocomplete',
           name: 'name',
           message: 'Enter the bucket\'s name:',
-          choices: buckets,
+          choices: [...buckets, 'None'],
         }
       ]);
+
+      if (toBeDeleted === 'None') {
+        this.start();
+        return;
+      }
 
       try {
         await manageTemplate(toBeDeleted, true, 'template');
@@ -465,7 +475,14 @@ class MailGuardian {
     let { data } = await listBuckets();
 
     if (!data) {
-      throw new Error('Something happened while trying to fetch the buckets list...');
+      throw new Error('Something wrong happened while fetchin buckets from the server!');
+    }
+
+    if (data && data?.length === 0) {
+      this.caster.inform('\n  There are no templates to fetch in the server...');
+      await delay(2000);
+      this.start()
+      return;
     }
 
     const buckets = data.map(bucket => bucket.name);
@@ -562,6 +579,13 @@ class MailGuardian {
 
     if (!availableTemplates) {
       throw new Error('Something happened while trying to fetch the buckets list...');
+    }
+
+    if (availableTemplates && availableTemplates?.length === 0) {
+      this.caster.inform('\n  There are no templates to fetch in the server...');
+      await delay(2000);
+      this.start()
+      return;
     }
 
     const buckets = availableTemplates.map(bucket => bucket.name);
