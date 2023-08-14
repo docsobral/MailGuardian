@@ -68,7 +68,7 @@ export async function generatePDF(spamResult: SpamResult, path: string): Promise
       return stringArray;
     }
 
-    else if (totalWeight >= 1) {
+    else if (totalWeight >= 1.5) {
       stringArray.push(' may ', 'affect', ' the user experience.');
       return stringArray;
     }
@@ -103,7 +103,7 @@ export async function generatePDF(spamResult: SpamResult, path: string): Promise
 
     switch (true) {
       case totalWeight >= 3: return [255, 27, 120];
-      case totalWeight >= 1: return [255, 240, 17];
+      case totalWeight >= 1.5: return [255, 27, 120];
       default: return [0, 189, 250];
     }
   }
@@ -277,7 +277,7 @@ export async function generatePDF(spamResult: SpamResult, path: string): Promise
 
   doc.moveDown();
 
-  doc.fontSize(12).text(stringArray[0], { continued: true }).fillColor(weightColor).text(stringArray[1], { continued: true }).fillColor('black').text(stringArray[2], { continued: true }).fillColor(weightColor).text(stringArray[3], { continued: true }).fillColor('black').text(stringArray[4], { continued: false });
+  doc.fontSize(12).text(stringArray[0], { continued: true }).fillColor(weightColor).text(stringArray[1], { continued: true }).fillColor(weightColor).text(stringArray[2], { continued: true }).fillColor(weightColor).text(stringArray[3], { continued: true }).fillColor('black').text(stringArray[4], { continued: false });
 
   const gifs = findGIFs(mediaStats);
 

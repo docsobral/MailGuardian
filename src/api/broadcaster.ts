@@ -183,11 +183,12 @@ export class Broadcaster implements Partial<Console> {
     }
   }
 
-  log(text: string) {
-    this._process.stdout.write(''.repeat(this.indent) + text + '\n');
+  log(text?: string) {
+    const toPrint = text ? text : '';
+    this._process.stdout.write(''.repeat(this.indent) + toPrint + '\n');
   }
 
-  logSeries(array: [string, 'yellow' | 'blue' | 'green' | 'red'][]) {
+  logSeries(array: [string, 'yellow' | 'blue' | 'green' | 'red' | undefined][]) {
     let string: string = '';
     let colorer;
 
@@ -208,6 +209,8 @@ export class Broadcaster implements Partial<Console> {
         case 'green':
           colorer = chalk.green;
           break;
+        default:
+          colorer = chalk.white;
       }
 
       string += colorer(text);

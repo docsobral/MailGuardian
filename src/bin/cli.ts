@@ -322,8 +322,8 @@ class MailGuardian {
       case 'List':
         await listComponents(this.caster);
 
-        // @ts-ignore
-        const { confirm } = await this.caster.ask([
+        this.caster.log();
+        await this.caster.ask([
           {
             type: 'confirm',
             name: 'confirm',
@@ -354,7 +354,15 @@ class MailGuardian {
     else if (choice === 'List') {
       await list(this.caster, true);
 
-      await delay(2000);
+      this.caster.log();
+      await this.caster.ask([
+        {
+          type: 'confirm',
+          name: 'confirm',
+          message: 'Press "y" when you are done viewing the list.'
+        }
+      ]);
+
       this.start();
     }
 
