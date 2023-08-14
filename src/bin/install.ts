@@ -1,9 +1,9 @@
 #! /usr/bin/env node
 
 import chalk from "chalk";
-import { mkdirSync,  existsSync } from 'node:fs';
-import { writeFile } from 'node:fs/promises';
 import { resolve } from 'path';
+import { mkdirSync,  existsSync } from 'node:fs';
+import { writeFile, readFile } from 'node:fs/promises';
 import { AppState, __dirname } from "../api/filesystem.js";
 import { enquire, EnquireMessages, EnquireNames, EnquireTypes } from "../api/enquire.js";
 
@@ -55,3 +55,11 @@ if (!existsSync(resolve(__dirname, 'node_modules/win-select-folder/dist/select-f
 
   await writeFile(resolve(__dirname, 'node_modules/win-select-folder/dist/select-folder.d.ts'), thing, { encoding: 'utf8' });
 }
+
+let TSCONFIG = JSON.parse(await readFile(resolve(__dirname, 'tsconfig.json'), { encoding: 'utf8' }));
+
+TSCONFIG.compilerOptions.noEmitOnError = true;
+
+TSCONFIG = JSON.stringify(TSCONFIG, null, 2);
+
+await writeFile(resolve(__dirname, 'tsconfig.json'), TSCONFIG);

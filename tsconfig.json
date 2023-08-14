@@ -8,7 +8,7 @@
     "removeComments": true,
     "preserveConstEnums": true,
     "sourceMap": false,
-    "noEmitOnError": true,
+    "noEmitOnError": false,
     "esModuleInterop": true,
     "rootDir": "src",
     "outDir": "build",
