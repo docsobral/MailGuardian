@@ -36,5 +36,8 @@
     "mailer": "./build/bin/index.js",
     "install-mailer": "./build/bin/install.js",
     "mg": "./build/bin/cli.js"
+  },
+  "scripts": {
+    "mg": "node ./build/bin/cli.js"
   }
 }
