@@ -464,8 +464,9 @@ class MailGuardian {
             break;
           }
 
-          save('paths', name, paths[name]);
+          if (!paths[name]) paths[name] = resolve(__dirname, 'templates', name);
 
+          save('paths', name, paths[name]);
           await uploadMJML(name, paths[name], false, this.caster);
           await uploadImages(name, paths[name], this.caster);
 
@@ -717,16 +718,22 @@ class MailGuardian {
     const paths: Paths = JSON.parse(readFileSync(resolve(__dirname, 'config/paths.json'), { encoding: 'utf8'}));
     const last = readFileSync(resolve(__dirname, 'temp/last'), { encoding: 'utf8' });
 
+    let log: string = '';
+
     try {
-      const log = readFileSync(__dirname + 'temp/log.txt', 'utf-8');
+      log = readFileSync(__dirname + 'temp/log.txt', 'utf-8');
       const analysis = parseSpamAnalysis(log);
       await generatePDF(analysis, paths[last]);
       this.caster.succeed(`Generated PDF file at ${this.caster.color(resolve(__dirname, 'temp/spam-analysis.pdf'), 'green')}`);
     }
 
     catch (error) {
-      this.caster.fail();
-      this.caster.error(error as string);
+      console.log(error)
+      this.caster.fail('Couldn\'t find the log file. Run a SpamAssassin test before trying to generate a PDF report!');
+
+      await delay(3500);
+      this.start();
+      return;
     }
 
     await delay(2000);
