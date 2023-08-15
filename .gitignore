@@ -11,6 +11,7 @@ downloads/
 templates/
 components/
 boilerplate/
+.npmignore
 
 # Local
 old_logo.jpg
