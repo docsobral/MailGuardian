@@ -394,7 +394,7 @@ program
       const time = new Date();
       const hours = `${time.getHours()}:${time.getMinutes()}:${time.getSeconds()}`;
       broadcaster.appendSuffix(`\n  Change detected at ${hours}`, 'blue');
-      const [result, error] = await compileHTML(compilerOptions);
+      const [result, error] = await compileHTML(compilerOptions, broadcaster);
 
       if (result === 'error') {
         broadcaster.fail(error);
@@ -406,7 +406,7 @@ program
     });
 
     watcher.once('start', async () => {
-      const [result, error] = await compileHTML(compilerOptions);
+      const [result, error] = await compileHTML(compilerOptions, broadcaster);
 
       if (result === 'error') {
         broadcaster.fail(error);
@@ -431,7 +431,7 @@ program
     return;
   }
 
-  const [result, error, pathToHTML] = await compileHTML(compilerOptions);
+  const [result, error, pathToHTML] = await compileHTML(compilerOptions, broadcaster);
   broadcaster.start('Compiling HTML...');
   await delay(500);
 

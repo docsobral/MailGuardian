@@ -2,10 +2,10 @@ import mjml2html from 'mjml';
 import { resolve } from 'node:path';
 import { writeFileSync } from 'node:fs';
 import selectFolder from 'win-select-folder';
+import { Broadcaster } from '../api/broadcaster.js';
 import { __dirname, getFile } from '../api/filesystem.js';
 import beautify, { HTMLBeautifyOptions } from 'js-beautify';
 import { EnquireMessages, EnquireNames, EnquireTypes, enquire } from '../api/enquire.js';
-import { broadcaster } from '../bin/index.js';
 
 const { html_beautify } = beautify;
 
@@ -52,12 +52,12 @@ export type CompilerOptions = {
   insertLabels?: boolean,
 }
 
-async function insertLabels(html: string): Promise<string> {
+async function insertLabels(html: string, broadcaster: Broadcaster): Promise<string> {
   let result: string = html;
 
   function getAnchors(html: string) {
     // const finder = /(?<=<a.*"\s?>\n?)(.*)(?=\n? *<\/a>)/g;
-    const finder = /(?<=<a.*href=".*">\s*)(.*?)(?=\s*<\/a>)/g;
+    const finder = /(<a.*?href=".*?">\s*)(.*?)(\s*<\/a>)/g;
     const finds = html.matchAll(finder);
     return finds;
   }
@@ -72,7 +72,8 @@ async function insertLabels(html: string): Promise<string> {
 
     if (done) break;
 
-    broadcaster.solve(`\nFound this anchor: ${broadcaster.color(value[0].trim(), 'green')}`);
+    broadcaster.solve(`\nFound this anchor: ${broadcaster.color(value[2].trim(), 'green')}`);
+    broadcaster.inform(value)
     const { addLabel } = await enquire([
       {
         type: EnquireTypes.confirm,
@@ -93,13 +94,13 @@ async function insertLabels(html: string): Promise<string> {
       const labelTag = `<b style="display:none;color:#ffffff;">${label}</b>`;
       let finder: string | RegExp = value[0];
 
-      if ((finder as string).includes('unsubscribe')) {
-        finder = new RegExp(finder + '(?!_product_link)');
-      }
+      // if ((finder as string).includes('unsubscribe')) {
+      //   finder = new RegExp(finder + '(?!_product_link)');
+      // }
 
       console.log(finder)
 
-      const replacer = labelTag + next.value[0];
+      const replacer = value[1] + labelTag + value[2] + value[3];
 
       console.log(replacer)
 
@@ -138,7 +139,7 @@ function insertIF(html: string): string {
   return html.replace(finder, replacer);
 }
 
-export async function compileHTML(options: CompilerOptions): Promise<['success' | 'error', any, string]> {
+export async function compileHTML(options: CompilerOptions, broadcaster: Broadcaster): Promise<['success' | 'error', any, string]> {
   try {
     const folderPath = options.folderPath;
     const fileName: string = options.fileName;
@@ -150,7 +151,7 @@ export async function compileHTML(options: CompilerOptions): Promise<['success' 
     }
 
     if (options.insertLabels) {
-      htmlString = await insertLabels(htmlString);
+      htmlString = await insertLabels(htmlString, broadcaster);
     }
 
     if (options.insertIF) {
