@@ -26,7 +26,6 @@ export async function login(id: string, password: string): Promise<boolean> {
       if (error) {
         console.log(error);
       } else {
-        // console.log(`${chalk.blueBright('Success! Saving your credentials')}`);
         saveCredentials(options);
         saveCredentials({logged: true});
       }
