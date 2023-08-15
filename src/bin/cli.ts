@@ -17,6 +17,7 @@ process.emitWarning = (warning, ...args) => {
 import { imagesUrls, listBuckets, listImages, listFiles, fileExists, deleteFile, uploadFile, deleteBucket, manageBucket } from '../api/supabase.js';
 import { __dirname, cleanTemp, getChildDirectories, manageTemplate, openVS, saveFile, getFile, save } from '../api/filesystem.js';
 import { buildImage, convertHTML, isSpam, train, parseSpamAnalysis } from '../api/spamassassin.js';
+import { EnquireTypes, EnquireNames, EnquireMessages, enquire } from '../api/enquire.js';
 import { importComponents, listComponents } from '../lib/components.js';
 import { downloadMJML, parseMJML } from '../lib/prepare.js';
 import { uploadImages, uploadMJML } from '../lib/export.js';
@@ -24,9 +25,11 @@ import { listComponents as list } from '../lib/append.js';
 import { downloadHTML, mailHTML } from '../lib/mail.js';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { createClient } from '@supabase/supabase-js';
+import { isLoggedIn, login } from '../lib/login.js';
 import { Broadcaster } from '../api/broadcaster.js';
 import { getPath } from '../lib/filestats.js';
 import { generatePDF } from '../api/pdf.js';
+import { program } from 'commander';
 import { resolve } from 'path';
 import open from 'open';
 
@@ -45,6 +48,63 @@ if (typeof config['SUPA_URL'] === 'undefined' || typeof config['SUPA_SECRET'] ==
 }
 
 export const supabase = createClient(config['SUPA_URL'], config['SUPA_SECRET']);
+
+program
+.command('login')
+.description('Valitades and stores sender email address credentials')
+.argument('<id>', 'User ID e.g. email@address.com')
+.argument('<password>', 'If you use 2FA, your regular password will not work')
+.action(async (id: string, password: string) => {
+  password = password.replace(/\\/g, '');
+  const broadcaster = new Broadcaster();
+
+  try {
+    const check = await isLoggedIn();
+
+    if (check) {
+      broadcaster.inform('\nYou already have saved credentials... do you want to switch accounts?');
+
+      const { confirm } = await enquire([
+        {
+          type: EnquireTypes.confirm,
+          name: EnquireNames.confirm,
+          message: EnquireMessages.confirm
+        }
+      ]);
+
+      if (confirm) {
+        broadcaster.start('Validating credentials...');
+
+        if (!(await login(id, password))) {
+          broadcaster.fail();
+          throw new Error('Failed to login!');
+        }
+
+        broadcaster.succeed('Success! Your credentials were saved.');
+      }
+
+      else {
+        broadcaster.calm('Ok, exiting...');
+        process.exit();
+      }
+    }
+
+    else {
+      broadcaster.start('Validating credentials...');
+
+      if (await login(id, password)) {
+        broadcaster.fail();
+        throw new Error('Something went wrong... try again!');
+      }
+
+      broadcaster.succeed('Success! Your credentials were saved.');
+    }
+  }
+
+  catch (error) {
+    broadcaster.error(error as string);
+  }
+});
 
 class MailGuardian {
   _step: number;
@@ -745,6 +805,10 @@ class MailGuardian {
 
 async function delay(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+if (process.argv[2]) {
+  program.parse(process.argv);
 }
 
 new MailGuardian().initialize();
