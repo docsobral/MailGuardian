@@ -1,9 +1,23 @@
 {
   "name": "mailguardian",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "homepage": "https://github.com/orchidb0y/mailer",
   "license": "AGPL-3.0-only",
   "type": "module",
+  "keywords": [
+    "mjml",
+    "marketo",
+    "template",
+    "component",
+    "supabase",
+    "proof",
+    "test",
+    "email",
+    "spam",
+    "spamassassin",
+    "report",
+    "pdf"
+  ],
   "dependencies": {
     "@stdlib/datasets-spam-assassin": "^0.0.8",
     "@supabase/supabase-js": "^2.12.0",

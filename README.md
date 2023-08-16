@@ -8,9 +8,12 @@ This tool was built with the initial purpose of serving as a quick means of proo
 
 MailGuardian was made and tested with TypeScript v5.0.2 and Node v18.12.0. Your mileage may vary depending on the version you have installed.
 
-Install [Docker](https://www.docker.com/). Then install MailGuardian with `npm install -g mailguardian`. Then run `mg login <email> <password>`. Only works with Gmail, and you must create an app password first.
-
-After installation, run use the command `mg` to start the CLI.
+1. Install [Docker](https://www.docker.com/)
+2. Create a supabase project and open the API settings page
+3. Run `npm install -g mailguardian`
+4. Provide the service_role key, project URL and provide a secret key
+5. Run `mg login <email> <password>`
+6. You are ready to start, just run `mg` start the CLI.
 
 ## Style requirements for importing components
 
@@ -34,13 +37,11 @@ For now, the only format supported by the component importer is the one below. O
 </mj-head>
 ```
 
-***WARNING***: Use 2 spaces for each indentation, not tabs.
-
 ## Requirements for Marketo MJML
 
- ***ALL top elements in the MJML file (`<mj-section>` or `<mj-wrapper>`) MUST have a `css-class` attribute. That is how the Marketo modules are going to be named. Try using a name descriptive of the function of the section/wrapper.***
+ ***ALL direct child elements of `<mjml>` (top elements) in the MJML file (`<mj-section>` or `<mj-wrapper>`) MUST have a `css-class` attribute. That is how the Marketo modules are going to be named (can be renamed later). Try using a name descriptive of the function of the section/wrapper.***
 
- ***All lateral padding (that is, left and right padding) of top elements (`<mj-section>` or `<mj-wrapper>`), MUST be fixed. Variables are NOT allowed as values for top elements. Blame it on Outlook.***
+ ***All inline padding of top elements (`<mj-section>` or `<mj-wrapper>`), MUST be fixed. Variables are NOT allowed as values for top elements.***
 
 Marketo variables can be used with the MJML, and they will be parsed for Marketo. The required syntax is as follows, and **MUST** be followed:
 
