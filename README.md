@@ -96,3 +96,14 @@ The steps you must follow to send a proof test are:
 You can also use the spam scoring function. To use it, you must have docker installed. First, build the SpamAssassin image. After building it, you can test an email straight away. To improve results, you can also train SpamAssassin. MailGuardian takes care of fetching a spam and ham database that it uses to train SpamAssassin.
 
 Finally, you can generate a report on the email. The report compiles SpamAssassin results as well as checking if the HTML file is too large (Gmail cropping) or if the loaded email weight is too large.
+
+## Known bugs
+
+1. Component sorter doesn't work properly in the native Bash shell:
+  - This is a problem with the Enquirer library
+  - It DOES work in the Bash shell inside VSCode
+
+2. I get a ENOENT error after selecting a folder from the folder select window:
+  - This is a problem with the win-select-folder library
+  - Sometimes it appends a linebreak in the middle of the path, which breaks it
+  - Try again and it should work
