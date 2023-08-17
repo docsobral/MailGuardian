@@ -32,6 +32,7 @@ import { generatePDF } from '../api/pdf.js';
 import { program } from 'commander';
 import { resolve } from 'path';
 import open from 'open';
+import { minifyHTML } from '../lib/minify.js';
 
 type Config = {
   [config: string]: string;
@@ -555,7 +556,7 @@ class MailGuardian {
 
     const buckets = data.map(bucket => bucket.name);
 
-    const { name, marketo } = await this.caster.ask([
+    const { name, marketo, minify } = await this.caster.ask([
       {
         type: 'autocomplete',
         name: 'name',
@@ -566,7 +567,12 @@ class MailGuardian {
         type: 'confirm',
         name: 'marketo',
         message: 'Marketo?',
-      }
+      },
+      {
+        type: 'confirm',
+        name: 'minify',
+        message: 'Minify?',
+      },
     ]);
 
     await cleanTemp();
@@ -613,18 +619,21 @@ class MailGuardian {
       // save mjml with new paths
       await saveFile(__tempdirname, 'source.mjml', mjmlString);
 
-      const parsedHTML = parseMJML(readFileSync(resolve(__tempdirname, 'source.mjml'), { encoding: 'utf8' }), marketo);
+      let parsedHTML = parseMJML(readFileSync(resolve(__tempdirname, 'source.mjml'), { encoding: 'utf8' }), marketo);
+      if (minify) {
+        parsedHTML = minifyHTML(parsedHTML);
+      }
       await saveFile(__tempdirname, 'parsed.html', parsedHTML);
 
       const list = await listFiles(name);
-      const exists = await fileExists(`${false? 'marketo.html' : 'index.html'}`, list.data);
+      const exists = await fileExists(`${marketo? 'marketo.html' : 'index.html'}`, list.data);
 
       if (exists) {
-        const result = await deleteFile(`${false? 'marketo.html' : 'index.html'}`, name);
+        const result = await deleteFile(`${marketo? 'marketo.html' : 'index.html'}`, name);
 
         if (result.error) {
           this.caster.fail();
-          this.caster.error(`Failed to delete ${false? 'marketo.html' : 'index.html'} file! ${result.error.stack?.slice(17)}`);
+          this.caster.error(`Failed to delete ${marketo? 'marketo.html' : 'index.html'} file! ${result.error.stack?.slice(17)}`);
         }
       }
 
