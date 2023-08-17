@@ -257,24 +257,24 @@ program
 
     if (options.create) {
       if (existsSync(__dirname + `templates\\${name}`)) {
-        openVS(name, 'template');
+        openVS(name, 'template', broadcaster);
         return;
       }
 
       await supabaseAPI.manageBucket(name, 'create', broadcaster);
-      await manageTemplate(name, false, 'template');
+      await manageTemplate(name, false, 'template', broadcaster);
 
       if (typeof options.create !== 'boolean') {
         await importComponents(options.create, name, broadcaster);
       }
 
-      openVS(name, 'template');
+      openVS(name, 'template', broadcaster);
 
       return;
     }
 
     if (options.delete) {
-      await manageTemplate(name, true, 'template');
+      await manageTemplate(name, true, 'template', broadcaster);
       await supabaseAPI.manageBucket(name, 'delete', broadcaster);
       return;
     }
@@ -284,7 +284,7 @@ program
     }
 
     if (existsSync(resolve(__dirname, `templates\\${name}`))) {
-      openVS(name, 'template');
+      openVS(name, 'template', broadcaster);
       return;
     }
   }
@@ -336,21 +336,21 @@ program
 
     if (options.create) {
       if (existsSync(resolve(__dirname, `components\\${name}`))) {
-        openVS(name, 'component');
+        openVS(name, 'component', broadcaster);
 
         return;
       }
 
-      await manageTemplate(name, false, 'component');
+      await manageTemplate(name, false, 'component', broadcaster);
       await delay(1000);
 
-      openVS(name, 'component');
+      openVS(name, 'component', broadcaster);
 
       return;
     }
 
     if (options. delete) {
-      await manageTemplate(name, true, 'component');
+      await manageTemplate(name, true, 'component', broadcaster);
       broadcaster.inform(`\nDeleted component named ${name}.`);
     }
   }

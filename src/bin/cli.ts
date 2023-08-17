@@ -41,7 +41,7 @@ type Paths = {
   [name: string]: string
 }
 
-const config: Config = JSON.parse(readFileSync(__dirname + 'config\\config.json', { encoding: 'utf8' }));
+const config: Config = JSON.parse(readFileSync(resolve(__dirname, 'config/config.json'), { encoding: 'utf8' }));
 
 if (typeof config['SUPA_URL'] === 'undefined' || typeof config['SUPA_SECRET'] === 'undefined') {
   throw new Error('Missing API url, key or secret key! Please run \'mailer config\' to set them.');
@@ -76,8 +76,8 @@ program
         broadcaster.start('Validating credentials...');
 
         if (!(await login(id, password))) {
-          broadcaster.fail();
-          throw new Error('Failed to login!');
+          broadcaster.fail('Failed to login!');
+          return;
         }
 
         broadcaster.succeed('Success! Your credentials were saved.');
@@ -93,8 +93,7 @@ program
       broadcaster.start('Validating credentials...');
 
       if (await login(id, password)) {
-        broadcaster.fail();
-        throw new Error('Something went wrong... try again!');
+        broadcaster.fail('Something went wrong... try again!');
       }
 
       broadcaster.succeed('Success! Your credentials were saved.');
@@ -217,9 +216,9 @@ class MailGuardian {
           break;
         }
 
-        await manageTemplate(newName, false, 'component');
+        await manageTemplate(newName, false, 'component', this.caster);
         await delay(1000);
-        openVS(newName, 'component');
+        openVS(newName, 'component', this.caster);
 
         await delay(2000);
         this.start();
@@ -242,7 +241,7 @@ class MailGuardian {
           break;
         }
 
-        await manageTemplate(name, true, 'component');
+        await manageTemplate(name, true, 'component', this.caster);
 
         await delay(2000);
         this.start();
@@ -328,13 +327,13 @@ class MailGuardian {
         if (result.error) {
           throw result.error;
         }
-        await manageTemplate(templateName, false, 'template');
+        await manageTemplate(templateName, false, 'template', this.caster);
 
         if (!(picks as string[]).includes('None')) {
           await importComponents(sorted, templateName, this.caster);
         }
 
-        openVS(name, 'template');
+        openVS(name, 'template', this.caster);
 
         await delay(2000);
         this.start();
@@ -364,7 +363,7 @@ class MailGuardian {
         }
 
         try {
-          await manageTemplate(toBeDeleted, true, 'template');
+          await manageTemplate(toBeDeleted, true, 'template', this.caster);
         } catch (error) {
           throw error;
         }
@@ -472,7 +471,7 @@ class MailGuardian {
       }
 
       try {
-        await manageTemplate(toBeDeleted, true, 'template');
+        await manageTemplate(toBeDeleted, true, 'template', this.caster);
       } catch (error) {
         throw error;
       }
@@ -781,7 +780,7 @@ class MailGuardian {
     let log: string = '';
 
     try {
-      log = readFileSync(__dirname + 'temp/log.txt', 'utf-8');
+      log = readFileSync(resolve(__dirname, 'temp/log.txt'), 'utf-8');
       const analysis = parseSpamAnalysis(log);
       await generatePDF(analysis, paths[last]);
       this.caster.succeed(`Generated PDF file at ${this.caster.color(resolve(__dirname, 'temp/spam-analysis.pdf'), 'green')}`);
@@ -809,6 +808,6 @@ async function delay(ms: number): Promise<void> {
 
 if (process.argv[2]) {
   program.parse(process.argv);
+} else {
+  new MailGuardian().initialize();
 }
-
-new MailGuardian().initialize();

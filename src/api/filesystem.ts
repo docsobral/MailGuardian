@@ -12,8 +12,6 @@ async function delay(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-const broadcaster = new Broadcaster();
-
 function escapeBackslashes(path: string): string {
   const pathArray: string[] = path.split('');
   let newArray: string[] = [];
@@ -98,7 +96,7 @@ const newMJML = `<mjml>
   </mj-body>
 </mjml>`
 
-export async function manageTemplate(name: string, remove: boolean, type: 'template' | 'component'): Promise<void> {
+export async function manageTemplate(name: string, remove: boolean, type: 'template' | 'component', broadcaster: Broadcaster): Promise<void> {
   const option = remove ? 'Delet' : 'Creat';
   broadcaster.start(`${option}ing ${type} named ${name}`);
   await delay(1000);
@@ -123,7 +121,7 @@ export async function manageTemplate(name: string, remove: boolean, type: 'templ
   broadcaster.succeed(`${option}ed ${type} named ${name} at ${__dirname}/${type}s/${name}.`);
 }
 
-export async function openVS(name: string, type: 'template' | 'component'): Promise<void> {
+export async function openVS(name: string, type: 'template' | 'component', broadcaster: Broadcaster): Promise<void> {
   exec(`${process.platform === 'win32' ? 'code.cmd' : 'code'} "${__dirname}\\${type}s\\${name}"`, (error, stdout, stderr) => {
     if (error) {
       throw new Error(`Error executing the command: ${error.message}`);

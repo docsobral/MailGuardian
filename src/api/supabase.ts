@@ -10,7 +10,7 @@ type Config = {
   [config: string]: string;
 }
 
-const config: Config = JSON.parse(readFileSync(__dirname + 'config\\config.json', { encoding: 'utf8' }));
+const config: Config = JSON.parse(readFileSync(resolve(__dirname, 'config/config.json'), { encoding: 'utf8' }));
 
 if (typeof config['SUPA_URL'] === 'undefined' || typeof config['SUPA_SECRET'] === 'undefined') {
   throw new Error('Missing API url, key or secret key! Please run \'mailer config\' to set them.');
