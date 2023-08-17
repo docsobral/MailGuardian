@@ -369,7 +369,8 @@ program
 .option('-i, --if', 'Inserts IF block', false)
 .option('-w, --watch', 'Compiles file after every change', false)
 .option('-l, --labels', 'Inserts labels in the final HTML', false)
-.action(async (path: string, options: {name: string, author: string, if: boolean, watch: boolean, labels: boolean}) => {
+.option('-m, --minify', 'Minified the output HTML', false)
+.action(async (path: string, options: {name: string, author: string, if: boolean, watch: boolean, labels: boolean, minify: boolean}) => {
   const compilerOptions: CompilerOptions = {
     folderPath: path,
     fileName: options.name.replace(/.mjml/, ''),
@@ -378,6 +379,7 @@ program
     insertIF: options.if,
     watch: options.watch,
     insertLabels: options.labels,
+    minify: options.minify,
   }
 
   if (options.watch) {

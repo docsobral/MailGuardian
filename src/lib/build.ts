@@ -6,6 +6,7 @@ import { Broadcaster } from '../api/broadcaster.js';
 import { __dirname, getFile } from '../api/filesystem.js';
 import beautify, { HTMLBeautifyOptions } from 'js-beautify';
 import { EnquireMessages, EnquireNames, EnquireTypes, enquire } from '../api/enquire.js';
+import { minifyHTML } from './minify.js';
 
 const { html_beautify } = beautify;
 
@@ -50,6 +51,7 @@ export type CompilerOptions = {
   insertIF?: boolean,
   watch?: boolean,
   insertLabels?: boolean,
+  minify?: boolean,
 }
 
 async function insertLabels(html: string, broadcaster: Broadcaster): Promise<string> {
@@ -156,6 +158,10 @@ export async function compileHTML(options: CompilerOptions, broadcaster: Broadca
 
     if (options.insertIF) {
       htmlString = insertIF(htmlString);
+    }
+
+    if (options.minify) {
+      htmlString = minifyHTML(htmlString);
     }
 
     writeFileSync(resolve(folderPath, fileName + '.html'), htmlString, { encoding: 'utf8' });
