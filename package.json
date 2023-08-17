@@ -26,6 +26,7 @@
     "cryptr": "^6.2.0",
     "enquirer": "^2.3.6",
     "exiftool-vendored": "^22.0.0",
+    "html-minifier": "^4.0.0",
     "js-beautify": "^1.14.7",
     "mailcomposer": "^4.0.2",
     "mjml": "^4.13.0",
@@ -37,6 +38,7 @@
     "win-select-folder": "^1.0.1"
   },
   "devDependencies": {
+    "@types/html-minifier": "^4.0.2",
     "@types/js-beautify": "^1.13.3",
     "@types/mjml": "^4.7.0",
     "@types/nodemailer": "^6.4.7",
