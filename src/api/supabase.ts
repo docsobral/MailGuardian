@@ -112,7 +112,7 @@ export async function listImagesV2 (bucketName: string) {
 export async function imagesUrls(bucketName: string, imageNames: string[]) {
   const pathList = imageNames.map(imageName => 'img/' + imageName);
 
-  return supabase.storage.from(bucketName).createSignedUrls(pathList, 600);
+  return supabase.storage.from(bucketName).createSignedUrls(pathList, 86400);
 }
 
 export async function imagesUrlsV2(bucketName: string, imageList: string[]) {
