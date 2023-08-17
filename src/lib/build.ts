@@ -146,7 +146,7 @@ export async function compileHTML(options: CompilerOptions, broadcaster: Broadca
     const folderPath = options.folderPath;
     const fileName: string = options.fileName;
     const mjml: string = await getFile('mjml', folderPath, false, fileName);
-    let htmlString = beautifyHTML(mjml2html(mjml, { validationLevel: 'soft' }).html);
+    let htmlString = beautifyHTML(mjml2html(mjml, { validationLevel: 'soft', keepComments: false }).html);
 
     if (options.insertAuthor) {
       htmlString = insertAuthor(htmlString, options.taskCode);
