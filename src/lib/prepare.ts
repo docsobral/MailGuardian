@@ -134,11 +134,12 @@ function beautifyHTML(html: string): string {
 function generator(): () => string {
   let count = 0;
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  const char = chars.charAt(Math.floor(Math.random() * chars.length));
+  const char1 = chars.charAt(Math.floor(Math.random() * chars.length));
+  const char2 = chars.charAt(Math.floor(Math.random() * chars.length));
 
   function increment() {
     count++;
-    return `${char}${count}`
+    return `${char1}${char2}${count}`
   }
 
   return increment;

@@ -637,7 +637,7 @@ class MailGuardian {
         }
       }
 
-      const results = await uploadFile(readFileSync(resolve(__tempdirname, 'parsed.html'), { encoding: 'utf8' }), `${false? 'marketo.html' : 'index.html'}`, name);
+      const results = await uploadFile(readFileSync(resolve(__tempdirname, 'parsed.html'), { encoding: 'utf8' }), `${marketo? 'marketo.html' : 'index.html'}`, name);
 
       if (results.error) {
         this.caster.fail();
