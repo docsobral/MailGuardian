@@ -75,7 +75,7 @@ async function insertLabels(html: string, broadcaster: Broadcaster): Promise<str
     if (done) break;
 
     broadcaster.solve(`\nFound this anchor: ${broadcaster.color(value[2].trim(), 'green')}`);
-    broadcaster.inform(value)
+    broadcaster.inform('\n' + `${broadcaster.color('Before: ', 'blue')}` + value[0] + '\n');
     const { addLabel } = await enquire([
       {
         type: EnquireTypes.confirm,
@@ -100,11 +100,11 @@ async function insertLabels(html: string, broadcaster: Broadcaster): Promise<str
       //   finder = new RegExp(finder + '(?!_product_link)');
       // }
 
-      console.log(finder)
+      // console.log(finder)
 
       const replacer = value[1] + labelTag + value[2] + value[3];
 
-      console.log(replacer)
+      broadcaster.inform('\n' + `${broadcaster.color('After: ', 'blue')}` + value[1] + `${broadcaster.color(labelTag, 'green')}` + value[2] + value[3]);
 
       result = result.replace(finder, replacer);
     }
