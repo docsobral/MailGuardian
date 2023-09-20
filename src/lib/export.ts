@@ -85,7 +85,7 @@ export async function uploadImages(bucketName: string, path: string, broadcaster
     broadcaster.append(`   Succesfully uploaded ${imageName}`, 'blue', true);
   });
 
-  await delay(1000);
+  await delay(3000);
   broadcaster.succeed();
 }
 
