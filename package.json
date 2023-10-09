@@ -54,7 +54,6 @@
   },
   "scripts": {
     "mg": "node ./build/bin/cli.js",
-    "postinstall": "install-mailer",
     "prepublish": "tsc"
   }
 }
