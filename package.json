@@ -50,7 +50,8 @@
   },
   "bin": {
     "install-mailer": "./build/bin/install.js",
-    "mg": "./build/bin/cli.js"
+    "mg": "./build/bin/cli.js",
+    "mgc": "./build/bin/index.js"
   },
   "scripts": {
     "mg": "node ./build/bin/cli.js",
