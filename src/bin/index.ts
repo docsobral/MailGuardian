@@ -375,7 +375,7 @@ program
     folderPath: path,
     fileName: options.name.replace(/.mjml/, ''),
     insertAuthor: options.author ? true : false,
-    taskCode: options.author,
+    taskCode: typeof options.author === 'boolean' ? '' : options.author,
     insertIF: options.if,
     watch: options.watch,
     insertLabels: options.labels,
