@@ -11,7 +11,7 @@ MailGuardian was made and tested with TypeScript v5.0.2 and Node v18.12.0. Your 
 1. Install [Docker](https://www.docker.com/)
 2. Create a supabase project and open the API settings page
 3. Run `npm install -g mailguardian`
-4. Provide the service_role key, project URL and provide a secret key
+4. Run the `install-mailer` and provide the service_role key, project URL and provide a secret key
 5. Run `mg login <email> <password>`
 6. You are ready to start, just run `mg` start the CLI.
 
