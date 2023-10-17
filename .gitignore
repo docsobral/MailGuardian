@@ -9,6 +9,7 @@ demo/
 build/
 downloads/
 templates/
+tasks/
 components/
 boilerplate/
 .npmignore

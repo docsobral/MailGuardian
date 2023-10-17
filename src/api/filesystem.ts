@@ -51,10 +51,10 @@ export async function getFile(fileType: 'html' | 'mjml', pathToRoot: string, mar
   return string;
 }
 
-export async function getImage(path: string, imageName: string): Promise<Buffer> {
+export function getImage(path: string, imageName: string): Buffer {
   let image: Buffer;
 
-  image = await readFile(path + `\\img\\${imageName}`);
+  image = readFileSync(path + `\\img\\${imageName}`);
   return image;
 }
 
@@ -62,7 +62,7 @@ export async function saveFile(path: string, name: string, file: string | Buffer
   await writeFile(`${path}\\${name}`, file);
 }
 
-export async function createFolders(templateName: string): Promise<void> {
+export async function createFolders(templateName?: string): Promise<void> {
   // check if downloads folder exists
   if (!existsSync(__dirname + 'downloads')) {
     await mkdir(__dirname + 'downloads');
@@ -82,23 +82,66 @@ export async function createFolders(templateName: string): Promise<void> {
   if (!existsSync(__dirname + 'components')) {
     await mkdir(__dirname + 'components');
   }
+
+  // check if tasks folder exists
+  if (!existsSync(__dirname + 'tasks')) {
+    await mkdir(__dirname + 'tasks');
+  }
 }
 
-const newMJML = `<mjml>
+export async function createFolder(folderPath: string, broadcaster: Broadcaster, type: 'task' | 'email'): Promise<void> {
+  const taskName = folderPath.split('\\')[5];
+  const emailName = folderPath.split('\\')[6];
+  broadcaster.start(`Creating the ${type}: ${type === 'task' ? taskName : emailName}`);
+  if (!existsSync(folderPath)) {
+    try {
+      await mkdir(folderPath);
+      await delay(1000);
+    } catch (e) {
+      broadcaster.fail('Something went wrong!');
+      broadcaster.error(e as string);
+    }
+  }
+  broadcaster.succeed(`Created the ${type}: ${type === 'task' ? taskName : emailName}`);
+}
+
+export async function deleteFolder(folderPath: string, broadcaster: Broadcaster, type: 'task' | 'email'): Promise<void> {
+  const taskName = folderPath.split('\\')[5];
+  const emailName = folderPath.split('\\')[6];
+  broadcaster.start(`Deleting the ${type}: ${type === 'task' ? taskName : emailName}`);
+  if (existsSync(resolve(__dirname, folderPath))) {
+    try {
+      await rm(resolve(__dirname, folderPath), { recursive: true, force: true });
+      await delay(1000);
+    } catch (e) {
+      broadcaster.fail('Something went wrong!');
+      broadcaster.error(e as string);
+    }
+  }
+  broadcaster.succeed(`Deleted the ${type}: ${type === 'task' ? taskName : emailName}`);
+}
+
+export async function getFolders(folderPath: string, broadcaster: Broadcaster): Promise<string[]> {
+  const folders = await readdir(folderPath);
+  return folders;
+}
+
+const newMJML =
+`<mjml>
   <mj-head>
     <mj-style>
       @media (max-width: 480px) {
-
+${' '.repeat(8)}
       }
     </mj-style>
   </mj-head>
 
   <mj-body background-color="#ffffff">
-
+${' '.repeat(4)}
   </mj-body>
 </mjml>`
 
-export async function manageTemplate(name: string, remove: boolean, type: 'template' | 'component', broadcaster: Broadcaster): Promise<void> {
+export async function manageTemplate(name: string, remove: boolean, type: 'template' | 'component' | 'email', broadcaster: Broadcaster, taskName?: string, emailName?: string): Promise<void> {
   const option = remove ? 'Delet' : 'Creat';
   broadcaster.start(`${option}ing ${type} named ${name}`);
   await delay(1000);
@@ -113,25 +156,45 @@ export async function manageTemplate(name: string, remove: boolean, type: 'templ
     options = { recursive: true, force: true };
   }
 
-  await manage(__dirname + `${type}s\\${name}`, options);
-  await manage(__dirname + `${type}s\\${name}\\img`, options);
+  if (type !== 'email') {
+    await manage(__dirname + `${type}s\\${name}`, options);
+    await manage(__dirname + `${type}s\\${name}\\img`, options);
+  } else if (typeof taskName === 'string' && typeof emailName === 'string') {
+    await manage(resolve(__dirname, 'tasks', taskName, emailName), options);
+    await manage(resolve(__dirname, 'tasks', taskName, emailName, 'img'), options);
+  }
 
-  if (!remove) {
+  if (!remove && type !== 'email') {
     writeFileSync(__dirname + `${type}s\\${name}\\index.mjml`, newMJML);
+  } else if (!remove && typeof taskName === 'string' && typeof emailName === 'string') {
+    writeFileSync(resolve(__dirname, 'tasks', taskName, emailName, 'index.mjml'), newMJML);
   }
 
   broadcaster.succeed(`${option}ed ${type} named ${name} at ${__dirname}/${type}s/${name}.`);
 }
 
-export async function openVS(name: string, type: 'template' | 'component', broadcaster: Broadcaster): Promise<void> {
-  exec(`${process.platform === 'win32' ? 'code.cmd' : 'code'} "${__dirname}\\${type}s\\${name}"`, (error, stdout, stderr) => {
-    if (error) {
-      throw new Error(`Error executing the command: ${error.message}`);
-    } else {
-      broadcaster.indent = 3;
-      broadcaster.inform('\n   Folder opened in VSCode.');
-    }
-  });
+export async function openVS(name: string, type: 'template' | 'component' | 'email', broadcaster: Broadcaster, taskName?: string, emailName?: string): Promise<void> {
+  if (type !== 'email') {
+    exec(`${process.platform === 'win32' ? 'code.cmd' : 'code'} "${__dirname}\\${type}s\\${name}"`, (error, stdout, stderr) => {
+      if (error) {
+        throw new Error(`Error executing the command: ${error.message}`);
+      } else {
+        broadcaster.indent = 3;
+        broadcaster.inform('\n   Folder opened in VSCode.');
+      }
+    });
+  }
+
+  else {
+    exec(`${process.platform === 'win32' ? 'code.cmd' : 'code'} "${__dirname}\\tasks\\${taskName}\\${emailName}"`, (error, stdout, stderr) => {
+      if (error) {
+        throw new Error(`Error executing the command: ${error.message}`);
+      } else {
+        broadcaster.indent = 3;
+        broadcaster.inform('\n   Folder opened in VSCode.');
+      }
+    });
+  }
 }
 
 export async function cleanTemp(): Promise<void> {

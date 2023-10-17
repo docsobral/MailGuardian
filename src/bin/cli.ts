@@ -14,8 +14,9 @@ process.emitWarning = (warning, ...args) => {
   return emitWarning(warning, ...args);
 }
 
+
+import { __dirname, cleanTemp, getChildDirectories, manageTemplate, openVS, saveFile, getFile, save, createFolder, createFolders, deleteFolder, getFolders, getImage } from '../api/filesystem.js';
 import { imagesUrls, listBuckets, listImages, listFiles, fileExists, deleteFile, uploadFile, deleteBucket, manageBucket } from '../api/supabase.js';
-import { __dirname, cleanTemp, getChildDirectories, manageTemplate, openVS, saveFile, getFile, save } from '../api/filesystem.js';
 import { buildImage, convertHTML, isSpam, train, parseSpamAnalysis } from '../api/spamassassin.js';
 import { EnquireTypes, EnquireNames, EnquireMessages, enquire } from '../api/enquire.js';
 import { importComponents, listComponents } from '../lib/components.js';
@@ -28,11 +29,12 @@ import { createClient } from '@supabase/supabase-js';
 import { isLoggedIn, login } from '../lib/login.js';
 import { Broadcaster } from '../api/broadcaster.js';
 import { getPath } from '../lib/filestats.js';
+import { minifyHTML } from '../lib/minify.js';
 import { generatePDF } from '../api/pdf.js';
 import { program } from 'commander';
 import { resolve } from 'path';
 import open from 'open';
-import { minifyHTML } from '../lib/minify.js';
+import { readdir } from 'node:fs/promises';
 
 type Config = {
   [config: string]: string;
@@ -130,7 +132,7 @@ class MailGuardian {
         type: 'select',
         name: 'answer',
         message: 'Choose:',
-        choices: ['Components', 'Templates', 'Bucket', 'Export', 'Prepare', 'Send', 'SpamAssassin', 'PDF report', 'Exit'],
+        choices: ['Components', 'Templates', 'Tasks', 'Bucket', 'Export', 'Prepare', 'Send', 'SpamAssassin', 'PDF report', 'Exit'],
       }
     ]);
 
@@ -140,6 +142,9 @@ class MailGuardian {
         break;
       case 'Templates':
         this.templates();
+        break;
+      case 'Tasks':
+        this.tasks();
         break;
       case 'Bucket':
         this.bucket();
@@ -285,7 +290,7 @@ class MailGuardian {
 
         templateName = name;
 
-        const components = getChildDirectories(resolve(__dirname, 'components'))
+        const components = getChildDirectories(resolve(__dirname, 'components'));
         const componentsList = components.map((name, index) => {
           return `${index + 1}. ${name}`;
         });
@@ -295,7 +300,6 @@ class MailGuardian {
         componentsList.forEach(name => componentListString += name + '\n');
 
         const message = 'Which components do you want to import? (spacebar to select and return/enter to submit)';
-        // const message = `Which components do you want to import? (e.g.: 1, 14, 5, 3, 4)\nBack - Exit - None\n${componentListString}`
 
         const { picks } = await this.caster.ask([
           {
@@ -331,7 +335,7 @@ class MailGuardian {
         await manageTemplate(templateName, false, 'template', this.caster);
 
         if (!(picks as string[]).includes('None')) {
-          await importComponents(sorted, templateName, this.caster);
+          await importComponents(sorted, templateName, this.caster, 'template');
         }
 
         openVS(name, 'template', this.caster);
@@ -392,6 +396,295 @@ class MailGuardian {
         ]);
 
         this.start();
+    }
+  }
+
+  async tasks() {
+    const tasksFolderPath = resolve(__dirname, 'tasks');
+    await createFolders();
+
+    this.switchScreen('Choose your option:');
+
+    const { choice } = await this.caster.ask([
+      {
+        type: 'select',
+        name: 'choice',
+        message: 'Choose:',
+        choices: ['Create', 'Delete', 'Manage', 'List', 'Back'],
+      }
+    ]);
+
+    if (choice === 'Back') {
+      this.start();
+    }
+
+    let taskName: string;
+
+    const folders = await getFolders(tasksFolderPath, this.caster);
+
+    switch (choice) {
+      case 'Create':
+        const { name } = await this.caster.ask([
+          {
+            type: 'input',
+            name: 'name',
+            message: 'Enter the task\'s name: (\'Back\' to return)',
+          }
+        ]);
+
+        if ((name as string).toLowerCase() === 'back') {
+          this.tasks();
+          return;
+        }
+
+        taskName = name;
+        await createFolder(resolve(tasksFolderPath, taskName), this.caster, 'task');
+
+        const result = await supabase.storage.createBucket(taskName, { public: false });
+        if (result.error) {
+          throw result.error;
+        }
+
+        await delay(1000);
+
+        this.tasks();
+        break;
+
+      case 'Delete':
+        const { taskToDelete } = await this.caster.ask([
+          {
+            type: 'autocomplete',
+            name: 'taskToDelete',
+            message: 'Enter the task\'s name: (\'Back\' to return)',
+            choices: [...folders, 'Back'],
+          }
+        ]);
+
+        if ((taskToDelete as string).toLowerCase() === 'back') {
+          this.tasks();
+          return;
+        }
+
+        await deleteFolder(resolve(tasksFolderPath, taskToDelete), this.caster, 'task');
+
+        const deletionResult = await deleteBucket(taskToDelete);
+        if (deletionResult.error) {
+          throw deletionResult.error;
+        }
+
+        await delay(2000);
+
+        this.tasks();
+        break;
+
+      case 'Manage':
+        let pickedTask: string;
+
+        const { taskToManage } = await this.caster.ask([
+          {
+            type: 'autocomplete',
+            name: 'taskToManage',
+            message: 'Choose the task you want to manage: (\'Back\' to return)',
+            choices: [...folders, 'Back'],
+          }
+        ]);
+
+        pickedTask = taskToManage;
+
+        if ((taskToManage as string).toLowerCase() === 'back') {
+          this.tasks();
+          break;
+        }
+
+        const { choice } = await this.caster.ask([
+          {
+            type: 'select',
+            name: 'choice',
+            message: `What would like to do at ${pickedTask}? (\'Back\' to return)`,
+            choices: ['Create email', 'Delete email', 'List emails', 'Back'],
+          }
+        ]);
+
+        const taskFolderPath = resolve(tasksFolderPath, pickedTask);
+        const emails = await getFolders(taskFolderPath, this.caster);
+
+        if (choice === 'Create email') {
+          const { emailName } = await this.caster.ask([
+            {
+              type: 'input',
+              name: 'emailName',
+              message: 'Name this email: (\'Back\' to return)',
+            }
+          ]);
+
+          if ((emailName as string).toLowerCase() === 'back') {
+            this.start();
+            break;
+          }
+
+          const { pick } = await this.caster.ask([
+            {
+              type: 'select',
+              name: 'pick',
+              message: 'Would how you would like to create this email: (\'Back\' to return)',
+              choices: ['From components', 'From templates', 'Blank', 'Back'],
+            }
+          ]);
+
+          if (pick === 'From components') {
+            const components = getChildDirectories(resolve(__dirname, 'components'));
+
+            const { picks } = await this.caster.ask([
+              {
+                type: 'multiselect',
+                name: 'picks',
+                message: 'Which components do you want to import? (spacebar to select and return/enter to submit)',
+                choices: ['Back', ...components],
+              }
+            ]);
+
+            if ((picks as string[]).includes('Back')) {
+              this.tasks();
+              break;
+            }
+
+            const { sorted } = await this.caster.ask([
+              {
+                type: 'sort',
+                name: 'sorted',
+                message: 'Sort the components by the order they should appear:',
+                choices: picks,
+                result(names) {
+                  const string = (names as string[]).join(', ');
+                  return string;
+                }
+              }
+            ]);
+
+            await manageTemplate(emailName, false, 'email', this.caster, pickedTask, emailName);
+
+            if (!(picks as string[]).includes('None')) {
+              await importComponents(sorted, emailName, this.caster, 'email', pickedTask, emailName);
+            }
+
+            openVS(emailName, 'email', this.caster, pickedTask, emailName);
+
+            await delay(3000);
+            this.tasks();
+          }
+
+          else if (pick === 'From templates') {
+            const templates = getChildDirectories(resolve(__dirname, 'templates'));
+
+            const { pick } = await this.caster.ask([
+              {
+                type: 'select',
+                name: 'pick',
+                message: 'Which components do you want to import? (spacebar to select and return/enter to submit)',
+                choices: ['Back', ...templates],
+              }
+            ]);
+
+            if ((pick as string[]).includes('Back')) {
+              this.tasks();
+              break;
+            }
+
+            await manageTemplate(emailName, false, 'email', this.caster, pickedTask, emailName);
+
+            await delay(1000);
+
+            const templatePath = resolve(__dirname, 'templates', pick)
+            const mjml = readFileSync(resolve(templatePath, 'index.mjml'), { encoding: 'utf8' });
+            writeFileSync(resolve(taskFolderPath, emailName, 'index.mjml'), mjml, { encoding: 'utf8' });
+
+            const imageNames: string[] = await readdir(resolve(templatePath, 'img'));
+            const images = imageNames.map(imageName => getImage(templatePath, imageName));
+            images.forEach((image, index) => {
+              writeFileSync(resolve(taskFolderPath, emailName, 'img', imageNames[index]), image);
+            });
+
+            openVS(emailName, 'email', this.caster, pickedTask, emailName);
+            await delay(3000);
+
+            this.start();
+          }
+
+          else if (pick === 'Blank') {
+            await manageTemplate(emailName, false, 'email', this.caster, pickedTask, emailName);
+            openVS(emailName, 'email', this.caster, pickedTask, emailName);
+            await delay(3000);
+
+            this.start();
+          }
+        }
+
+        else if (choice === 'Delete email') {
+          const { emailToDelete } = await this.caster.ask([
+            {
+              type: 'autocomplete',
+              name: 'emailToDelete',
+              message: 'Enter the email\'s name: (\'Back\' to return)',
+              choices: ['Back', ...emails],
+            }
+          ]);
+
+          if ((emailToDelete as string).toLowerCase() === 'back') {
+            this.tasks();
+            return;
+          }
+
+          deleteFolder(resolve(taskFolderPath, emailToDelete), this.caster, 'email');
+          await delay(2000);
+
+          this.tasks();
+        }
+
+        else if (choice === 'List emails') {
+          this.caster.inform('\nTasks:');
+          let count = 1;
+          for (let index in emails) {
+            this.caster.logSeries([[`  ${count}.`, 'yellow'], [` ${emails[index]}`, 'blue']]);
+            count++
+          }
+
+          this.caster.log();
+
+          await this.caster.ask([
+            {
+              type: 'confirm',
+              name: 'confirm',
+              message: 'Press "y" when you are done viewing the list.'
+            }
+          ]);
+
+          this.tasks();
+        }
+
+        else if (choice === 'Back') {
+          this.tasks();
+        }
+
+        break;
+
+      case 'List':
+        this.caster.inform('Tasks:');
+        let count = 1;
+        for (let index in folders) {
+          this.caster.logSeries([[`  ${count}.`, 'yellow'], [` ${folders[index]}`, 'blue']]);
+          count++
+        }
+
+        this.caster.log();
+        await this.caster.ask([
+          {
+            type: 'confirm',
+            name: 'confirm',
+            message: 'Press "y" when you are done viewing the list.'
+          }
+        ]);
+
+        this.tasks();
     }
   }
 

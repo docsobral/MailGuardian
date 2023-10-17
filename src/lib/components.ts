@@ -143,11 +143,20 @@ function splitComponents(components: string): string[] {
   return components.split(',').map(component => component.trim());
 }
 
-export async function importComponents(commandParameter: string, name: string, broadcaster: Broadcaster): Promise<void> {
+export async function importComponents(commandParameter: string, name: string, broadcaster: Broadcaster, type: 'template' | 'email', taskName?: string, emailName?: string): Promise<void> {
   try {
     broadcaster.start('Importing components to new template...');
     const components: string[] = splitComponents(commandParameter);
-    let mjml = readFileSync(resolve(__dirname, `templates\\${name}\\index.mjml`), { encoding: 'utf8' });
+    let mjml: string = '';
+
+    if (type === 'template') {
+      console.log('in there')
+      mjml = readFileSync(resolve(__dirname, `templates\\${name}\\index.mjml`), { encoding: 'utf8' });
+    }
+    else if (typeof taskName === 'string' && typeof emailName === 'string') {
+      console.log('in here')
+      mjml = readFileSync(resolve(__dirname, 'tasks', taskName, emailName, 'index.mjml'), { encoding: 'utf8' });
+    }
 
     let media480: string = '';
     let media280: string = '';
@@ -169,7 +178,13 @@ export async function importComponents(commandParameter: string, name: string, b
 
       const images = await getImages(resolve(__dirname, `components\\${components[i]}`));
       Object.keys(images).forEach(imageName => {
-        writeFileSync(resolve(__dirname, `templates\\${name}\\img\\${imageName}`), images[imageName]);
+        if (type === 'template') {
+          writeFileSync(resolve(__dirname, `templates\\${name}\\img\\${imageName}`), images[imageName]);
+        }
+
+        else if (typeof taskName === 'string' && typeof emailName === 'string') {
+          writeFileSync(resolve(__dirname, 'tasks', taskName, emailName, 'img', imageName), images[imageName])
+        }
       });
     }
 
@@ -183,7 +198,13 @@ export async function importComponents(commandParameter: string, name: string, b
       mjml = await insertSections(regularStyles, mjml, 'regularStyles');
     }
 
-    writeFileSync(resolve(__dirname, `templates\\${name}\\index.mjml`), mjml);
+    if (type === 'template') {
+      writeFileSync(resolve(__dirname, `templates\\${name}\\index.mjml`), mjml);
+    }
+
+    else if (typeof taskName === 'string' && typeof emailName === 'string') {
+      writeFileSync(resolve(__dirname, 'tasks', taskName, emailName, 'index.mjml'), mjml);
+    }
 
     broadcaster.succeed('Finished importing components');
   }
