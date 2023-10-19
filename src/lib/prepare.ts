@@ -41,11 +41,11 @@ enum InsertExpression {
   meta = '(?<=<meta name="viewport" content="width=device-width, initial-scale=1">)(\n)',
 }
 
-export async function downloadMJML(projectName: string, marketo: boolean = false, broadcaster: Broadcaster): Promise<Blob> {
+export async function downloadMJML(projectName: string, marketo: boolean = false, broadcaster: Broadcaster, operationType: 'normal' | 'email', emailName?: string): Promise<Blob> {
   try {
-    const { data, error } = await downloadFile(projectName, 'mjml', marketo);
+    const { data, error } = await downloadFile(projectName, 'mjml', marketo, operationType, undefined, emailName);
     if (error) {
-      throw new Error('Failed to get MJML file! Check the project name or the project bucket');
+      throw error;
     }
     if (!data) {
       throw new Error('Data is empty!');

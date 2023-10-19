@@ -3,8 +3,8 @@ import { getState } from '../api/filesystem.js';
 import { downloadFile } from '../api/supabase.js';
 import { StorageError } from '@supabase/storage-js';
 
-export async function downloadHTML(projectName: string, marketo?: boolean): Promise<{data: Blob |null, error: StorageError | null}> {
-  const { data, error } = await downloadFile(projectName, 'html', marketo);
+export async function downloadHTML(projectName: string, operationType: 'normal' | 'email', marketo?: boolean, emailName?: string): Promise<{data: Blob |null, error: StorageError | null}> {
+  const { data, error } = await downloadFile(projectName, 'html', marketo, operationType, undefined, emailName);
   return { data, error };
 }
 

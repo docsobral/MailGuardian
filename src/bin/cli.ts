@@ -15,8 +15,8 @@ process.emitWarning = (warning, ...args) => {
 }
 
 
-import { __dirname, cleanTemp, getChildDirectories, manageTemplate, openVS, saveFile, getFile, save, createFolder, createFolders, deleteFolder, getFolders, getImage } from '../api/filesystem.js';
-import { imagesUrls, listBuckets, listImages, listFiles, fileExists, deleteFile, uploadFile, deleteBucket, manageBucket } from '../api/supabase.js';
+import { __dirname, cleanTemp, getChildDirectories, manageTemplate, openVS, saveFile, getFile, createFolder, createFolders, deleteFolder, getFolders, getImage } from '../api/filesystem.js';
+import { imagesUrls, listBuckets, uploadFile, deleteBucket, manageBucket, bucketExists, listFilesV2, listImagesV2 } from '../api/supabase.js';
 import { buildImage, convertHTML, isSpam, train, parseSpamAnalysis } from '../api/spamassassin.js';
 import { EnquireTypes, EnquireNames, EnquireMessages, enquire } from '../api/enquire.js';
 import { importComponents, listComponents } from '../lib/components.js';
@@ -132,7 +132,7 @@ class MailGuardian {
         type: 'select',
         name: 'answer',
         message: 'Choose:',
-        choices: ['Components', 'Templates', 'Tasks', 'Bucket', 'Export', 'Prepare', 'Send', 'SpamAssassin', 'PDF report', 'Exit'],
+        choices: ['Components', 'Templates', 'Tasks', 'Bucket', 'Synchronize', 'Prepare', 'Send', 'SpamAssassin', 'PDF report', 'Exit'],
       }
     ]);
 
@@ -149,8 +149,8 @@ class MailGuardian {
       case 'Bucket':
         this.bucket();
         break;
-      case 'Export':
-        this.export();
+      case 'Synchronize':
+        this.synchronize();
         break;
       case 'Prepare':
         this.prepare();
@@ -191,7 +191,7 @@ class MailGuardian {
   }
 
   async components() {
-    this.switchScreen('Choose your option:');
+    this.switchScreen('COMPONENTS - Here you can create and manage components');
 
     const { choice } = await this.caster.ask([
       {
@@ -256,7 +256,7 @@ class MailGuardian {
   }
 
   async templates() {
-    this.switchScreen('Choose your option:');
+    this.switchScreen('TEMPLATES - Here you can create and manage new templates');
 
     const { choice } = await this.caster.ask([
       {
@@ -403,7 +403,7 @@ class MailGuardian {
     const tasksFolderPath = resolve(__dirname, 'tasks');
     await createFolders();
 
-    this.switchScreen('Choose your option:');
+    this.switchScreen('TASKS - Here you can manage tasks and each individual email');
 
     const { choice } = await this.caster.ask([
       {
@@ -416,6 +416,7 @@ class MailGuardian {
 
     if (choice === 'Back') {
       this.start();
+      return;
     }
 
     let taskName: string;
@@ -689,7 +690,7 @@ class MailGuardian {
   }
 
   async bucket() {
-    this.switchScreen('Choose your option:');
+    this.switchScreen('BUCKET - Here you can manage all buckets in the server');
 
     const { choice } = await this.caster.ask([
       {
@@ -702,6 +703,7 @@ class MailGuardian {
 
     if (choice === 'Back') {
       this.start();
+      return;
     }
 
     else if (choice === 'List') {
@@ -737,7 +739,7 @@ class MailGuardian {
 
       await delay(2000);
 
-      this.start();
+      this.bucket();
       return;
     }
 
@@ -760,75 +762,197 @@ class MailGuardian {
       ]);
 
       if (toBeDeleted === 'None') {
-        this.start();
+        this.bucket();
         return;
       }
 
       try {
-        await manageTemplate(toBeDeleted, true, 'template', this.caster);
+        await manageBucket(toBeDeleted, 'delete', this.caster);
       } catch (error) {
         throw error;
       }
 
-      const deletionResult = await deleteBucket(toBeDeleted);
-      if (deletionResult.error) {
-        throw deletionResult.error;
-      }
-
       await delay(2000);
 
-      this.start();
+      this.bucket();
       return;
     }
   }
 
-  async export() {
-    this.switchScreen('Choose your option:');
+  async synchronize() {
+    this.switchScreen('SYNCHRONIZE - Here you can synchronize components, templates and emails with the server');
 
     const { choice } = await this.caster.ask([
       {
         type: 'select',
         name: 'choice',
         message: 'Choose:',
-        choices: ['Template', 'Component (not implemented)', 'Back'],
+        choices: ['All components', 'All templates', 'All tasks', 'Single component', 'Single template', 'Single task', 'Back'],
       }
     ]);
 
-    if ((choice as string).toLowerCase() === 'back') {
+    if (choice === 'Back') {
       this.start();
+      return;
     }
 
-    const paths: Paths = JSON.parse(readFileSync(resolve(__dirname, 'config/paths.json'), { encoding: 'utf8'}));
-    const choices: string[] = getChildDirectories(resolve(__dirname, 'templates'));
+    let hasRun: boolean = false;
+    const componentNames: string[] = getChildDirectories(resolve(__dirname, 'components'));
+    const templateNames: string[] = getChildDirectories(resolve(__dirname, 'templates'));
+    const taskNames: string[] = getChildDirectories(resolve(__dirname, 'tasks'));
 
     switch (choice) {
-      case 'Template':
-          const { name } = await this.caster.ask([
+      case 'All components':
+
+        for (let component of componentNames) {
+          if (!(await bucketExists(component))) {
+            await manageBucket(component, 'create', this.caster);
+            await this.exportMJML(component, 'templates');
+            hasRun = true;
+          }
+        }
+
+        this.caster.inform(hasRun ? '\nDone synchronizing components!' : '\nAlready up to date');
+        await delay(3000);
+        this.synchronize();
+        break;
+
+      case 'All templates':
+        for (let template of templateNames) {
+          if (!(await bucketExists(template))) {
+            await manageBucket(template, 'create', this.caster);
+            await this.exportMJML(template, 'templates');
+            hasRun = true;
+          }
+        }
+
+        this.caster.inform(hasRun ? '\nDone synchronizing templates!' : '\nAlready up to date');
+        await delay(3000);
+        this.synchronize();
+        break;
+
+      case 'All tasks':
+        for (let task of taskNames) {
+          if (!(await bucketExists(task))) {
+            await manageBucket(task, 'create', this.caster);
+            const emailNames: string[] = getChildDirectories(resolve(__dirname, 'tasks', task));
+
+            for (let email of emailNames) {
+              await this.exportMJML(task, 'email', email);
+            }
+
+            hasRun = true;
+          }
+        }
+
+        this.caster.inform(hasRun ? '\nDone synchronizing tasks!' : '\nAlready up to date');
+        await delay(3000);
+        this.synchronize();
+        break;
+
+      case 'Single task':
+        const { pick: taskPick } = await this.caster.ask([
+          {
+            type: 'autocomplete',
+            name: 'pick',
+            message: 'Choose which template you want to synchronize:',
+            choices: [...taskNames, 'Back']
+          }
+        ]);
+
+        if (taskPick === 'Back') {
+          this.synchronize();
+          return;
+        }
+
+        const emailNames: string[] = getChildDirectories(resolve(__dirname, 'tasks', taskPick));
+
+        const { choice } = await this.caster.ask([
+          {
+            type: 'confirm',
+            name: 'choice',
+            message: 'Do you want to synchronize the whole task?'
+          }
+        ]);
+
+        if (choice) {
+          if (!(await bucketExists(taskPick))) {
+            await manageBucket(taskPick, 'create', this.caster);
+          }
+
+          for (let email of emailNames) {
+            await this.exportMJML(taskPick, 'email', email);
+          }
+        }
+
+        else {
+          const { emailPick } = await this.caster.ask([
             {
-              type: 'autocomplete',
-              name: 'name',
-              message: 'Enter the template\'s name:',
-              choices: [...choices, 'Back']
+              type: 'select',
+              name: 'emailPick',
+              message: 'Which email would you like to synchronize?',
+              choices: [...emailNames],
             }
           ]);
 
-          if ((name as string).toLowerCase() === 'back') {
-            this.export();
-            break;
+          await this.exportMJML(taskPick, 'email', emailPick);
+        }
+
+        this.caster.inform('\nDone synchronizing!');
+        await delay(3000);
+        this.synchronize();
+        break;
+
+      case 'Single component':
+        const { pick: componentPick } = await this.caster.ask([
+          {
+            type: 'autocomplete',
+            name: 'pick',
+            message: 'Choose which component you want to synchronize:',
+            choices: [...componentNames, 'Back']
           }
+        ]);
 
-          if (!paths[name]) paths[name] = resolve(__dirname, 'templates', name);
+        if (componentPick === 'Back') {
+          this.synchronize();
+          return;
+        }
 
-          save('paths', name, paths[name]);
-          await uploadMJML(name, paths[name], false, this.caster);
-          await uploadImages(name, paths[name], this.caster);
+        if (!(await bucketExists(componentPick))) {
+          await manageBucket(componentPick, 'create', this.caster);
+        }
 
-          await delay(2000);
-          this.start();
-          break;
+        await this.exportMJML(componentPick, 'components');
 
-      case 'Component (not implemented)':
-        this.start();
+        this.caster.inform('\nDone synchronizing component!');
+        await delay(3000);
+        this.synchronize();
+        break;
+
+      case 'Single template':
+        const { pick: templatePick } = await this.caster.ask([
+          {
+            type: 'autocomplete',
+            name: 'pick',
+            message: 'Choose which template you want to synchronize:',
+            choices: [...templateNames, 'Back']
+          }
+        ]);
+
+        if (templatePick === 'Back') {
+          this.synchronize();
+          return;
+        }
+
+        if (!(await bucketExists(templatePick))) {
+          await manageBucket(templatePick, 'create', this.caster);
+        }
+
+        await this.exportMJML(templatePick, 'templates');
+
+        this.caster.inform('\nDone synchronizing template!');
+        await delay(3000);
+        this.synchronize();
         break;
     }
   }
@@ -837,11 +961,11 @@ class MailGuardian {
     let { data } = await listBuckets();
 
     if (!data) {
-      throw new Error('Something wrong happened while fetchin buckets from the server!');
+      throw new Error('Something wrong happened while fetching buckets from the server!');
     }
 
     if (data && data?.length === 0) {
-      this.caster.inform('\n  There are no templates to fetch in the server...');
+      this.caster.inform('\n  There are no buckets to fetch in the server...');
       await delay(2000);
       this.start()
       return;
@@ -849,11 +973,13 @@ class MailGuardian {
 
     const buckets = data.map(bucket => bucket.name);
 
-    const { name, marketo, minify } = await this.caster.ask([
+    this.switchScreen('PREPARE - Here you can select a component, template or email\'s MJML to be converted to HTML')
+
+    const { name, marketo, minify, email } = await this.caster.ask([
       {
         type: 'autocomplete',
         name: 'name',
-        message: 'What is the template\'s name?',
+        message: 'What is the bucket\'s name?',
         choices: buckets,
       },
       {
@@ -866,43 +992,56 @@ class MailGuardian {
         name: 'minify',
         message: 'Minify?',
       },
+      {
+        type: 'confirm',
+        name: 'email',
+        message: 'Email?',
+      }
     ]);
+
+    let emailName: string | undefined = undefined;
+
+    if (email) {
+      const fileObjects = await listFilesV2(name);
+      const { answer } = await this.caster.ask([
+        {
+          type: 'select',
+          name: 'answer',
+          message: 'Which email do you want to prepare?',
+          choices: [...(fileObjects.map(object => object.name))],
+        }
+      ]);
+      emailName = answer;
+    }
 
     await cleanTemp();
 
     writeFileSync(resolve(__dirname, 'temp/last'), name, { encoding: 'utf8' });
 
     this.caster.start(`Fetching and parsing MJML file from the ${name} bucket...`);
-    const mjmlBlob = await downloadMJML(name, false, this.caster);
+    const mjmlBlob = await downloadMJML(name, false, this.caster, email ? 'email' : 'normal', emailName);
 
     if (mjmlBlob) {
       let mjmlString = await mjmlBlob.text();
-      let imgList: string[] = [];
       let signedUrlList: string[] = [];
 
-      const imageList = await listImages(name);
+      const imageList = await listImagesV2(name, email ? 'email' : 'normal', emailName);
+      let signedUrlObjectList: any = [];
 
-      if (imageList.error) {
+      if (signedUrlObjectList.error) {
         this.caster.fail();
-        this.caster.error(`Failed to fetch list of image names! ${imageList.error.stack?.slice(17)}`);
+        this.caster.error(`Failed to get signed URLs! ${signedUrlObjectList.error.stack?.slice(17)}`);
       }
 
-      // @ts-ignore
-      imageList.data.forEach(fileObject => imgList.push(fileObject.name));
-      const signedList = await imagesUrls(name, imgList);
-
-      if (signedList.error) {
-        this.caster.fail();
-        this.caster.error(`Failed to get signed URLs! ${signedList.error.stack?.slice(17)}`);
+      if (imageList.length > 0) {
+        signedUrlObjectList = await imagesUrls(name, imageList, email ? 'email' : 'normal', emailName);
+        // @ts-ignore
+        signedUrlObjectList.data.forEach(object => signedUrlList.push(object.signedUrl));
       }
-
-      // @ts-ignore
-      signedList.data.forEach(object => signedUrlList.push(object.signedUrl));
 
       // MOVE THIS FUNCTION TO A SEPARATE FILE
-      // replace local paths for remote paths
-      for (let index in imgList) {
-        const localPath = `(?<=src=")(.*)(${imgList[index]})(?=")`;
+      for (let index in imageList) {
+        const localPath = `(?<=src=")(.*)(${imageList[index]})(?=")`;
         const replacer = new RegExp(localPath, 'g');
         mjmlString = mjmlString.replace(replacer, signedUrlList[index]);
       };
@@ -913,24 +1052,16 @@ class MailGuardian {
       await saveFile(__tempdirname, 'source.mjml', mjmlString);
 
       let parsedHTML = parseMJML(readFileSync(resolve(__tempdirname, 'source.mjml'), { encoding: 'utf8' }), marketo);
+
       if (minify) {
         parsedHTML = minifyHTML(parsedHTML);
       }
+
       await saveFile(__tempdirname, 'parsed.html', parsedHTML);
 
-      const list = await listFiles(name);
-      const exists = await fileExists(`${marketo? 'marketo.html' : 'index.html'}`, list.data);
-
-      if (exists) {
-        const result = await deleteFile(`${marketo? 'marketo.html' : 'index.html'}`, name);
-
-        if (result.error) {
-          this.caster.fail();
-          this.caster.error(`Failed to delete ${marketo? 'marketo.html' : 'index.html'} file! ${result.error.stack?.slice(17)}`);
-        }
-      }
-
-      const results = await uploadFile(readFileSync(resolve(__tempdirname, 'parsed.html'), { encoding: 'utf8' }), `${marketo? 'marketo.html' : 'index.html'}`, name);
+      const fileName = marketo ? 'marketo.html' : 'index.html';
+      const filePath = email ? emailName + '/' + fileName : fileName;
+      const results = await uploadFile(parsedHTML, filePath, name);
 
       if (results.error) {
         this.caster.fail();
@@ -952,20 +1083,27 @@ class MailGuardian {
     }
 
     if (availableTemplates && availableTemplates?.length === 0) {
-      this.caster.inform('\n  There are no templates to fetch in the server...');
+      this.caster.inform('\n  There are no buckets to fetch in the server...');
       await delay(2000);
       this.start()
       return;
     }
 
+    this.switchScreen('SEND - Here you can send proof tests');
+
     const buckets = availableTemplates.map(bucket => bucket.name);
 
-    const { name, recipients } = await this.caster.ask([
+    const { name, email, recipients } = await this.caster.ask([
       {
         type: 'autocomplete',
         name: 'name',
-        message: 'What is the template\'s name?',
+        message: 'What is the bucket\'s name?',
         choices: buckets,
+      },
+      {
+        type: 'confirm',
+        name: 'email',
+        message: 'Is this a task bucket?',
       },
       {
         type: 'input',
@@ -974,11 +1112,26 @@ class MailGuardian {
       }
     ]);
 
+    let emailName: string = '';
+
+    if (email) {
+      const fileObjects = await listFilesV2(name);
+      const { answer } = await this.caster.ask([
+        {
+          type: 'select',
+          name: 'answer',
+          message: 'Which email do you want to prepare?',
+          choices: [...(fileObjects.map(object => object.name))],
+        }
+      ]);
+      emailName = answer;
+    }
+
     const recipientsList = (recipients as string).split(/ *, */);
 
     this.caster.start('Fetching HTML file from the bucket');
 
-    const { data, error } = await downloadHTML(name, false);
+    const { data: htmlData, error } = await downloadHTML(name, email ? 'email' : 'normal', false, emailName);
 
     if (error) {
       this.caster.fail();
@@ -987,8 +1140,8 @@ class MailGuardian {
 
     this.caster.succeed();
 
-    if (data) {
-      const htmlString = await data.text();
+    if (htmlData) {
+      const htmlString = await htmlData.text();
       try {
         this.caster.start('Sending email...');
         await mailHTML(recipientsList, htmlString);
@@ -1006,7 +1159,7 @@ class MailGuardian {
   }
 
   async spamassassin() {
-    this.switchScreen('Choose your option:');
+    this.switchScreen('SPAMASSASSIN - Here you can manage the SpamAssassin instance');
 
     const { choice } = await this.caster.ask([
       {
@@ -1101,6 +1254,28 @@ class MailGuardian {
     this.start();
 
     open(resolve(__dirname, 'temp/spam-analysis.pdf'), { app: { name: 'browser' } });
+  }
+
+  async mapBuckets(): Promise<Map<string, boolean>> {
+    let bucketsObjects = await listBuckets();
+
+    let bucketsNames: Map<string, boolean> = new Map();
+
+    if (bucketsObjects.data) {
+      bucketsObjects.data.forEach(bucket => bucketsNames.set(bucket.name, true));
+    }
+
+    return bucketsNames;
+  }
+
+  async exportMJML(bucketName: string, type: 'templates' | 'components' | 'email', emailName?: string): Promise<void> {
+    const exportType = type === 'email' ? 'email' : 'normal';
+    const folder = type === 'email' ? 'tasks' : type;
+    let path = resolve(__dirname, folder, bucketName);
+    if (emailName) path = resolve(path, emailName);
+
+    await uploadMJML(bucketName, path, exportType, this.caster, emailName);
+    await uploadImages(bucketName, path, this.caster, emailName);
   }
 }
 

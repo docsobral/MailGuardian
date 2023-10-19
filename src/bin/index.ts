@@ -174,7 +174,7 @@ program
     let bucket;
 
     bucket = await supabaseAPI.bucketExists(name);
-    if (bucket.error) {
+    if (!bucket) {
       throw new BucketError(`Bucket ${name} doesn\'t exist! Use \'mailer bucket -c <name>\' to create one before trying to export a template.`);
     }
     const files = getConfigAndPath();
@@ -227,7 +227,7 @@ program
     }
 
     else {
-      await uploadMJML(name, path, options.marketo, broadcaster);
+      await uploadMJML(name, path, options.marketo ? 'marketo' : 'normal', broadcaster);
 
       if (!options.images) {
         await uploadImages(name, path, broadcaster);
@@ -518,12 +518,15 @@ program
     await cleanTemp();
 
     broadcaster.start(`Fetching and parsing MJML file from the ${name} bucket...`);
-    const mjmlBlob = await downloadMJML(name, options.marketo, broadcaster);
+    const mjmlBlob = await downloadMJML(name, options.marketo, broadcaster, 'normal');
 
     if (mjmlBlob) {
       let mjmlString = await mjmlBlob.text();
       let imgList: string[] = [];
       let signedUrlList: string[] = [];
+
+      console.log(mjmlString)
+      await delay(10000)
 
       const imageList = await supabaseAPI.listImages(name);
 
@@ -604,7 +607,7 @@ program
     }
 
     const bucket = await supabaseAPI.bucketExists(name);
-    if (bucket.error) {
+    if (!bucket) {
       broadcaster.error('Bucket doesn\'t exist! Use \'mailer template <name> -c\' to create one before trying to export a template.');
     }
 
@@ -612,7 +615,7 @@ program
 
     broadcaster.start('Fetching HTML file from the bucket');
 
-    const { data, error } = await downloadHTML(name, options.marketo);
+    const { data, error } = await downloadHTML(name, 'normal', options.marketo, undefined);
     if (error) {
       broadcaster.fail();
       throw new Error('Failed to download HTML file!');
@@ -694,7 +697,7 @@ program
   const supabaseAPI = await import('../api/supabase.js');
 
   const bucket = await supabaseAPI.bucketExists(name);
-  if (bucket.error) {
+  if (!bucket) {
     broadcaster.error('\nBUCKET ERROR: bucket doesn\'t exist! Use \'mailer bucket -c [name]\' to create one before trying to export a template.');
   }
 

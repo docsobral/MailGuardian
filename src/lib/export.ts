@@ -50,13 +50,23 @@ export async function getImages(path: string): Promise<Images> {
   return images;
 }
 
-export async function uploadMJML(bucketName: string, path: string, marketo: boolean = false, broadcaster: Broadcaster): Promise<void> {
+export async function uploadMJML(bucketName: string, path: string, type: 'normal' | 'marketo' | 'email', broadcaster: Broadcaster, emailName?: string): Promise<void> {
   try {
-    const fileName = marketo ? 'marketo.mjml' : 'index.mjml';
+    let fileName: string = '';
+
+    switch (type) {
+      case 'normal':
+        fileName = 'index.mjml'
+        break;
+      case 'marketo':
+        fileName = 'marketo.mjml'
+      case 'email' :
+        fileName = `${emailName}/index.mjml`
+    }
 
     broadcaster.start(`Uploading ${fileName} file...`);
 
-    const mjml = await getMJML(path, marketo);
+    const mjml = await getMJML(path, type === 'marketo' ? true : false);
     const upload = await uploadFile(mjml, `${fileName}`, bucketName, 'text/plain');
 
     if (upload.error) {
@@ -72,13 +82,13 @@ export async function uploadMJML(bucketName: string, path: string, marketo: bool
   }
 }
 
-export async function uploadImages(bucketName: string, path: string, broadcaster: Broadcaster): Promise<void> {
+export async function uploadImages(bucketName: string, path: string, broadcaster: Broadcaster, emailName?: string): Promise<void> {
   const images = await getImages(path);
 
   broadcaster.start('Uploading images...')
 
   Object.keys(images).forEach(async (imageName) => {
-    const upload = await uploadFile(images[imageName], `img/${imageName}`, bucketName, 'image/png');
+    const upload = await uploadFile(images[imageName], emailName ? `${emailName}/img/${imageName}` : `img/${imageName}`, bucketName, 'image/png');
     if (upload.error) {
       broadcaster.append(`   Failed to upload ${imageName}! ${upload.error.message}`, 'red', true);
     }

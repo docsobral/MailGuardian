@@ -74,24 +74,29 @@ export async function deleteFile(fileName: string, bucketName: string) {
 export async function bucketExists(bucketName: string) {
   let result: SupabaseStorageResult = await supabase.storage.getBucket(bucketName);
   if (result.error) {
-    throw new BucketError(`Bucket ${name} doesn\'t exist! Use \'mailer bucket -c [name]\' to create one before trying to export a template.`);
+    return false
   }
-  return result;
+  return true;
 }
 
-export async function downloadFile(bucketName: string, extension: 'mjml' | 'html' | 'png', marketo: boolean = false, imageName?: string): Promise<SupabaseDownloadResult> {
-  const type = marketo ? 'marketo' : 'index';
+export async function downloadFile(bucketName: string, extension: 'mjml' | 'html' | 'png', marketo: boolean = false, operationType: 'normal' | 'email', imageName?: string, emailName?: string): Promise<SupabaseDownloadResult> {
+  const MJMLType = marketo ? 'marketo' : 'index';
+
+  let path: string = '';
+
+  if (operationType === 'email') path = `${emailName}/${MJMLType}.${extension}`;
+  else path = `${MJMLType}.${extension}`;
 
   if (extension === 'mjml') {
-    return await supabase.storage.from(bucketName).download(`${type}.mjml`);
+    return await supabase.storage.from(bucketName).download(path);
   }
 
   else if (extension === 'html') {
-    return await supabase.storage.from(bucketName).download(`${type}.html`);
+    return await supabase.storage.from(bucketName).download(path);
   }
 
   else {
-    return await supabase.storage.from(bucketName).download(`img/${imageName}`);
+    return await supabase.storage.from(bucketName).download(`${operationType === 'email' ? emailName + '/' : null}img/${imageName}`);
   }
 }
 
@@ -99,8 +104,9 @@ export async function listImages(bucketName: string) {
   return await supabase.storage.from(bucketName).list('img', { sortBy: { column: 'name', order: 'asc' } });
 }
 
-export async function listImagesV2 (bucketName: string) {
-  const result = await supabase.storage.from(bucketName).list('img', { sortBy: { column: 'name', order: 'asc' } });
+export async function listImagesV2 (bucketName: string, operationType: 'normal' | 'email', emailName?: string) {
+  const path = operationType === 'email' ? emailName + '/img' : 'img';
+  const result = await supabase.storage.from(bucketName).list(path, { sortBy: { column: 'name', order: 'asc' } });
 
   if (result.error) {
     throw result.error;
@@ -109,8 +115,11 @@ export async function listImagesV2 (bucketName: string) {
   return result.data.map(image => image.name);
 }
 
-export async function imagesUrls(bucketName: string, imageNames: string[]) {
-  const pathList = imageNames.map(imageName => 'img/' + imageName);
+export async function imagesUrls(bucketName: string, imageNames: string[], operationType?: 'normal' | 'email', emailName?: string) {
+  const pathList = imageNames.map(imageName => {
+    const path = operationType === 'email' ? emailName + '/img/' : 'img/';
+    return path + imageName;
+  });
 
   return supabase.storage.from(bucketName).createSignedUrls(pathList, 86400);
 }
@@ -140,6 +149,16 @@ export async function listBuckets() {
   return await supabase.storage.listBuckets();
 }
 
+export async function listFilesV2(bucketName: string): Promise<FileObject[]> {
+  const { data, error } = await supabase.storage.from(bucketName).list();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
 type Manager = typeof createBucket | typeof deleteBucket;
 
 export async function manageBucket(name: string, type: 'create' | 'delete', broadcaster: any): Promise<void> {
@@ -157,7 +176,7 @@ export async function manageBucket(name: string, type: 'create' | 'delete', broa
     throw new BucketError(`\nFailed to ${type} bucket named ${name}!\n\n${error.stack?.slice(17)}`);
   }
 
-  broadcaster.succeed(`${capitalizeFirstLetter(type)}d template named ${name}.`);
+  broadcaster.succeed(`${capitalizeFirstLetter(type)}d bucket named ${name}.`);
 }
 
 type Bucket = Partial<Tables<'buckets'>>;

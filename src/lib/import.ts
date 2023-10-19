@@ -24,7 +24,7 @@ export async function importBucket(projectName: string, marketo: boolean = false
   fetch.data.forEach(fileObject => imgList.push(fileObject.name));
 
   for (let image of imgList) {
-    const arrayBuffer = await (await downloadFile(projectName, 'png', undefined, image)).data?.arrayBuffer();
+    const arrayBuffer = await (await downloadFile(projectName, 'png', undefined, 'normal', image)).data?.arrayBuffer();
     if (arrayBuffer) {
       const tuple: [string, Buffer] = [image, Buffer.from(arrayBuffer)];
       images.push(tuple);
@@ -33,8 +33,8 @@ export async function importBucket(projectName: string, marketo: boolean = false
 
   bucketFiles.images = images;
 
-  const mjml = await (await downloadFile(projectName, 'mjml')).data?.text();
-  const mktomjml = marketo ? await (await downloadFile(projectName, 'mjml', marketo)).data?.text() : undefined;
+  const mjml = await (await downloadFile(projectName, 'mjml', false, 'normal')).data?.text();
+  const mktomjml = marketo ? await (await downloadFile(projectName, 'mjml', marketo, 'normal')).data?.text() : undefined;
 
   if (mjml) {
     bucketFiles.mjml = mjml;
@@ -50,8 +50,8 @@ export async function importBucket(projectName: string, marketo: boolean = false
 
   // get html
   // console.log(`${chalk.green('Downloading HTML...')}`);
-  const html = await (await downloadFile(projectName, 'html', marketo)).data?.text();
-  const mktohtml = marketo ? await (await downloadFile(projectName, 'html', marketo)).data?.text() : undefined;
+  const html = await (await downloadFile(projectName, 'html', marketo, 'normal')).data?.text();
+  const mktohtml = marketo ? await (await downloadFile(projectName, 'html', marketo, 'normal')).data?.text() : undefined;
 
   if (html) {
     bucketFiles.html = html;
