@@ -1,6 +1,6 @@
 {
   "name": "mailguardian",
-  "version": "1.4.2",
+  "version": "1.4.3",
   "homepage": "https://github.com/orchidb0y/mailer",
   "license": "AGPL-3.0-only",
   "type": "module",
