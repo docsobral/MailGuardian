@@ -117,6 +117,8 @@ class MailGuardian {
     this._step = 0;
     this._path = resolve('build/bin/index.js');
     this.caster = new Broadcaster();
+
+    createFolders();
   }
 
   async initialize() {

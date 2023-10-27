@@ -1,15 +1,11 @@
 #! /usr/bin/env node
 
-import ora from "ora";
 import chalk from "chalk";
 import { resolve } from 'path';
 import { writeFile } from 'node:fs/promises';
 import { mkdirSync,  existsSync } from 'node:fs';
 import { AppState, __dirname } from "../api/filesystem.js";
 import { enquire, EnquireMessages, EnquireNames, EnquireTypes } from "../api/enquire.js";
-
-const spinner = ora();
-spinner.start(`${chalk.yellow('Installing MailGuardian...')}`);
 
 try {
   if (!existsSync(resolve(__dirname, 'config'))) {
@@ -53,7 +49,7 @@ try {
 }
 
 catch (error) {
-  spinner.fail(error as string);
+  throw new Error(error as string);
 }
 
 async function delay(ms: number): Promise<void> {
@@ -61,8 +57,8 @@ async function delay(ms: number): Promise<void> {
 }
 
 await delay(2000);
-spinner.suffixText = chalk.bgWhite.black(`\n\n${chalk.bgBlack('  ')}Now run \'${chalk.red('mg login <email> <passoword>')}\'.`);
-spinner.suffixText += `\n\n${chalk.bgBlack('  ')}${chalk.bgRed.black.bold.underline('NOTICE: Only works with Gmail, and you must use an app password. To generate an app password, go to Manage you Google Account > Security > 2FA > App Passwords')}`;
-spinner.succeed(`${chalk.yellow('Finished installing MailGuardian!')}`);
+console.log(chalk.bgWhite.black(`\n\n${chalk.bgBlack('  ')}Now run \'${chalk.red('mg login <email> <passoword>')}\'.`));
+console.log(`\n\n${chalk.bgBlack('  ')}${chalk.bgRed.black.bold.underline('NOTICE: Only works with Gmail, and you must use an app password. To generate an app password, go to Manage you Google Account > Security > 2FA > App Passwords')}`)
+console.log(`${chalk.yellow('Finished installing MailGuardian!')}`);
 
 await delay(3000);
