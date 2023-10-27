@@ -669,7 +669,7 @@ class MailGuardian {
         break;
 
       case 'List':
-        this.caster.inform('Tasks:');
+        this.caster.inform('\nTasks:');
         let count = 1;
         for (let index in folders) {
           this.caster.logSeries([[`  ${count}.`, 'yellow'], [` ${folders[index]}`, 'blue']]);
