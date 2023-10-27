@@ -49,7 +49,7 @@
     "typescript": "^5.0.2"
   },
   "bin": {
-    "install-mailer": "./build/bin/install.js",
+    "install-mg": "./build/bin/install.js",
     "mg": "./build/bin/cli.js",
     "mgc": "./build/bin/index.js"
   },
