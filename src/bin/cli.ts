@@ -95,11 +95,11 @@ program
     else {
       broadcaster.start('Validating credentials...');
 
-      if (await login(id, password)) {
+      if (!(await login(id, password))) {
         broadcaster.fail('Something went wrong... try again!');
       }
 
-      broadcaster.succeed('Success! Your credentials were saved.');
+      broadcaster.succeed('Success! Your credentials were saved.\n');
     }
   }
 

@@ -60,6 +60,6 @@ await delay(2000);
 
 console.log(chalk.bgWhite.black(`\n\n${chalk.bgBlack('  ')}Now run \'${chalk.red('mg login <email> <passoword>')}\'.`));
 console.log(`\n\n${chalk.bgBlack('  ')}${chalk.bgRed.black.bold.underline('NOTICE: Only works with Gmail, and you must use an app password. To generate an app password, go to Manage you Google Account > Security > 2FA > App Passwords')}`)
-console.log(`${chalk.yellow('Finished installing MailGuardian!')}`);
+console.log(`${chalk.yellow('\nFinished installing MailGuardian!')}`);
 
 await delay(3000);
