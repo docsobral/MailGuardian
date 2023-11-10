@@ -12,7 +12,7 @@
     "esModuleInterop": true,
     "rootDir": "src",
     "outDir": "build",
-    "noUnusedLocals": true,
+    "noUnusedLocals": false,
     "forceConsistentCasingInFileNames": true
   }
 }
