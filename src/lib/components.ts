@@ -221,13 +221,11 @@ export async function listComponents(broadcaster: any): Promise<void> {
 
   if (error) {
     broadcaster.fail();
-    // @ts-ignore
     throw new BucketError(`\nFailed to fetch templates!\n\n${error.stack?.slice(17)}`);
   }
 
   if (data.length === 0) {
     broadcaster.fail('There are no templates in the server.');
-
     return;
   }
 
