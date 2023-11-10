@@ -3,8 +3,8 @@ import { readFile, mkdir, writeFile, readdir, unlink, rm } from 'node:fs/promise
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { dirname, resolve, basename } from 'path';
 import { Broadcaster } from './broadcaster.js';
+import { existsSync, Dirent } from 'node:fs';
 import { exec } from 'child_process';
-import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'url';
 import Cryptr from 'cryptr';
 
@@ -292,6 +292,6 @@ export function getVersion(): string {
 
 export function getChildDirectories(path: string): string[] {
   return readdirSync(path, { withFileTypes: true })
-      .filter((dirent: any) => dirent.isDirectory())
-      .map((dirent: any) => dirent.name);
+      .filter((dirent: Dirent) => dirent.isDirectory())
+      .map((dirent: Dirent) => dirent.name);
 }
