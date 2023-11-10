@@ -4,7 +4,7 @@ import { Broadcaster } from '../api/broadcaster.js';
 import { readdir, readFile } from 'node:fs/promises';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { getFile, __dirname } from '../api/filesystem.js';
-
+import { BucketError } from './error.js';
 import { listBuckets } from '../api/supabase.js';
 
 export async function getImage(path: string, imageName: string): Promise<Buffer> {
@@ -217,7 +217,6 @@ export async function importComponents(commandParameter: string, name: string, b
 
 export async function listComponents(broadcaster: any): Promise<void> {
   broadcaster.start('Fetching templates...');
-  // @ts-ignore
   const { data, error } = await listBuckets();
 
   if (error) {
