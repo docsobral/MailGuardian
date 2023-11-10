@@ -26,6 +26,11 @@ export type SupabaseDownloadResult = {
   error: null | StorageError;
 }
 
+export type DownloadedBucket = {
+  MJML: Blob,
+  images: [Blob, string][],
+}
+
 // const options = { db: { schema: 'public' }, auth: { autoRefreshToken: true, persistSession: true, detectSessionInUrl: true } };
 export const supabase = createClient<Database>(config['SUPA_URL'], config['SUPA_SECRET']);
 
@@ -35,13 +40,19 @@ export async function createBucket(bucketName: string) {
 }
 
 export async function deleteBucket(bucketName: string) {
-  await supabase.storage.emptyBucket(bucketName);
-  let result: SupabaseStorageResult = await supabase.storage.deleteBucket(bucketName);
-  return result;
+  const emptyResult = await supabase.storage.emptyBucket(bucketName);
+  if (emptyResult.error) throw emptyResult.error;
+
+  let deleteResult: SupabaseStorageResult = await supabase.storage.deleteBucket(bucketName);
+  return deleteResult;
 }
 
 export async function cleanBucket(bucketName: string) {
-  return await supabase.storage.emptyBucket(bucketName);
+  try {
+    return await supabase.storage.emptyBucket(bucketName);
+  } catch(error) {
+    throw error;
+  }
 }
 
 export async function uploadFile(file: string | Buffer, fileName: string, bucketName: string, contentType: 'text/plain' | 'image/png' = 'text/plain') {
@@ -100,6 +111,34 @@ export async function downloadFile(bucketName: string, extension: 'mjml' | 'html
   }
 }
 
+export async function downloadMJML(bucketName: string, operationType: 'normal' | 'email', emailName?: string): Promise<Blob> {
+  let path: string = '';
+
+  if (operationType === 'email') path = `${emailName}/index.mjml`;
+  else path = 'index.mjml';
+
+  try {
+    const mjml = await downloadFile(bucketName, 'mjml', false, operationType, undefined, emailName);
+
+    if (mjml.error) throw mjml.error;
+
+    else if (mjml.data == null) throw new Error('Unknown error when downloading MJML file');
+
+    return mjml.data;
+  }
+
+  catch (error) {
+    throw error;
+  }
+}
+
+export async function downloadBucket(bucketName: string, operationType: 'normal' | 'email', emailName?: string): Promise<DownloadedBucket> {
+  const MJML = await downloadMJML(bucketName, operationType, emailName);
+  const images = await downloadImages(bucketName, operationType);
+
+  return { MJML, images };
+}
+
 export async function listImages(bucketName: string) {
   return await supabase.storage.from(bucketName).list('img', { sortBy: { column: 'name', order: 'asc' } });
 }
@@ -113,6 +152,25 @@ export async function listImagesV2 (bucketName: string, operationType: 'normal' 
   }
 
   return result.data.map(image => image.name);
+}
+
+export async function downloadImages(bucketName: string, operationType: 'normal' | 'email', emailName?: string): Promise<[Blob, string][]> {
+  const imageNames = await listImagesV2(bucketName, operationType, emailName);
+
+  console.log(imageNames)
+
+  let images: [Blob, string][] = [];
+
+  for (const imageName of imageNames) {
+    const image = await supabase.storage.from(bucketName).download(`img/${imageName}`);
+
+    if (image.error) throw image.error;
+    if (image.data === null) throw new Error(`Unknown error when downloading image ${imageName}`);
+
+    images.push([image.data, imageName]);
+  }
+
+  return images;
 }
 
 export async function imagesUrls(bucketName: string, imageNames: string[], operationType?: 'normal' | 'email', emailName?: string) {
@@ -180,3 +238,7 @@ export async function manageBucket(name: string, type: 'create' | 'delete', broa
 }
 
 type Bucket = Partial<Tables<'buckets'>>;
+
+export function isBucket(value: any): value is Bucket {
+  return typeof (value as Bucket).id != null;
+}
