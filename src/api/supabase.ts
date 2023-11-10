@@ -77,11 +77,6 @@ export async function listFiles(projectName: string) {
   return await supabase.storage.from(projectName).list();
 }
 
-export async function deleteFile(fileName: string, bucketName: string) {
-  let result: SupabaseStorageResult = await supabase.storage.from(bucketName).remove([`${fileName}`]);
-  return result;
-}
-
 export async function bucketExists(bucketName: string) {
   let result: SupabaseStorageResult = await supabase.storage.getBucket(bucketName);
   if (result.error) {
@@ -191,16 +186,6 @@ export async function imagesUrlsV2(bucketName: string, imageList: string[]) {
   }
 
   return result.data.map(url => url.signedUrl);
-}
-
-export async function fileExists(name: string, list: any) {
-  for (let index in list) {
-    if (list[index].name === name) {
-      return true
-    }
-  }
-
-  return false
 }
 
 export async function listBuckets() {
