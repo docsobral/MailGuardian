@@ -14,9 +14,8 @@ process.emitWarning = (warning, ...args) => {
   return emitWarning(warning, ...args);
 }
 
-
 import { __dirname, cleanTemp, getChildDirectories, manageTemplate, openVS, saveFile, getFile, createFolder, createFolders, deleteFolder, getFolders, getImage } from '../api/filesystem.js';
-import { imagesUrls, listBuckets, uploadFile, deleteBucket, manageBucket, bucketExists, listFilesV2, listImagesV2 } from '../api/supabase.js';
+import { imagesUrls, listBuckets, uploadFile, deleteBucket, manageBucket, listFilesV2, listImagesV2, bucketExists } from '../api/supabase.js';
 import { buildImage, convertHTML, isSpam, train, parseSpamAnalysis } from '../api/spamassassin.js';
 import { EnquireTypes, EnquireNames, EnquireMessages, enquire } from '../api/enquire.js';
 import { importComponents, listComponents } from '../lib/components.js';
@@ -28,13 +27,14 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { createClient } from '@supabase/supabase-js';
 import { isLoggedIn, login } from '../lib/login.js';
 import { Broadcaster } from '../api/broadcaster.js';
+import { handleSync } from '../lib/synchronize.js';
 import { getPath } from '../lib/filestats.js';
 import { minifyHTML } from '../lib/minify.js';
 import { generatePDF } from '../api/pdf.js';
+import { readdir } from 'node:fs/promises';
 import { program } from 'commander';
 import { resolve } from 'path';
 import open from 'open';
-import { readdir } from 'node:fs/promises';
 
 type Config = {
   [config: string]: string;
@@ -47,7 +47,7 @@ type Paths = {
 const config: Config = JSON.parse(readFileSync(resolve(__dirname, 'config/config.json'), { encoding: 'utf8' }));
 
 if (typeof config['SUPA_URL'] === 'undefined' || typeof config['SUPA_SECRET'] === 'undefined') {
-  throw new Error('Missing API url, key or secret key! Please run \'mailer config\' to set them.');
+  throw new Error('Missing API url, key or secret key! Please run \'install-mg\' to set them.');
 }
 
 export const supabase = createClient(config['SUPA_URL'], config['SUPA_SECRET']);
@@ -781,7 +781,7 @@ class MailGuardian {
     }
   }
 
-  async synchronize() {
+  async synchronize(): Promise<void> {
     this.switchScreen('SYNCHRONIZE - Here you can synchronize components, templates and emails with the server');
 
     const { choice } = await this.caster.ask([
@@ -798,165 +798,189 @@ class MailGuardian {
       return;
     }
 
-    let hasRun: boolean = false;
-    const componentNames: string[] = getChildDirectories(resolve(__dirname, 'components'));
-    const templateNames: string[] = getChildDirectories(resolve(__dirname, 'templates'));
-    const taskNames: string[] = getChildDirectories(resolve(__dirname, 'tasks'));
-
-    switch (choice) {
-      case 'All components':
-
-        for (let component of componentNames) {
-          if (!(await bucketExists(component))) {
-            await manageBucket(component, 'create', this.caster);
-            await this.exportMJML(component, 'templates');
-            hasRun = true;
-          }
-        }
-
-        this.caster.inform(hasRun ? '\nDone synchronizing components!' : '\nAlready up to date');
-        await delay(3000);
-        this.synchronize();
-        break;
-
-      case 'All templates':
-        for (let template of templateNames) {
-          if (!(await bucketExists(template))) {
-            await manageBucket(template, 'create', this.caster);
-            await this.exportMJML(template, 'templates');
-            hasRun = true;
-          }
-        }
-
-        this.caster.inform(hasRun ? '\nDone synchronizing templates!' : '\nAlready up to date');
-        await delay(3000);
-        this.synchronize();
-        break;
-
-      case 'All tasks':
-        for (let task of taskNames) {
-          if (!(await bucketExists(task))) {
-            await manageBucket(task, 'create', this.caster);
-            const emailNames: string[] = getChildDirectories(resolve(__dirname, 'tasks', task));
-
-            for (let email of emailNames) {
-              await this.exportMJML(task, 'email', email);
-            }
-
-            hasRun = true;
-          }
-        }
-
-        this.caster.inform(hasRun ? '\nDone synchronizing tasks!' : '\nAlready up to date');
-        await delay(3000);
-        this.synchronize();
-        break;
-
-      case 'Single task':
-        const { pick: taskPick } = await this.caster.ask([
-          {
-            type: 'autocomplete',
-            name: 'pick',
-            message: 'Choose which template you want to synchronize:',
-            choices: [...taskNames, 'Back']
-          }
-        ]);
-
-        if (taskPick === 'Back') {
-          this.synchronize();
-          return;
-        }
-
-        const emailNames: string[] = getChildDirectories(resolve(__dirname, 'tasks', taskPick));
-
-        const { choice } = await this.caster.ask([
-          {
-            type: 'confirm',
-            name: 'choice',
-            message: 'Do you want to synchronize the whole task?'
-          }
-        ]);
-
-        if (choice) {
-          if (!(await bucketExists(taskPick))) {
-            await manageBucket(taskPick, 'create', this.caster);
-          }
-
-          for (let email of emailNames) {
-            await this.exportMJML(taskPick, 'email', email);
-          }
-        }
-
-        else {
-          const { emailPick } = await this.caster.ask([
-            {
-              type: 'select',
-              name: 'emailPick',
-              message: 'Which email would you like to synchronize?',
-              choices: [...emailNames],
-            }
-          ]);
-
-          await this.exportMJML(taskPick, 'email', emailPick);
-        }
-
-        this.caster.inform('\nDone synchronizing!');
-        await delay(3000);
-        this.synchronize();
-        break;
-
-      case 'Single component':
-        const { pick: componentPick } = await this.caster.ask([
-          {
-            type: 'autocomplete',
-            name: 'pick',
-            message: 'Choose which component you want to synchronize:',
-            choices: [...componentNames, 'Back']
-          }
-        ]);
-
-        if (componentPick === 'Back') {
-          this.synchronize();
-          return;
-        }
-
-        if (!(await bucketExists(componentPick))) {
-          await manageBucket(componentPick, 'create', this.caster);
-        }
-
-        await this.exportMJML(componentPick, 'components');
-
-        this.caster.inform('\nDone synchronizing component!');
-        await delay(3000);
-        this.synchronize();
-        break;
-
-      case 'Single template':
-        const { pick: templatePick } = await this.caster.ask([
-          {
-            type: 'autocomplete',
-            name: 'pick',
-            message: 'Choose which template you want to synchronize:',
-            choices: [...templateNames, 'Back']
-          }
-        ]);
-
-        if (templatePick === 'Back') {
-          this.synchronize();
-          return;
-        }
-
-        if (!(await bucketExists(templatePick))) {
-          await manageBucket(templatePick, 'create', this.caster);
-        }
-
-        await this.exportMJML(templatePick, 'templates');
-
-        this.caster.inform('\nDone synchronizing template!');
-        await delay(3000);
-        this.synchronize();
-        break;
+    try {
+      await handleSync(choice, this.caster);
     }
+
+    catch(error) {
+      this.caster.error(error as string);
+    }
+
+    // switch (choice) {
+    //   case 'All components':
+
+    //     try {
+    //       this.caster.inform('\nChecking remote buckets...');
+    //       const remoteBuckets = await listBuckets();
+
+    //       if (remoteBuckets.error) {
+    //         throw new Error(remoteBuckets.error.stack);
+    //       }
+
+    //       if (remoteBuckets.data) {
+    //         this.caster.inform('\nFiltering buckets...');
+    //         const remoteComponents = remoteBuckets.data.filter(bucket => bucket.name.includes('_VC-')).map(bucket => bucket.name);
+
+    //         this.caster.inform('\nChecking local folders...');
+    //         const onlyLocalComponents = localComponents.filter(component => !(remoteComponents.includes(component)));
+    //         const onlyRemoteComponents = remoteComponents.filter(component => !(localComponents.includes(component)));
+    //       }
+    //     }
+
+    //     catch (e) {
+    //       this.caster.error(e as string);
+    //     }
+
+    //     for (let component of localComponents) {
+    //       if (!(await bucketExists(component))) {
+    //         await manageBucket(component, 'create', this.caster);
+    //         await this.exportMJML(component, 'components');
+    //       }
+    //     }
+
+    //     this.caster.inform(hasRun ? '\nDone synchronizing components!' : '\nAlready up to date');
+    //     await delay(3000);
+    //     this.synchronize();
+    //     break;
+
+    //   case 'All templates':
+    //     for (let template of templateNames) {
+    //       if (!(await bucketExists(template))) {
+    //         await manageBucket(template, 'create', this.caster);
+    //         await this.exportMJML(template, 'templates');
+    //         hasRun = true;
+    //       }
+    //     }
+
+    //     this.caster.inform(hasRun ? '\nDone synchronizing templates!' : '\nAlready up to date');
+    //     await delay(3000);
+    //     this.synchronize();
+    //     break;
+
+    //   case 'All tasks':
+    //     for (let task of taskNames) {
+    //       if (!(await bucketExists(task))) {
+    //         await manageBucket(task, 'create', this.caster);
+    //         const emailNames: string[] = getChildDirectories(resolve(__dirname, 'tasks', task));
+
+    //         for (let email of emailNames) {
+    //           await this.exportMJML(task, 'email', email);
+    //         }
+
+    //         hasRun = true;
+    //       }
+    //     }
+
+    //     this.caster.inform(hasRun ? '\nDone synchronizing tasks!' : '\nAlready up to date');
+    //     await delay(3000);
+    //     this.synchronize();
+    //     break;
+
+      // case 'Single task':
+      //   const { pick: taskPick } = await this.caster.ask([
+      //     {
+      //       type: 'autocomplete',
+      //       name: 'pick',
+      //       message: 'Choose which template you want to synchronize:',
+      //       choices: [...taskNames, 'Back']
+      //     }
+      //   ]);
+
+      //   if (taskPick === 'Back') {
+      //     this.synchronize();
+      //     return;
+      //   }
+
+      //   const emailNames: string[] = getChildDirectories(resolve(__dirname, 'tasks', taskPick));
+
+      //   const { choice } = await this.caster.ask([
+      //     {
+      //       type: 'confirm',
+      //       name: 'choice',
+      //       message: 'Do you want to synchronize the whole task?'
+      //     }
+      //   ]);
+
+      //   if (choice) {
+      //     if (!(await bucketExists(taskPick))) {
+      //       await manageBucket(taskPick, 'create', this.caster);
+      //     }
+
+      //     for (let email of emailNames) {
+      //       await this.exportMJML(taskPick, 'email', email);
+      //     }
+      //   }
+
+      //   else {
+      //     const { emailPick } = await this.caster.ask([
+      //       {
+      //         type: 'select',
+      //         name: 'emailPick',
+      //         message: 'Which email would you like to synchronize?',
+      //         choices: [...emailNames],
+      //       }
+      //     ]);
+
+      //     await this.exportMJML(taskPick, 'email', emailPick);
+      //   }
+
+      //   this.caster.inform('\nDone synchronizing!');
+      //   await delay(3000);
+      //   this.synchronize();
+      //   break;
+
+      // case 'Single component':
+      //   const { pick: componentPick } = await this.caster.ask([
+      //     {
+      //       type: 'autocomplete',
+      //       name: 'pick',
+      //       message: 'Choose which component you want to synchronize:',
+      //       choices: [...localComponents, 'Back']
+      //     }
+      //   ]);
+
+      //   if (componentPick === 'Back') {
+      //     this.synchronize();
+      //     return;
+      //   }
+
+      //   if (!(await bucketExists(componentPick))) {
+      //     await manageBucket(componentPick, 'create', this.caster);
+      //   }
+
+      //   await this.exportMJML(componentPick, 'components');
+
+      //   this.caster.inform('\nDone synchronizing component!');
+      //   await delay(3000);
+      //   this.synchronize();
+      //   break;
+
+    //   case 'Single template':
+    //     const { pick: templatePick } = await this.caster.ask([
+    //       {
+    //         type: 'autocomplete',
+    //         name: 'pick',
+    //         message: 'Choose which template you want to synchronize:',
+    //         choices: [...templateNames, 'Back']
+    //       }
+    //     ]);
+
+    //     if (templatePick === 'Back') {
+    //       this.synchronize();
+    //       return;
+    //     }
+
+    //     if (!(await bucketExists(templatePick))) {
+    //       await manageBucket(templatePick, 'create', this.caster);
+    //     }
+
+    //     await this.exportMJML(templatePick, 'templates');
+
+    //     this.caster.inform('\nDone synchronizing template!');
+    //     await delay(3000);
+    //     this.synchronize();
+    //     break;
+    // }
   }
 
   async prepare() {
