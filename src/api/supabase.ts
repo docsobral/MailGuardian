@@ -208,7 +208,7 @@ export async function manageBucket(name: string, type: 'create' | 'delete', broa
   let manager: Manager = type === 'create' ? createBucket : deleteBucket;
 
   function capitalizeFirstLetter(string: string): string {
-    return `${string[0].toUpperCase() + string.slice(1)}`
+    return string[0].toUpperCase() + string.slice(1);
   }
 
   broadcaster.start(`Attempting to ${type} bucket named ${name}`);
