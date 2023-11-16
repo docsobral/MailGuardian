@@ -15,7 +15,7 @@ process.emitWarning = (warning, ...args) => {
 }
 
 import { __dirname, cleanTemp, getChildDirectories, manageTemplate, openVS, saveFile, getFile, createFolder, createFolders, deleteFolder, getFolders, getImage } from '../api/filesystem.js';
-import { imagesUrls, listBuckets, uploadFile, deleteBucket, manageBucket, listFilesV2, listImagesV2, bucketExists } from '../api/supabase.js';
+import { imagesUrls, listBuckets, uploadFile, deleteBucket, manageBucket, listFilesV2, listImagesV2 } from '../api/supabase.js';
 import { buildImage, convertHTML, isSpam, train, parseSpamAnalysis } from '../api/spamassassin.js';
 import { EnquireTypes, EnquireNames, EnquireMessages, enquire } from '../api/enquire.js';
 import { importComponents, listComponents } from '../lib/components.js';
@@ -799,83 +799,17 @@ class MailGuardian {
     }
 
     try {
-      await handleSync(choice, this.caster);
+      await handleSync(choice, this.caster, this.exportMJML);
     }
 
     catch(error) {
       this.caster.error(error as string);
     }
 
+    await delay(3000);
+    this.synchronize();
+
     // switch (choice) {
-    //   case 'All components':
-
-    //     try {
-    //       this.caster.inform('\nChecking remote buckets...');
-    //       const remoteBuckets = await listBuckets();
-
-    //       if (remoteBuckets.error) {
-    //         throw new Error(remoteBuckets.error.stack);
-    //       }
-
-    //       if (remoteBuckets.data) {
-    //         this.caster.inform('\nFiltering buckets...');
-    //         const remoteComponents = remoteBuckets.data.filter(bucket => bucket.name.includes('_VC-')).map(bucket => bucket.name);
-
-    //         this.caster.inform('\nChecking local folders...');
-    //         const onlyLocalComponents = localComponents.filter(component => !(remoteComponents.includes(component)));
-    //         const onlyRemoteComponents = remoteComponents.filter(component => !(localComponents.includes(component)));
-    //       }
-    //     }
-
-    //     catch (e) {
-    //       this.caster.error(e as string);
-    //     }
-
-    //     for (let component of localComponents) {
-    //       if (!(await bucketExists(component))) {
-    //         await manageBucket(component, 'create', this.caster);
-    //         await this.exportMJML(component, 'components');
-    //       }
-    //     }
-
-    //     this.caster.inform(hasRun ? '\nDone synchronizing components!' : '\nAlready up to date');
-    //     await delay(3000);
-    //     this.synchronize();
-    //     break;
-
-    //   case 'All templates':
-    //     for (let template of templateNames) {
-    //       if (!(await bucketExists(template))) {
-    //         await manageBucket(template, 'create', this.caster);
-    //         await this.exportMJML(template, 'templates');
-    //         hasRun = true;
-    //       }
-    //     }
-
-    //     this.caster.inform(hasRun ? '\nDone synchronizing templates!' : '\nAlready up to date');
-    //     await delay(3000);
-    //     this.synchronize();
-    //     break;
-
-    //   case 'All tasks':
-    //     for (let task of taskNames) {
-    //       if (!(await bucketExists(task))) {
-    //         await manageBucket(task, 'create', this.caster);
-    //         const emailNames: string[] = getChildDirectories(resolve(__dirname, 'tasks', task));
-
-    //         for (let email of emailNames) {
-    //           await this.exportMJML(task, 'email', email);
-    //         }
-
-    //         hasRun = true;
-    //       }
-    //     }
-
-    //     this.caster.inform(hasRun ? '\nDone synchronizing tasks!' : '\nAlready up to date');
-    //     await delay(3000);
-    //     this.synchronize();
-    //     break;
-
       // case 'Single task':
       //   const { pick: taskPick } = await this.caster.ask([
       //     {
@@ -1294,14 +1228,14 @@ class MailGuardian {
     return bucketsNames;
   }
 
-  async exportMJML(bucketName: string, type: 'templates' | 'components' | 'email', emailName?: string): Promise<void> {
+  async exportMJML(bucketName: string, type: 'templates' | 'components' | 'email', broadcaster = this.caster, emailName?: string): Promise<void> {
     const exportType = type === 'email' ? 'email' : 'normal';
     const folder = type === 'email' ? 'tasks' : type;
     let path = resolve(__dirname, folder, bucketName);
     if (emailName) path = resolve(path, emailName);
 
-    await uploadMJML(bucketName, path, exportType, this.caster, emailName);
-    await uploadImages(bucketName, path, this.caster, emailName);
+    await uploadMJML(bucketName, path, exportType, broadcaster, emailName);
+    await uploadImages(bucketName, path, broadcaster, emailName);
   }
 }
 

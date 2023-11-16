@@ -128,8 +128,12 @@ export async function downloadMJML(bucketName: string, operationType: 'normal' |
 }
 
 export async function downloadBucket(bucketName: string, operationType: 'normal' | 'email', emailName?: string): Promise<DownloadedBucket> {
+  console.log(4)
+  console.log('bucket name:', bucketName)
+  console.log('email name:', emailName)
   const MJML = await downloadMJML(bucketName, operationType, emailName);
-  const images = await downloadImages(bucketName, operationType);
+  console.log(5)
+  const images = await downloadImages(bucketName, operationType, emailName);
 
   return { MJML, images };
 }
@@ -157,7 +161,8 @@ export async function downloadImages(bucketName: string, operationType: 'normal'
   let images: [Blob, string][] = [];
 
   for (const imageName of imageNames) {
-    const image = await supabase.storage.from(bucketName).download(`img/${imageName}`);
+    const imagePath = operationType === 'email' ? `${emailName}/img/${imageName}` : `img/${imageName}`;
+    const image = await supabase.storage.from(bucketName).download(imagePath);
 
     if (image.error) throw image.error;
     if (image.data === null) throw new Error(`Unknown error when downloading image ${imageName}`);
