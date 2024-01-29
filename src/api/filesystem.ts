@@ -145,21 +145,28 @@ export async function manageTemplate(name: string, remove: boolean, type: 'templ
     options = { recursive: true, force: true };
   }
 
-  if (type !== 'email') {
-    await manage(__dirname + `${type}s\\${name}`, options);
-    await manage(__dirname + `${type}s\\${name}\\img`, options);
-  } else if (typeof taskName === 'string' && typeof emailName === 'string') {
-    await manage(resolve(__dirname, 'tasks', taskName, emailName), options);
-    await manage(resolve(__dirname, 'tasks', taskName, emailName, 'img'), options);
+  try {
+    if (type !== 'email') {
+      await manage(__dirname + `${type}s\\${name}`, options);
+      await manage(__dirname + `${type}s\\${name}\\img`, options);
+    } else if (typeof taskName === 'string' && typeof emailName === 'string') {
+      await manage(resolve(__dirname, 'tasks', taskName, emailName), options);
+      await manage(resolve(__dirname, 'tasks', taskName, emailName, 'img'), options);
+    }
+
+    if (!remove && type !== 'email') {
+      writeFileSync(__dirname + `${type}s\\${name}\\index.mjml`, newMJML);
+    } else if (!remove && typeof taskName === 'string' && typeof emailName === 'string') {
+      writeFileSync(resolve(__dirname, 'tasks', taskName, emailName, 'index.mjml'), newMJML);
+    }
+
+    broadcaster.succeed(`${option}ed ${type} named ${name} at ${resolve(__dirname, type, name)}.`);
   }
 
-  if (!remove && type !== 'email') {
-    writeFileSync(__dirname + `${type}s\\${name}\\index.mjml`, newMJML);
-  } else if (!remove && typeof taskName === 'string' && typeof emailName === 'string') {
-    writeFileSync(resolve(__dirname, 'tasks', taskName, emailName, 'index.mjml'), newMJML);
+  catch (error) {
+    broadcaster.fail('The template\'s folder is currently under use. Close all programs using it before trying to delete or overwrite it!');
+    await delay(3000);
   }
-
-  broadcaster.succeed(`${option}ed ${type} named ${name} at ${resolve(__dirname, type, name)}.`);
 }
 
 export async function openVS(name: string, type: 'template' | 'component' | 'email', broadcaster: Broadcaster, taskName?: string, emailName?: string): Promise<void> {

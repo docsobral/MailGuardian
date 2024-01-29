@@ -356,6 +356,12 @@ class MailGuardian {
         try {
           await manageTemplate(toBeDeleted, true, 'template', this.caster);
         } catch (error) {
+          if ((error as Error).name === 'EBUSY') {
+            this.caster.inform('The template\'s folder is currently under use. Close all programs using it before trying to delete it!');
+            await delay(3000);
+            this.templates();
+            break
+          }
           throw error;
         }
 
