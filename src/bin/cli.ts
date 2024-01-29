@@ -309,8 +309,7 @@ class MailGuardian {
             message: 'Sort the components by the order they should appear:',
             choices: picks,
             result(names) {
-              const string = (names as string[]).join(', ');
-              return string;
+              return (names as string[]).join(', ');
             }
           }
         ]);
@@ -321,13 +320,13 @@ class MailGuardian {
         }
         await manageTemplate(templateName, false, 'template', this.caster);
 
-        if (!(picks as string[]).includes('None')) {
+        if ((picks as string[]).includes('None')) {
           await importComponents(sorted, templateName, this.caster, 'template');
         }
 
         openVS(name, 'template', this.caster);
 
-        await delay(2000);
+        await delay(5000);
         this.start();
         break;
 
