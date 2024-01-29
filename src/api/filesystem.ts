@@ -12,20 +12,9 @@ async function delay(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function escapeBackslashes(path: string): string {
-  const pathArray: string[] = path.split('');
-  let newArray: string[] = [];
-
-  for (let char of pathArray) {
-    char !== '\\' ? newArray.push(char) : newArray.push('\\\\');
-  };
-
-  return newArray.join('');
-};
-
 const __filename: string = dirname(fileURLToPath(import.meta.url));
 
-export const __dirname: string = escapeBackslashes(__filename.split('build')[0]);
+export const __dirname: string = __filename.split('build')[0];
 
 export function absolutePath(path: string): string {
   if (path.startsWith('C:\\')) {
@@ -170,7 +159,7 @@ export async function manageTemplate(name: string, remove: boolean, type: 'templ
     writeFileSync(resolve(__dirname, 'tasks', taskName, emailName, 'index.mjml'), newMJML);
   }
 
-  broadcaster.succeed(`${option}ed ${type} named ${name} at ${__dirname}/${type}s/${name}.`);
+  broadcaster.succeed(`${option}ed ${type} named ${name} at ${resolve(__dirname, type, name)}.`);
 }
 
 export async function openVS(name: string, type: 'template' | 'component' | 'email', broadcaster: Broadcaster, taskName?: string, emailName?: string): Promise<void> {

@@ -179,19 +179,6 @@ class MailGuardian {
     this.caster.inform(`\n${text}\n`);
   }
 
-  async checkCommand(text: string) {
-    if (text.toLowerCase() === 'quit' || text.toLowerCase() === 'exit') {
-      this.caster.inform('\n  Ok. Terminating process...');
-      await delay(1000);
-      process.exit(0);
-    }
-
-    else if (text.toLowerCase() === 'back') {
-      this.components();
-      return 'back';
-    }
-  }
-
   async components() {
     this.switchScreen('COMPONENTS - Here you can create and manage components');
 
@@ -218,9 +205,7 @@ class MailGuardian {
           }
         ]);
 
-        const check = await this.checkCommand(newName);
-
-        if (check === 'back') {
+        if ((newName as string).toLowerCase() === 'back') {
           break;
         }
 
