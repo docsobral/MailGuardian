@@ -17,7 +17,7 @@ export async function getImage(path: string, imageName: string): Promise<Buffer>
 export async function getImageNames(path: string): Promise<string[]> {
   let list: string[] = [];
 
-  list = await readdir(path + '\\img');
+  list = await readdir(resolve(path, 'img'));
 
   return list;
 }
