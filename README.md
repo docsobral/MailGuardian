@@ -2,7 +2,7 @@
 
 ## About
 
-This tool was built with the initial purpose of serving as a quick means of proof testing email templates built with the MJML framework. Eventually it grew to be more than that, and it's taking the shape of a suite for testing and compiling emails. You can send email samples, build and store templates, build components, test for spam score and compile MJML emails into regular HTML or Marketo compatible HTML.
+This tool was built with the initial purpose of serving as a quick means of proof testing email templates built with the MJML framework. Eventually it grew to be more than that, and took the shape of a devtool to build, manage and test components (block), email templates and emails. You can send email samples, build and store templates, build components, test for spam score and compile MJML emails into regular HTML or Marketo compatible HTML.
 
 ## Instalation
 
